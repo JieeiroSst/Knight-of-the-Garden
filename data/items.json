@@ -1,0 +1,161 @@
+[
+  {
+    "Id": "sword",
+    "Name": "Kiem Thep",
+    "Description": "Thanh kiem cua mot hiep si nam xua. Ben va sac.",
+    "Type": "Weapon",
+    "Rarity": "Rare",
+    "MaxStack": 1,
+    "SellPrice": 120,
+    "BuyPrice": 300,
+    "IconPath": "res://assets/items/sword.png",
+    "Damage": 25
+  },
+  {
+    "Id": "shield",
+    "Name": "Khien Soi",
+    "Description": "Khien go boc sat, khac hinh dau soi.",
+    "Type": "Armor",
+    "Rarity": "Uncommon",
+    "MaxStack": 1,
+    "SellPrice": 60,
+    "BuyPrice": 150,
+    "IconPath": "res://assets/items/shield.png",
+    "Defense": 10
+  },
+  {
+    "Id": "ring",
+    "Name": "Nhan Da Tim",
+    "Description": "Chiec nhan bi an, toa ra hoi am ky la.",
+    "Type": "Armor",
+    "Rarity": "Epic",
+    "MaxStack": 1,
+    "SellPrice": 250,
+    "BuyPrice": 600,
+    "IconPath": "res://assets/items/ring.png",
+    "Defense": 5
+  },
+  {
+    "Id": "potion",
+    "Name": "Thuoc Hoi Mau",
+    "Description": "Hoi 40 HP khi uong.",
+    "Type": "Consumable",
+    "Rarity": "Common",
+    "MaxStack": 10,
+    "SellPrice": 20,
+    "BuyPrice": 40,
+    "IconPath": "res://assets/items/potion.png",
+    "HealAmount": 40
+  },
+  {
+    "Id": "coins",
+    "Name": "Tui Vang",
+    "Description": "May dong vang le.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 10,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "mud_core",
+    "Name": "Loi Bun",
+    "Description": "Roi ra tu quai bun. Dung de che tao.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 8,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "spike_shard",
+    "Name": "Manh Gai Tim",
+    "Description": "Manh gai sac tu quai tim. Nguyen lieu hiem.",
+    "Type": "Material",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 22,
+    "IconPath": "res://assets/items/ring.png"
+  },
+  {
+    "Id": "wood",
+    "Name": "Go",
+    "Description": "Chat tu cay trong hoang da. Dung de che tao / ban lay vang.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 6,
+    "IconPath": "res://assets/items/coins.png"
+  },
+
+  {
+    "Id": "pumpkin",
+    "Name": "Bi Ngo",
+    "Description": "Bi ngo chin mong, ban duoc gia.",
+    "Type": "Crop",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 35,
+    "IconPath": "res://assets/crops/pumpkin.png"
+  },
+  {
+    "Id": "tomato",
+    "Name": "Ca Chua",
+    "Description": "Gio ca chua tuoi.",
+    "Type": "Crop",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 20,
+    "IconPath": "res://assets/crops/tomato.png"
+  },
+  {
+    "Id": "wheat",
+    "Name": "Bo Lua Mi",
+    "Description": "Lua mi vang ong.",
+    "Type": "Crop",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 15,
+    "IconPath": "res://assets/crops/wheat.png"
+  },
+
+  {
+    "Id": "pumpkin_seed",
+    "Name": "Hat Bi Ngo",
+    "Description": "Trong sau 3 ngay se ra bi ngo.",
+    "Type": "Seed",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 5,
+    "BuyPrice": 15,
+    "IconPath": "res://assets/crops/pumpkin.png",
+    "GrowsIntoCropId": "pumpkin",
+    "GrowDays": 3
+  },
+  {
+    "Id": "tomato_seed",
+    "Name": "Hat Ca Chua",
+    "Description": "Trong sau 2 ngay se ra ca chua.",
+    "Type": "Seed",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 3,
+    "BuyPrice": 10,
+    "IconPath": "res://assets/crops/tomato.png",
+    "GrowsIntoCropId": "tomato",
+    "GrowDays": 2
+  },
+  {
+    "Id": "wheat_seed",
+    "Name": "Hat Lua Mi",
+    "Description": "Trong sau 2 ngay se ra lua mi.",
+    "Type": "Seed",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 2,
+    "BuyPrice": 8,
+    "IconPath": "res://assets/crops/wheat.png",
+    "GrowsIntoCropId": "wheat",
+    "GrowDays": 2
+  }
+]

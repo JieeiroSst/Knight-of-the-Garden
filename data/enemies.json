@@ -1,0 +1,33 @@
+[
+  {
+    "Id": "mud_monster",
+    "Name": "Quai Bun",
+    "MaxHp": 40,
+    "Damage": 8,
+    "Speed": 55,
+    "DetectRange": 140,
+    "ExpReward": 20,
+    "GoldReward": 10,
+    "SpritePath": "res://assets/enemies/mud_monster.png",
+    "Loot": [
+      { "ItemId": "mud_core", "Chance": 0.8, "Min": 1, "Max": 2 },
+      { "ItemId": "potion", "Chance": 0.15, "Min": 1, "Max": 1 }
+    ]
+  },
+  {
+    "Id": "spiky_monster",
+    "Name": "Quai Gai Tim",
+    "MaxHp": 75,
+    "Damage": 15,
+    "Speed": 70,
+    "DetectRange": 180,
+    "ExpReward": 45,
+    "GoldReward": 25,
+    "SpritePath": "res://assets/enemies/spiky_monster.png",
+    "Loot": [
+      { "ItemId": "spike_shard", "Chance": 0.7, "Min": 1, "Max": 3 },
+      { "ItemId": "potion", "Chance": 0.3, "Min": 1, "Max": 1 },
+      { "ItemId": "ring", "Chance": 0.05, "Min": 1, "Max": 1 }
+    ]
+  }
+]

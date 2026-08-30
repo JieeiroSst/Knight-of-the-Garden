@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3 uid="uid://bfarmplothsvv01"]
+
+[ext_resource type="Script" path="res://scripts/entities/FarmPlot.cs" id="1"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1"]
+size = Vector3(44, 4, 44)
+
+[node name="FarmPlot" type="StaticBody3D" groups=["farm_plots"]]
+script = ExtResource("1")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 2, 0)
+shape = SubResource("BoxShape3D_1")

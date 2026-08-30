@@ -1,0 +1,35 @@
+[
+  {
+    "Id": "q_first_harvest",
+    "Title": "Vu Mua Dau Tien",
+    "Description": "Thu hoach 3 bi ngo dau tien tren manh ruong.",
+    "ObjectiveType": "collect",
+    "TargetId": "pumpkin",
+    "TargetCount": 3,
+    "RewardGold": 50,
+    "RewardItemId": "tomato_seed",
+    "RewardItemCount": 3
+  },
+  {
+    "Id": "q_clear_mud",
+    "Title": "Don Dep Khu Rung",
+    "Description": "Tieu diet 3 con Quai Bun dang pha hoai mua mang.",
+    "ObjectiveType": "kill",
+    "TargetId": "mud_monster",
+    "TargetCount": 3,
+    "RewardGold": 80,
+    "RewardItemId": "potion",
+    "RewardItemCount": 2
+  },
+  {
+    "Id": "q_spiky_hunt",
+    "Title": "Moi De Doa Tim",
+    "Description": "San mot con Quai Gai Tim trong hang sau.",
+    "ObjectiveType": "kill",
+    "TargetId": "spiky_monster",
+    "TargetCount": 1,
+    "RewardGold": 150,
+    "RewardItemId": "sword",
+    "RewardItemCount": 1
+  }
+]

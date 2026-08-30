@@ -1,0 +1,29 @@
+[gd_scene load_steps=3 format=3 uid="uid://bplayerhsvv01"]
+
+[ext_resource type="Script" path="res://scripts/entities/Player.cs" id="1"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 12.0
+height = 40.0
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_1"]
+radius = 48.0
+
+[node name="Player" type="CharacterBody3D" groups=["player"]]
+script = ExtResource("1")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 20, 0)
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="Model" type="Node3D" parent="."]
+
+[node name="InteractArea" type="Area3D" parent="."]
+
+[node name="InteractShape" type="CollisionShape3D" parent="InteractArea"]
+position = Vector3(0, 20, 0)
+shape = SubResource("SphereShape3D_1")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+position = Vector3(0, 140, 115)
+rotation_degrees = Vector3(-35, 0, 0)

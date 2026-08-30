@@ -1,0 +1,106 @@
+[gd_scene load_steps=13 format=3 uid="uid://bscarecrowhsvv01"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_pole"]
+top_radius = 1.5
+bottom_radius = 1.5
+height = 44.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_leg_l"]
+size = Vector3(4, 16, 4)
+
+[sub_resource type="BoxMesh" id="BoxMesh_torso"]
+size = Vector3(11, 20, 7)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_arms"]
+top_radius = 1.4
+bottom_radius = 1.4
+height = 32.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_hand"]
+size = Vector3(3.5, 3.5, 3.5)
+
+[sub_resource type="SphereMesh" id="SphereMesh_head"]
+radius = 5.6
+height = 11.2
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_hatbrim"]
+top_radius = 9.5
+bottom_radius = 9.5
+height = 1.4
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_hattop"]
+top_radius = 0.5
+bottom_radius = 6.0
+height = 7.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_wood"]
+albedo_color = Color(0.35, 0.24, 0.13, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_sack"]
+albedo_color = Color(0.72, 0.6, 0.4, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_pants"]
+albedo_color = Color(0.32, 0.28, 0.42, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_head"]
+albedo_color = Color(0.82, 0.68, 0.48, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="Mat_hat"]
+albedo_color = Color(0.28, 0.2, 0.09, 1)
+roughness = 1.0
+
+[node name="Scarecrow" type="Node3D"]
+
+[node name="Pole" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 22, 0)
+mesh = SubResource("CylinderMesh_pole")
+surface_material_override/0 = SubResource("Mat_wood")
+
+[node name="LegLeft" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 8, 0)
+mesh = SubResource("BoxMesh_leg_l")
+surface_material_override/0 = SubResource("Mat_pants")
+
+[node name="LegRight" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 8, 0)
+mesh = SubResource("BoxMesh_leg_l")
+surface_material_override/0 = SubResource("Mat_pants")
+
+[node name="Torso" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 26, 0)
+mesh = SubResource("BoxMesh_torso")
+surface_material_override/0 = SubResource("Mat_sack")
+
+[node name="Arms" type="MeshInstance3D" parent="."]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 32, 0)
+mesh = SubResource("CylinderMesh_arms")
+surface_material_override/0 = SubResource("Mat_wood")
+
+[node name="HandLeft" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.5, 32, 0)
+mesh = SubResource("BoxMesh_hand")
+surface_material_override/0 = SubResource("Mat_sack")
+
+[node name="HandRight" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.5, 32, 0)
+mesh = SubResource("BoxMesh_hand")
+surface_material_override/0 = SubResource("Mat_sack")
+
+[node name="Head" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 41, 0)
+mesh = SubResource("SphereMesh_head")
+surface_material_override/0 = SubResource("Mat_head")
+
+[node name="HatBrim" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 45.5, 0)
+mesh = SubResource("CylinderMesh_hatbrim")
+surface_material_override/0 = SubResource("Mat_hat")
+
+[node name="HatTop" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 49.5, 0)
+mesh = SubResource("CylinderMesh_hattop")
+surface_material_override/0 = SubResource("Mat_hat")
