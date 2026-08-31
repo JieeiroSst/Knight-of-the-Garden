@@ -1,4 +1,3 @@
-using System;
 using Godot;
 
 namespace HiepSiVeVuon.Core
@@ -56,11 +55,6 @@ namespace HiepSiVeVuon.Core
                 _lastDate = today;
                 NextDay(); // sang ngay thuc moi -> cay lon len, quai hoi sinh (qua tin hieu DayChanged)
             }
-        }
-
-        private void EmitSignal(object hourChanged, int hour)
-        {
-            throw new NotImplementedException();
         }
 
         public void AddGold(int amount)

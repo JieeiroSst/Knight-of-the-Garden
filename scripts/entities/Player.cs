@@ -41,6 +41,15 @@ namespace HiepSiVeVuon.Entities
         // tuong). Vi vay khi vao nha phai thu nho offset nay lai that nhieu.
         private static readonly Vector3 OutdoorCameraOffset = new(0, 140, 115);
         private static readonly Vector3 IndoorCameraOffset = new(0, 60, 15);
+        private static readonly Vector3 MountedCameraOffset = new(0, 160, 125);
+
+        // Cuoi ngua: [R] gan ngua de len, [R] lan nua de xuong. Khi cuoi, CON NGUA moi la thuc
+        // the tu doc input va di chuyen that su (xem Horse.DoRiddenMovement) - nguoi choi chi
+        // "ngoi" dung vi tri tren lung ngua (Horse.SeatOffset) va giu nguyen model hien thi
+        // (khong an di), khac voi ban dau lam nguoc: an nguoi choi va bien ngua thanh nhan vat
+        // dieu khien, khien nhin nhu nguoi choi "nhap" vao than ngua thay vi ngoi tren.
+        [Export] public float MountRange = 55f;
+        private Horse _mountedHorse;
 
         public override void _Ready()
         {
@@ -89,6 +98,31 @@ namespace HiepSiVeVuon.Entities
         public override void _PhysicsProcess(double delta)
         {
             float dt = (float)delta;
+
+            if (_mountedHorse != null && IsInstanceValid(_mountedHorse))
+            {
+                // Dang cuoi: KHONG con tu di chuyen/roi tu do rieng nua - con ngua moi la thuc
+                // the tu doc input va di chuyen that su (xem Horse.DoRiddenMovement). Nguoi choi
+                // chi "ngoi" dung vi tri tren lung ngua (SeatOffset) va quay mat theo huong ngua
+                // dang di, giu nguyen HINH ANH (khong an di) - dung "nhap" vao than ngua.
+                // QUAN TRONG: SeatOffset la toa do CUC BO theo than ngua (trai/phai, len/xuong,
+                // truoc/sau) - phai XOAY theo dung huong ngua dang quay mat (_facing) truoc khi
+                // cong vao vi tri ngua, neu khong (cong thang theo truc THE GIOI) thi cho ngoi se
+                // "troi" sang mot ben ngay khi ngua re huong khac voi luc vua len ngua.
+                _facing = _mountedHorse.Facing;
+                Vector3 horseRight = _facing.Cross(Vector3.Up).Normalized();
+                Vector3 seatWorldOffset = horseRight * Horse.SeatOffset.X
+                    + Vector3.Up * Horse.SeatOffset.Y
+                    + _facing * Horse.SeatOffset.Z;
+                GlobalPosition = _mountedHorse.GlobalPosition + seatWorldOffset;
+                // Bo hoan toan viec tu nghieng Basis (thu truoc do lam nhan vat bi xoay gan 90 do,
+                // nam bet xuong dat thay vi ngoi) - giu than nguoi THANG DUNG, chi dua vi tri len
+                // dung tam LUNG NGUA that (gan vai/withers, khong cao hon dinh dau hay thap qua
+                // xuong duoi bung) - day la vi tri con nguoi that su ngoi khi cuoi ngua.
+                UpdateVisuals(dt, 0f); // dang "ngoi" - dung tu the Idle, khong chay hoat canh Di/Chay
+                return;
+            }
+
             var input2 = Input.GetVector("move_left", "move_right", "move_up", "move_down");
             var dir = new Vector3(input2.X, 0f, input2.Y);
 
@@ -126,12 +160,23 @@ namespace HiepSiVeVuon.Entities
             // Chuyen Idle -> Walk -> Run theo toc do thuc te (nhu con nguoi that: chi chay khi
             // di nhanh), va dieu chinh nhip chan (SpeedScale) khop voi toc do di chuyen de tranh
             // hieu ung "truot bang" (chan dong nhung nguoi di nhanh/cham hon animation).
-            string anim = speedRatio < 0.1f ? "Idle" : speedRatio < 0.6f ? "Walk" : "Run";
+            // Dung NGUONG KEP (hysteresis) quanh moi moc chuyen doi - vi du dang Idle phai vuot
+            // 0.12 moi sang Walk, nhung dang Walk phai tut duoi 0.08 moi ve lai Idle - neu chi
+            // dung 1 moc duy nhat, toc do dao dong nhe quanh moc do (vd di cheo, va nhe vao
+            // tuong) se lam animation nhay qua lai lien tuc, nhin rat gia/giat.
+            string anim = _currentAnim switch
+            {
+                "Run" => speedRatio < 0.55f ? (speedRatio < 0.08f ? "Idle" : "Walk") : "Run",
+                "Walk" => speedRatio < 0.08f ? "Idle" : speedRatio >= 0.65f ? "Run" : "Walk",
+                _ => speedRatio < 0.12f ? "Idle" : speedRatio >= 0.65f ? "Run" : "Walk",
+            };
             if (!_animPlayer.HasAnimation(anim)) anim = "Idle";
 
             if (_currentAnim != anim)
             {
-                _animPlayer.Play(anim);
+                // Chuyen muot (blend 0.15s) thay vi cat cung tuc thi - neu khong chan se "nhay"
+                // sang tu the khac ngay giua chung buoc, nhin may moc/khong tu nhien.
+                _animPlayer.Play(anim, 0.15);
                 _currentAnim = anim;
             }
             _animPlayer.SpeedScale = anim == "Idle" ? 1f : Mathf.Lerp(0.8f, 1.3f, speedRatio);
@@ -151,6 +196,51 @@ namespace HiepSiVeVuon.Entities
             if (e.IsActionPressed("attack")) TryAttack();
             else if (e.IsActionPressed("interact")) TryInteract();
             else if (e.IsActionPressed("use_tool")) TryUseTool();
+            else if (e.IsActionPressed("mount_horse")) TryToggleRide();
+        }
+
+        private void TryToggleRide()
+        {
+            if (_mountedHorse != null)
+            {
+                DismountHorse();
+                return;
+            }
+            if (_interactArea == null) return;
+            foreach (var body in _interactArea.GetOverlappingBodies())
+            {
+                if (body is Horse horse)
+                {
+                    MountHorse(horse);
+                    return;
+                }
+            }
+        }
+
+        private void MountHorse(Horse horse)
+        {
+            _mountedHorse = horse;
+            horse.SetRidden(true);
+            // Tat va cham rieng cua nguoi choi trong luc cuoi - vi tri nguoi choi gio chi "an
+            // theo" vi tri ngua (khong tu MoveAndSlide nua), neu de nguyen va cham thi than
+            // nguoi choi dung yen chong len ngua se can tro chinh MoveAndSlide cua con ngua.
+            CollisionLayer = 0;
+            CollisionMask = 0;
+            if (_camera != null) _camera.Position = MountedCameraOffset;
+            // Thu nho nguoi choi mot chut khi cuoi - phu hop voi dang "ngoi thap" (SeatOffset da
+            // ha xuong) hon la dung sung sung cao tren lung ngua.
+            if (_model != null) _model.Scale = Vector3.One * 0.88f;
+        }
+
+        private void DismountHorse()
+        {
+            if (_mountedHorse == null) return;
+            _mountedHorse.SetRidden(false);
+            _mountedHorse = null;
+            CollisionLayer = 1;
+            CollisionMask = 1;
+            if (_camera != null) _camera.Position = _indoors ? IndoorCameraOffset : OutdoorCameraOffset;
+            if (_model != null) _model.Scale = Vector3.One;
         }
 
         private void TryAttack()

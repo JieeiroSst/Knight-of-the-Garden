@@ -87,6 +87,16 @@
     "SellPrice": 6,
     "IconPath": "res://assets/items/coins.png"
   },
+  {
+    "Id": "milk",
+    "Name": "Sua Bo",
+    "Description": "Sua tuoi vat tu bo trong trang trai, do nguoi cham bo thu duoc moi ngay.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 10,
+    "IconPath": "res://assets/items/potion.png"
+  },
 
   {
     "Id": "pumpkin",

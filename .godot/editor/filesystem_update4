@@ -18,3 +18,12 @@ res://scripts/entities/Player.cs
 res://scripts/core/GameManager.cs
 res://scripts/core/WorldStreamer.cs
 res://scripts/entities/BuildingDoor.cs
+res://scripts/systems/MusicPlayer.cs
+res://scripts/entities/Cow.cs
+res://scripts/entities/FarmhandNpc.cs
+res://scripts/entities/Dog.cs
+res://scripts/entities/FarmDog.cs
+res://scripts/entities/FarmCat.cs
+res://scripts/ui/MapUI.cs
+res://scripts/entities/StablehandNpc.cs
+res://scripts/entities/Horse.cs

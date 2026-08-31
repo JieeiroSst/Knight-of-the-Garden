@@ -12,6 +12,16 @@ namespace HiepSiVeVuon.Core
         private PackedScene _enemyScene = GD.Load<PackedScene>("res://scenes/Enemy.tscn");
         private PackedScene _npcScene = GD.Load<PackedScene>("res://scenes/NPC.tscn");
         private PackedScene _playerScene = GD.Load<PackedScene>("res://scenes/Player.tscn");
+        private PackedScene _cowScene = GD.Load<PackedScene>("res://scenes/Cow.tscn");
+        private PackedScene _farmhandScene = GD.Load<PackedScene>("res://scenes/FarmhandNpc.tscn");
+        private PackedScene _horseScene = GD.Load<PackedScene>("res://scenes/Horse.tscn");
+        private PackedScene _stablehandScene = GD.Load<PackedScene>("res://scenes/StablehandNpc.tscn");
+        private PackedScene _dogScene = GD.Load<PackedScene>("res://scenes/Dog.tscn");
+        private PackedScene _farmDogScene = GD.Load<PackedScene>("res://scenes/FarmDog.tscn");
+        private PackedScene _farmCatScene = GD.Load<PackedScene>("res://scenes/FarmCat.tscn");
+        // Cot den duong (Post Lantern by Kay Lousberg, CC0, poly.pizza/m/ZSQ65S4lEu) - phong
+        // cach go/lang que hop voi nong trai hon den duong hien dai.
+        private PackedScene _lampPostScene = GD.Load<PackedScene>("res://assets3d/misc/lamp_post.glb");
 
         // Model that (Poly by Google, giay phep CC-BY - can ghi cong, khac cac asset con lai
         // deu CC0 - chon vi khong tim duoc ban CC0 phu hop sau 2 lan tim, va bu nhin nguyen thuy
@@ -102,6 +112,10 @@ namespace HiepSiVeVuon.Core
             SpawnNpcs();
             SpawnEnemies();
             GiveStartingItems();
+            BuildCowPasture();
+            BuildCowherd();
+            BuildHorseStable();
+            BuildStablehand();
 
             // Vung hoang da vo han xung quanh khu dung san o tren
             _world.AddChild(new WorldStreamer());
@@ -114,6 +128,14 @@ namespace HiepSiVeVuon.Core
 
             // Sang ngay thuc moi (GameManager tu phat hien qua dong ho may tinh) -> sinh them quai
             GameManager.Instance.DayChanged += _ => RespawnSomeEnemies();
+            // Den duong tu bat/tat theo dung gio (18h - 6h sang). Ap dung trang thai ban dau
+            // MOT LAN cho TAT CA cot den (ca 4 cot rieng va 2*13 cot o tung cong trinh) - phai
+            // dat SAU khi toan bo cong trinh da duoc xay xong (BuildCowherd la cong trinh cuoi
+            // cung o tren), neu khong cac cot tao sau se giu trang thai mac dinh sai.
+            GameManager.Instance.HourChanged += OnStreetLampHourChanged;
+            SetStreetLampsOn(IsStreetLampHour(GameManager.Instance.Hour));
+            // ...va thu cho bo giao phoi sinh be con (xem TryBreedCows).
+            GameManager.Instance.DayChanged += _ => TryBreedCows();
 
             // Neu co ban luu -> nap
             if (SaveSystem.Instance.HasSave())
@@ -173,6 +195,14 @@ namespace HiepSiVeVuon.Core
             AddDecor(_treeScene, new Vector3(-470, 0, -90), 34f);
             AddDecor(_treeScene2, new Vector3(-160, 0, -260), 38f);
 
+            // 4 cot den duong: 2 cai hai ben loi di truoc nha nong dan, 2 cai hai ben cong ruong.
+            // (Moi cong trinh khac tu them 2 cot rieng ngay tai cua - xem AddBuildingEntrance.
+            // Trang thai bat/tat that su duoc ap dung 1 lan cho TAT CA cot sau khi da dat xong,
+            // xem cuoi _Ready().)
+            AddStreetLamp(FarmhousePos + new Vector3(-45, 0, 80), 0f);
+            AddStreetLamp(FarmhousePos + new Vector3(45, 0, 80), 180f);
+            AddStreetLamp(new Vector3(FarmGatePos.X - 35, 0, FarmGatePos.Z), 90f);
+            AddStreetLamp(new Vector3(FarmGatePos.X + 35, 0, FarmGatePos.Z), -90f);
         }
 
         // Thi tran: mot "dao" dat rieng, cach xa khu nong trai (~500m), noi voi nhau qua AddRoad.
@@ -275,7 +305,9 @@ namespace HiepSiVeVuon.Core
         // trinh (du de kich hoat tu bat ky huong tiep can nao, vi khong the xac dinh chinh xac
         // mat tien that su cua tung model neu khong xem truc quan - bai hoc tu lan gan cua rieng
         // bi lech voi tuong nha truoc day) + 1 cua 3D that (Quaternius Door Round, CC0).
-        private void AddBuildingEntrance(Vector3 buildingPos, float rotationYDegrees, float triggerRadius, float doorDistance, RoomKind kind)
+        // Tra ve interiorAnchor (tang tret) de nguoi goi (vd BuildCowherd) co the dua NPC vao
+        // dung phong nay khi can (vd di ngu ban dem).
+        private Vector3 AddBuildingEntrance(Vector3 buildingPos, float rotationYDegrees, float triggerRadius, float doorDistance, RoomKind kind)
         {
             // Phong noi that dat NGAY PHIA TREN vi tri that cua chinh ngoi nha nay (cung X,Z) -
             // gan lien voi ngoi nha thay vi giau o mot khu vuc tach biet rat xa. Khong the nhin
@@ -293,15 +325,25 @@ namespace HiepSiVeVuon.Core
             var floor2Anchor = interiorAnchor + Vector3.Up * 400f;
             BuildRoomForKind(interiorAnchor, floor2Anchor, kind);
 
+            var basis = Basis.Identity.Rotated(Vector3.Up, Mathf.DegToRad(rotationYDegrees));
+
             if (_doorScene != null)
             {
-                var basis = Basis.Identity.Rotated(Vector3.Up, Mathf.DegToRad(rotationYDegrees));
                 var door = _doorScene.Instantiate<Node3D>();
                 door.Position = buildingPos + basis * new Vector3(0, 0, doorDistance);
                 door.RotationDegrees = new Vector3(0, rotationYDegrees, 0);
                 door.Scale = Vector3.One * 55f;
                 _world.AddChild(door);
             }
+
+            // Theo yeu cau: moi cong trinh co them 2 cot den, dat hai ben loi vao (dung basis da
+            // tinh cho cua) - khoang cach ty le voi kich thuoc cong trinh (triggerRadius) de
+            // khong dam vao tuong nha nho hay qua gan nha to.
+            float lampOffset = Mathf.Max(35f, triggerRadius * 0.5f);
+            AddStreetLamp(buildingPos + basis * new Vector3(-lampOffset, 0, doorDistance * 0.75f), rotationYDegrees);
+            AddStreetLamp(buildingPos + basis * new Vector3(lampOffset, 0, doorDistance * 0.75f), rotationYDegrees);
+
+            return interiorAnchor;
         }
 
         private void AddBuildingDoor(Vector3 pos, float triggerRadius, bool isExit, Vector3 interiorAnchor = default, bool isFloorChange = false, bool isAutoTrigger = false)
@@ -867,11 +909,25 @@ namespace HiepSiVeVuon.Core
             float angleDeg = Mathf.RadToDeg(Mathf.Atan2(-dir.Z, dir.X));
             for (int i = 0; i < count; i++)
             {
+                var segPos = from + dir * (actualSegment * (i + 0.5f));
                 var inst = fenceScene.Instantiate<Node3D>();
-                inst.Position = from + dir * (actualSegment * (i + 0.5f));
+                inst.Position = segPos;
                 inst.RotationDegrees = new Vector3(0, angleDeg, 0);
                 inst.Scale = Vector3.One * fenceScale;
                 _world.AddChild(inst);
+
+                // Va cham dac cho tung doan hang rao - truoc day hang rao chi la hinh anh, ca
+                // nguoi choi lan dong vat (bo) deu co the di xuyen qua. Hop va cham xoay dung
+                // theo huong doan hang rao, dai bang doan do.
+                var body = new StaticBody3D();
+                body.Position = segPos;
+                body.RotationDegrees = new Vector3(0, angleDeg, 0);
+                body.AddChild(new CollisionShape3D
+                {
+                    Shape = new BoxShape3D { Size = new Vector3(actualSegment, 50f, 8f) },
+                    Position = Vector3.Up * 25f
+                });
+                _world.AddChild(body);
             }
         }
 
@@ -916,12 +972,161 @@ namespace HiepSiVeVuon.Core
             _world.AddChild(post);
         }
 
+        // Cot den duong 3D that (Post Lantern by Kay Lousberg, CC0) + 1 den vang am phat sang
+        // that su tu dinh den (nhin ro nhat vao ban dem qua he thong ngay-dem da co) + va cham
+        // dac (mong) de nguoi choi khong xuyen qua duoc cot.
+        private void AddStreetLamp(Vector3 pos, float rotationYDegrees)
+        {
+            if (_lampPostScene != null)
+            {
+                var lamp = _lampPostScene.Instantiate<Node3D>();
+                lamp.Position = pos;
+                lamp.RotationDegrees = new Vector3(0, rotationYDegrees, 0);
+                lamp.Scale = Vector3.One * 18f;
+                _world.AddChild(lamp);
+
+                // Cho phan "kinh den" TU PHAT SANG that su (emission) khi den bat - khong chi
+                // dua vao anh sang OmniLight chieu ra xung quanh (co the qua nho/mo, kho nhan
+                // biet ro la "den dang sang" hay khong). Neu khong tim thay dung ten mesh con
+                // (tuy phien ban model), du phong sang toan bo cot den.
+                var glowNode = FindNodeByName(lamp, "post_lantern_lantern") as MeshInstance3D
+                    ?? FindNodeByName(lamp, "post_lantern") as MeshInstance3D;
+                if (glowNode != null)
+                {
+                    var glowMat = new StandardMaterial3D
+                    {
+                        AlbedoColor = new Color(1f, 0.85f, 0.5f),
+                        EmissionEnabled = true,
+                        Emission = new Color(1f, 0.7f, 0.3f),
+                        EmissionEnergyMultiplier = 0f // ApplyStreetLampState() dat lai dung gio ngay ben duoi
+                    };
+                    glowNode.MaterialOverride = glowMat;
+                    _streetLampGlowMats.Add(glowMat);
+                }
+            }
+
+            // Tang manh do sang/tam voi so voi ban dau - gia tri cu (1.6/110) co the qua yeu de
+            // nhan ra ro rang giua khung canh ban dem da co san sang mo tu bau troi/anh sang moi.
+            var light = new OmniLight3D
+            {
+                Position = pos + Vector3.Up * 58f,
+                LightColor = new Color(1f, 0.75f, 0.4f),
+                LightEnergy = 6f,
+                OmniRange = 180f
+            };
+            _world.AddChild(light);
+            _streetLamps.Add(light);
+
+            var body = new StaticBody3D { Position = pos };
+            body.AddChild(new CollisionShape3D
+            {
+                Shape = new CylinderShape3D { Radius = 4f, Height = 60f },
+                Position = Vector3.Up * 30f
+            });
+            _world.AddChild(body);
+        }
+
+        private static Node FindNodeByName(Node root, string name)
+        {
+            if (root.Name == name) return root;
+            foreach (Node child in root.GetChildren())
+            {
+                var found = FindNodeByName(child, name);
+                if (found != null) return found;
+            }
+            return null;
+        }
+
+        private readonly System.Collections.Generic.List<OmniLight3D> _streetLamps = new();
+        private readonly System.Collections.Generic.List<StandardMaterial3D> _streetLampGlowMats = new();
+
+        private static bool IsStreetLampHour(int hour) => hour >= 18 || hour < 6;
+
+        // Goi khi vua dat xong ca 4 cot (trang thai ban dau, dung gio hien tai) VA moi lan gio
+        // thuc su thay doi (GameManager.HourChanged) - bat/tat CA den chieu sang lan phan kinh
+        // den tu phat sang cung luc, sang tu 18h toi den 6h sang theo dong ho may tinh THAT.
+        private void SetStreetLampsOn(bool on)
+        {
+            foreach (var lamp in _streetLamps)
+                if (IsInstanceValid(lamp)) lamp.Visible = on;
+            foreach (var mat in _streetLampGlowMats)
+                mat.EmissionEnergyMultiplier = on ? 4f : 0f;
+        }
+
+        private void OnStreetLampHourChanged(int hour) => SetStreetLampsOn(IsStreetLampHour(hour));
+
+        // Chuong cho chung, gan nha nong dan - moi con cho (ca con theo nguoi choi lan may con
+        // chay rong) sau 12h dem den 6h sang deu tu dong ve day ngu.
+        private static readonly Vector3 KennelPos = FarmhousePos + new Vector3(110, 0, 130);
+
         private void SpawnPlayer()
         {
             var player = _playerScene.Instantiate<Player>();
             // Phai dung ngoai vung va cham dac cua nha (~113 don vi moi huong) - xem AddDecor/FarmhouseFootprint
             player.GlobalPosition = FarmhousePos + new Vector3(0, 0, 140);
             _world.AddChild(player);
+
+            AddDogHouse(KennelPos, -30f);
+
+            // Cho 3D luon di theo nguoi choi (Quaternius Shiba Inu, CC0) - dat ngay canh diem
+            // xuat phat, tu tim nguoi choi qua group "player" (xem Dog.cs).
+            var dog = _dogScene.Instantiate<Dog>();
+            dog.GlobalPosition = player.GlobalPosition + new Vector3(30, 0, 20);
+            dog.KennelPos = KennelPos;
+            _world.AddChild(dog);
+
+            SpawnFarmDogs();
+            SpawnFarmCats();
+        }
+
+        // 5 con cho khac (nhieu giong khac nhau - Husky/Wolf/Shiba Inu, deu CC0 Quaternius) tu do
+        // chay rong quanh nong trai (khac voi con Dog theo nguoi choi), sau 12h dem cung ve
+        // chung 1 chuong ngu qua Dog.cs/FarmDog.cs.
+        private void SpawnFarmDogs()
+        {
+            string[] breedPaths =
+            {
+                "res://assets3d/quaternius/animals/husky.glb",
+                "res://assets3d/quaternius/animals/wolf.glb",
+                "res://assets3d/quaternius/animals/dog.glb",
+                "res://assets3d/quaternius/animals/husky.glb",
+                "res://assets3d/quaternius/animals/wolf.glb",
+            };
+            var homeCenter = FarmhousePos + new Vector3(0, 0, 60);
+            var rng = new RandomNumberGenerator();
+            rng.Randomize();
+
+            for (int i = 0; i < breedPaths.Length; i++)
+            {
+                var farmDog = _farmDogScene.Instantiate<FarmDog>();
+                farmDog.ModelPath = breedPaths[i];
+                farmDog.HomeCenter = homeCenter;
+                farmDog.KennelPos = KennelPos;
+                farmDog.GlobalPosition = homeCenter + new Vector3(rng.RandfRange(-120, 120), 0, rng.RandfRange(-120, 120));
+                _world.AddChild(farmDog);
+            }
+        }
+
+        // Chuong meo rieng (khac vi tri chuong cho) - 10 con meo (Quaternius, CC0) tu do chay
+        // rong quanh nong trai, sau 12h dem den 6h sang tu ve day ngu (xem FarmCat.cs).
+        private static readonly Vector3 CatKennelPos = FarmhousePos + new Vector3(-110, 0, 130);
+
+        private void SpawnFarmCats()
+        {
+            AddCatHouse(CatKennelPos, 30f);
+
+            var homeCenter = FarmhousePos + new Vector3(0, 0, 60);
+            var rng = new RandomNumberGenerator();
+            rng.Randomize();
+
+            for (int i = 0; i < 10; i++)
+            {
+                var cat = _farmCatScene.Instantiate<FarmCat>();
+                cat.HomeCenter = homeCenter;
+                cat.KennelPos = CatKennelPos;
+                cat.GlobalPosition = homeCenter + new Vector3(rng.RandfRange(-150, 150), 0, rng.RandfRange(-150, 150));
+                _world.AddChild(cat);
+            }
         }
 
         private void BuildFarm()
@@ -1069,6 +1274,305 @@ namespace HiepSiVeVuon.Core
             e.EnemyId = id;
             e.Position = pos;
             _world.AddChild(e);
+        }
+
+        // Trang trai bo: 1 khu rieng co hang rao rieng, cach xa nha kho ~85 don vi de khong
+        // chong lan. Bo (Quaternius Farm Animal Pack, CC0) tu do di lai trong hang rao va tu
+        // dong den mang an luc 12h trua/16h chieu theo dong ho THAT (xem Cow.cs).
+        private static readonly Vector3 CowPastureCenter = new(-820, 0, -250);
+        private const float CowPastureHalf = 160f;
+
+        private void BuildCowPasture()
+        {
+            float minX = CowPastureCenter.X - CowPastureHalf;
+            float maxX = CowPastureCenter.X + CowPastureHalf;
+            float minZ = CowPastureCenter.Z - CowPastureHalf;
+            float maxZ = CowPastureCenter.Z + CowPastureHalf;
+            float gateX = CowPastureCenter.X;
+
+            AddFenceLine(new Vector3(minX, 0, minZ), new Vector3(maxX, 0, minZ), _fenceScene); // bac
+            AddFenceLine(new Vector3(minX, 0, minZ), new Vector3(minX, 0, maxZ), _fenceScene); // tay
+            AddFenceLine(new Vector3(maxX, 0, minZ), new Vector3(maxX, 0, maxZ), _fenceScene); // dong
+            // Nam - chua cong o giua
+            AddFenceLine(new Vector3(minX, 0, maxZ), new Vector3(gateX - 20f, 0, maxZ), _fenceScene);
+            AddFenceLine(new Vector3(gateX + 20f, 0, maxZ), new Vector3(maxX, 0, maxZ), _fenceScene);
+            AddFencePost(new Vector3(minX, 0, minZ));
+            AddFencePost(new Vector3(maxX, 0, minZ));
+            AddFencePost(new Vector3(minX, 0, maxZ));
+            AddFencePost(new Vector3(maxX, 0, maxZ));
+
+            var troughPos = CowPastureCenter;
+            AddFeedTrough(troughPos);
+
+            // 2 cot den hai ben cong chuong bo (giong cong ruong)
+            AddStreetLamp(new Vector3(gateX - 35, 0, maxZ), 90f);
+            AddStreetLamp(new Vector3(gateX + 35, 0, maxZ), -90f);
+
+            Vector3[] cowStarts =
+            {
+                CowPastureCenter + new Vector3(-70, 0, -60),
+                CowPastureCenter + new Vector3(70, 0, -50),
+                CowPastureCenter + new Vector3(-50, 0, 70),
+                CowPastureCenter + new Vector3(60, 0, 60),
+            };
+            foreach (var pos in cowStarts) SpawnCow(pos, isAdult: true);
+        }
+
+        // Nha o cho nguoi cham bo (SmallBarn - cung model/he thong cua+noi that 2 tang da dung
+        // cho ca 12 cong trinh khac, xem AddBuildingEntrance) + NPC AI di lam theo gio hanh
+        // chinh that (6h-18h) - xem FarmhandNpc.cs.
+        private static readonly Vector3 CowherdHousePos = new(-1100, 0, -250);
+
+        private void BuildCowherd()
+        {
+            AddDecor(_smallBarnScene, CowherdHousePos, 12f, 90f, SmallBarnFootprint);
+            var interiorHomePos = AddBuildingEntrance(CowherdHousePos, 90f, 80f, 50f, RoomKind.Village);
+
+            var npc = _farmhandScene.Instantiate<FarmhandNpc>();
+            npc.NpcId = "cowherd";
+            npc.NpcName = "Nguoi Cham Bo";
+            npc.DialogueLow = new[] { "Chao, ta la nguoi duoc thue cham dan bo o day. Gio hanh chinh 6 gio sang toi 6 gio toi." };
+            npc.DialogueMid = new[] { "Dan bo dao nay khoe re, an uong day du ca." };
+            npc.DialogueHigh = new[] { "Cau hay ghe qua chuong bo xem, thinh thoang ta de lai chut sua tuoi day." };
+            npc.HomePos = CowherdHousePos + new Vector3(0, 0, 55);
+            // Ngoai gio lam (sau 18h), NPC di vao HAN BEN TRONG nha (dung phong noi that that
+            // da xay qua AddBuildingEntrance) de ngu, khong dung ngoai san.
+            npc.InteriorHomePos = interiorHomePos;
+            npc.WorkPos = CowPastureCenter + new Vector3(0, 0, -40);
+            npc.TroughPos = CowPastureCenter;
+            _world.AddChild(npc);
+        }
+
+        // Chuong ngua: 1 khu rieng co hang rao rieng, phia bac chuong bo (cach ~80 don vi de
+        // khong chong lan). Ngua (Quaternius Farm Animal Pack, CC0) tu do di lai trong hang rao
+        // va tu dong den mang an luc 12h trua/16h chieu theo dong ho THAT (xem Horse.cs).
+        private static readonly Vector3 HorseStableCenter = new(-820, 0, -650);
+        private const float HorseStableHalf = 160f;
+
+        private void BuildHorseStable()
+        {
+            float minX = HorseStableCenter.X - HorseStableHalf;
+            float maxX = HorseStableCenter.X + HorseStableHalf;
+            float minZ = HorseStableCenter.Z - HorseStableHalf;
+            float maxZ = HorseStableCenter.Z + HorseStableHalf;
+            float gateX = HorseStableCenter.X;
+
+            AddFenceLine(new Vector3(minX, 0, minZ), new Vector3(maxX, 0, minZ), _fenceScene); // bac
+            AddFenceLine(new Vector3(minX, 0, minZ), new Vector3(minX, 0, maxZ), _fenceScene); // tay
+            AddFenceLine(new Vector3(maxX, 0, minZ), new Vector3(maxX, 0, maxZ), _fenceScene); // dong
+            // Nam - chua cong o giua
+            AddFenceLine(new Vector3(minX, 0, maxZ), new Vector3(gateX - 20f, 0, maxZ), _fenceScene);
+            AddFenceLine(new Vector3(gateX + 20f, 0, maxZ), new Vector3(maxX, 0, maxZ), _fenceScene);
+            AddFencePost(new Vector3(minX, 0, minZ));
+            AddFencePost(new Vector3(maxX, 0, minZ));
+            AddFencePost(new Vector3(minX, 0, maxZ));
+            AddFencePost(new Vector3(maxX, 0, maxZ));
+
+            AddFeedTrough(HorseStableCenter);
+
+            // 2 cot den hai ben cong chuong ngua (giong cong ruong/chuong bo)
+            AddStreetLamp(new Vector3(gateX - 35, 0, maxZ), 90f);
+            AddStreetLamp(new Vector3(gateX + 35, 0, maxZ), -90f);
+
+            Vector3[] horseStarts =
+            {
+                HorseStableCenter + new Vector3(-70, 0, -60),
+                HorseStableCenter + new Vector3(70, 0, -50),
+                HorseStableCenter + new Vector3(-50, 0, 70),
+                HorseStableCenter + new Vector3(60, 0, 60),
+            };
+            foreach (var pos in horseStarts)
+            {
+                var horse = _horseScene.Instantiate<Horse>();
+                horse.Position = pos;
+                horse.TroughPosition = HorseStableCenter;
+                horse.HomeCenter = HorseStableCenter;
+                horse.PastureHalfExtent = HorseStableHalf - 35f;
+                _world.AddChild(horse);
+            }
+        }
+
+        // Nha o cho nguoi cham ngua (SmallBarn - cung he thong cua+noi that 2 tang) + NPC AI di
+        // lam theo gio hanh chinh that (6h-18h) - xem StablehandNpc.cs.
+        private static readonly Vector3 StablehandHousePos = new(-1100, 0, -650);
+
+        private void BuildStablehand()
+        {
+            AddDecor(_smallBarnScene, StablehandHousePos, 12f, 90f, SmallBarnFootprint);
+            var interiorHomePos = AddBuildingEntrance(StablehandHousePos, 90f, 80f, 50f, RoomKind.Village);
+
+            var npc = _stablehandScene.Instantiate<StablehandNpc>();
+            npc.NpcId = "stablehand";
+            npc.NpcName = "Nguoi Cham Ngua";
+            npc.DialogueLow = new[] { "Chao, ta la nguoi duoc thue cham dan ngua o day. Gio hanh chinh 6 gio sang toi 6 gio toi." };
+            npc.DialogueMid = new[] { "Dan ngua dao nay khoe re, chay nhanh lam." };
+            npc.DialogueHigh = new[] { "Cau muon cuoi ngua thi cu ghe chuong hoi ta nhe." };
+            npc.HomePos = StablehandHousePos + new Vector3(0, 0, 55);
+            npc.InteriorHomePos = interiorHomePos;
+            npc.WorkPos = HorseStableCenter + new Vector3(0, 0, -40);
+            _world.AddChild(npc);
+        }
+
+        private void SpawnCow(Vector3 pos, bool isAdult)
+        {
+            var cow = _cowScene.Instantiate<Cow>();
+            cow.Position = pos;
+            cow.TroughPosition = CowPastureCenter;
+            cow.IsAdult = isAdult;
+            // Tam wander PHAI la tam that cua hang rao (khong phai vi tri spawn rieng cua tung
+            // con) + gioi han ban kinh nho hon nua be rong hang rao that (160) mot khoang an
+            // toan, de bo khong bao gio wander ra ngoai hang rao.
+            cow.HomeCenter = CowPastureCenter;
+            cow.PastureHalfExtent = CowPastureHalf - 35f;
+            _world.AddChild(cow);
+        }
+
+        private const int MaxCows = 10;
+
+        // Moi ngay THAT: neu co it nhat 2 bo TRUONG THANH va tong dan bo chua vuot muc toi da,
+        // co 1 co hoi ngau nhien sinh ra 1 be con moi (dat canh 2 "bo me", bat dau nho va phai
+        // an moi ngay de lon len - xem Cow.OnDayChanged). Gioi han so luong de dan bo khong
+        // tang vo han lam day chat hang rao.
+        private void TryBreedCows()
+        {
+            var cows = GetTree().GetNodesInGroup("cows");
+            if (cows.Count >= MaxCows) return;
+
+            int adultCount = 0;
+            Vector3 lastAdultPos = CowPastureCenter;
+            foreach (var node in cows)
+            {
+                if (node is Cow c && IsInstanceValid(c) && c.IsAdult)
+                {
+                    adultCount++;
+                    lastAdultPos = c.GlobalPosition;
+                }
+            }
+            if (adultCount < 2) return;
+
+            var rng = new RandomNumberGenerator();
+            rng.Randomize();
+            if (rng.Randf() > 0.5f) return; // ~50% co hoi moi ngay, khong phai ngay nao cung de
+
+            var calfPos = lastAdultPos + new Vector3(rng.RandfRange(-25, 25), 0, rng.RandfRange(-25, 25));
+            SpawnCow(calfPos, isAdult: false);
+        }
+
+        // Mang thuc an cho bo: khong tim duoc model CC0 phu hop rieng cho hinh dang nay, nen
+        // dung go primitive (giong cach lam cot hang rao/mat troi truoc do) - 1 khay go ho mo
+        // chat day thuc an mau vang, du don gian de khong can 1 model rieng.
+        private void AddFeedTrough(Vector3 pos)
+        {
+            var woodMat = new StandardMaterial3D { AlbedoColor = new Color(0.4f, 0.26f, 0.14f), Roughness = 0.9f };
+            var foodMat = new StandardMaterial3D { AlbedoColor = new Color(0.85f, 0.7f, 0.3f), Roughness = 1f };
+
+            void AddBox(Vector3 offset, Vector3 size, StandardMaterial3D mat)
+            {
+                _world.AddChild(new MeshInstance3D
+                {
+                    Mesh = new BoxMesh { Size = size },
+                    Position = pos + offset,
+                    MaterialOverride = mat
+                });
+            }
+
+            AddBox(new Vector3(0, 4, 0), new Vector3(70, 8, 30), woodMat);
+            AddBox(new Vector3(-33, 12, 0), new Vector3(4, 16, 30), woodMat);
+            AddBox(new Vector3(33, 12, 0), new Vector3(4, 16, 30), woodMat);
+            AddBox(new Vector3(0, 12, -13), new Vector3(70, 16, 4), woodMat);
+            AddBox(new Vector3(0, 12, 13), new Vector3(70, 16, 4), woodMat);
+            AddBox(new Vector3(0, 9, 0), new Vector3(60, 6, 22), foodMat);
+
+            var body = new StaticBody3D { Position = pos };
+            body.AddChild(new CollisionShape3D
+            {
+                Shape = new BoxShape3D { Size = new Vector3(74, 20, 34) },
+                Position = Vector3.Up * 10f
+            });
+            _world.AddChild(body);
+        }
+
+        // Chuong cho: khong tim duoc model CC0 phu hop rieng cho hinh dang nay sau nhieu lan
+        // tim (giong cach lam mang thuc an/cot hang rao truoc do) - dung go primitive: than
+        // hop go + mai chop (PrismMesh) + cua vao toi mau.
+        private void AddDogHouse(Vector3 pos, float rotationYDegrees)
+        {
+            var basis = Basis.Identity.Rotated(Vector3.Up, Mathf.DegToRad(rotationYDegrees));
+            var rot = new Vector3(0, rotationYDegrees, 0);
+            var woodMat = new StandardMaterial3D { AlbedoColor = new Color(0.5f, 0.32f, 0.18f), Roughness = 0.9f };
+            var roofMat = new StandardMaterial3D { AlbedoColor = new Color(0.32f, 0.16f, 0.09f), Roughness = 0.9f };
+            var doorMat = new StandardMaterial3D { AlbedoColor = new Color(0.04f, 0.03f, 0.03f), Roughness = 1f };
+
+            _world.AddChild(new MeshInstance3D
+            {
+                Mesh = new BoxMesh { Size = new Vector3(34, 28, 34) },
+                Position = pos + basis * new Vector3(0, 14, 0),
+                RotationDegrees = rot,
+                MaterialOverride = woodMat
+            });
+            _world.AddChild(new MeshInstance3D
+            {
+                Mesh = new BoxMesh { Size = new Vector3(13, 18, 2) },
+                Position = pos + basis * new Vector3(0, 9, 17.5f),
+                RotationDegrees = rot,
+                MaterialOverride = doorMat
+            });
+            _world.AddChild(new MeshInstance3D
+            {
+                Mesh = new PrismMesh { Size = new Vector3(40, 16, 40) },
+                Position = pos + basis * new Vector3(0, 28, 0),
+                RotationDegrees = rot,
+                MaterialOverride = roofMat
+            });
+
+            var body = new StaticBody3D { Position = pos, RotationDegrees = rot };
+            body.AddChild(new CollisionShape3D
+            {
+                Shape = new BoxShape3D { Size = new Vector3(34, 30, 34) },
+                Position = Vector3.Up * 15f
+            });
+            _world.AddChild(body);
+        }
+
+        // Chuong meo: khong tim duoc model CC0 phu hop (2 lua chon tim duoc deu CC-BY) - dung go
+        // primitive nhu chuong cho nhung nho hon va mau mieng/lieu gai de khac biet.
+        private void AddCatHouse(Vector3 pos, float rotationYDegrees)
+        {
+            var basis = Basis.Identity.Rotated(Vector3.Up, Mathf.DegToRad(rotationYDegrees));
+            var rot = new Vector3(0, rotationYDegrees, 0);
+            var wickerMat = new StandardMaterial3D { AlbedoColor = new Color(0.72f, 0.55f, 0.32f), Roughness = 1f };
+            var roofMat = new StandardMaterial3D { AlbedoColor = new Color(0.55f, 0.38f, 0.2f), Roughness = 0.9f };
+            var doorMat = new StandardMaterial3D { AlbedoColor = new Color(0.04f, 0.03f, 0.03f), Roughness = 1f };
+
+            _world.AddChild(new MeshInstance3D
+            {
+                Mesh = new CylinderMesh { TopRadius = 13f, BottomRadius = 14f, Height = 16f },
+                Position = pos + basis * new Vector3(0, 8, 0),
+                RotationDegrees = rot,
+                MaterialOverride = wickerMat
+            });
+            _world.AddChild(new MeshInstance3D
+            {
+                Mesh = new BoxMesh { Size = new Vector3(8, 10, 2) },
+                Position = pos + basis * new Vector3(0, 6, 12.5f),
+                RotationDegrees = rot,
+                MaterialOverride = doorMat
+            });
+            _world.AddChild(new MeshInstance3D
+            {
+                Mesh = new PrismMesh { Size = new Vector3(20, 8, 20) },
+                Position = pos + basis * new Vector3(0, 16, 0),
+                RotationDegrees = rot,
+                MaterialOverride = roofMat
+            });
+
+            var body = new StaticBody3D { Position = pos, RotationDegrees = rot };
+            body.AddChild(new CollisionShape3D
+            {
+                Shape = new CylinderShape3D { Radius = 14f, Height = 18f },
+                Position = Vector3.Up * 9f
+            });
+            _world.AddChild(body);
         }
 
         private const int MaxHandPlacedEnemies = 8;

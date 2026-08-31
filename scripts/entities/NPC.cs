@@ -38,16 +38,21 @@ namespace HiepSiVeVuon.Entities
             { "ranger", "res://assets3d/quaternius/characters/Swat.gltf" },
         };
 
+        // Luu lai (thay vi bien cuc bo) de cac lop con (vd FarmhandNpc) co the dieu khien
+        // hoat canh Di/Dung khi them AI di chuyen rieng.
+        protected Node3D _model;
+        protected AnimationPlayer _animPlayer;
+
         public override void _Ready()
         {
             AddToGroup("npcs");
-            var model = GetNodeOrNull<Node3D>("Model");
-            if (model != null)
+            _model = GetNodeOrNull<Node3D>("Model");
+            if (_model != null)
             {
                 string path = ModelPathByNpcId.TryGetValue(NpcId, out var p)
                     ? p : "res://assets3d/quaternius/characters/Worker.gltf";
-                var player = CharacterRig.Attach(model, path, ModelScale);
-                player?.Play("Idle");
+                _animPlayer = CharacterRig.Attach(_model, path, ModelScale);
+                _animPlayer?.Play("Idle");
             }
         }
 
