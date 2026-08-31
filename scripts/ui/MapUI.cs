@@ -41,6 +41,12 @@ namespace HiepSiVeVuon.UI
         // policePlot (-690, 0) tinh dong trong code.
         private static readonly Vector2 PoliceStationPos2D = new(9250 - 690, 3750 + 0);
 
+        // Khu chan nuoi phu (cuu/heo) + vuon cay/vuon nho + nha nguoi lam vuon (xem
+        // Main.SheepPigPastureCenter/OrchardCenter/VineyardCenter/EstateWorkerHousePos).
+        private static readonly Vector2 SheepPigPos2D = new(-820, -1330);
+        private static readonly Vector2 OrchardVineyardPos2D = new(-810, -1330);
+        private static readonly Vector2 EstateWorkerHousePos2D = new(-1100, -1330);
+
         // Vung toa do the gioi hien thi tren ban do (bao ca nong trai lan thi tran + le).
         // WorldMinX mo rong tu -2200 -> -3000 de bao ca canh dong huong duong o -2552 (xem
         // Main.SunflowerFieldCenter) sau khi doi ra 100m.
@@ -148,6 +154,9 @@ namespace HiepSiVeVuon.UI
 
             DrawLandmark(SunflowerFieldPos2D, new Color(0.95f, 0.78f, 0.1f), "Canh dong huong duong");
             DrawLandmark(PoliceStationPos2D, new Color(0.2f, 0.35f, 0.85f), "Tru Canh Sat");
+            DrawLandmark(SheepPigPos2D, new Color(0.85f, 0.85f, 0.8f), "Chuong cuu/heo");
+            DrawLandmark(OrchardVineyardPos2D, new Color(0.3f, 0.5f, 0.2f), "Vuon cay/Vuon nho");
+            DrawLandmark(EstateWorkerHousePos2D, new Color(0.7f, 0.5f, 0.3f), "Nha nguoi lam vuon");
 
             // Vung que nuoc Phap (xem Main.FrenchRegionCenter) cach xa toi 10km - qua xa de ve
             // dung ty le tren ban do nay (se lam ca ban do nong trai/lang bi thu nho khong doc

@@ -7,10 +7,15 @@ namespace HiepSiVeVuon.Entities
 {
     // Mot o dat trong: Trong -> Tuoi -> Lon len (theo ngay) -> Thu hoach.
     // Vong lap nong trai lien ket voi phieu luu (thu hoach ban lay gold / craft).
+    // Cac loai dat: anh huong toc do lon (GrowDays) va mau nen dat - gan tu Main.cs theo mau
+    // co dinh tren luoi (khong ngau nhien, giu nguyen moi lan tai lai).
+    public enum SoilType { Normal, Fertile, Dry, Wet, Toxic, Special }
+
     public partial class FarmPlot : StaticBody3D
     {
         public int GridX;
         public int GridY;
+        [Export] public SoilType Soil = SoilType.Normal;
 
         private string _cropId = null;   // hat giong dang trong -> se ra crop
         private string _growsInto = null;
@@ -113,7 +118,17 @@ namespace HiepSiVeVuon.Entities
             Inventory.Instance.RemoveItem(seedId, 1);
             _growsInto = seed.GrowsIntoCropId;
             _cropId = _growsInto;
-            _growDays = seed.GrowDays;
+            // Loai dat anh huong toc do lon: mau mo/dac biet lon nhanh hon, kho/nhiem doc lon
+            // cham hon, dat uot khong doi (nhung tu dong duoc "tuoi" moi ngay - xem OnDayChanged).
+            int soilAdjust = Soil switch
+            {
+                SoilType.Fertile => -1,
+                SoilType.Special => -2,
+                SoilType.Dry => 1,
+                SoilType.Toxic => 2,
+                _ => 0,
+            };
+            _growDays = Mathf.Max(1, seed.GrowDays + soilAdjust);
             _growStage = 0;
             _watered = false;
             GD.Print($"Da trong {seed.Name}.");
@@ -138,6 +153,9 @@ namespace HiepSiVeVuon.Entities
 
         private void OnDayChanged(int day)
         {
+            // Dat uot ("Wet") tu nhien du am moi ngay - khong can nguoi choi tuoi tay.
+            if (_cropId != null && Soil == SoilType.Wet) _watered = true;
+
             if (_cropId != null && _watered && _growStage < _growDays)
             {
                 _growStage++;
@@ -151,7 +169,18 @@ namespace HiepSiVeVuon.Entities
         {
             if (_soilMesh != null)
             {
-                var color = _watered ? new Color(0.35f, 0.25f, 0.15f) : new Color(0.5f, 0.38f, 0.24f);
+                var baseColor = _watered ? new Color(0.35f, 0.25f, 0.15f) : new Color(0.5f, 0.38f, 0.24f);
+                // Tinh mau theo loai dat de nguoi choi nhan biet duoc tung o (mau mo=xanh dam,
+                // kho=vang nhat, uot=nau sam hon, nhiem doc=tim, dac biet=vang kim).
+                var color = Soil switch
+                {
+                    SoilType.Fertile => baseColor.Lerp(new Color(0.25f, 0.35f, 0.12f), 0.5f),
+                    SoilType.Dry => baseColor.Lerp(new Color(0.68f, 0.58f, 0.35f), 0.5f),
+                    SoilType.Wet => baseColor.Darkened(0.25f),
+                    SoilType.Toxic => baseColor.Lerp(new Color(0.4f, 0.15f, 0.45f), 0.45f),
+                    SoilType.Special => baseColor.Lerp(new Color(0.75f, 0.65f, 0.15f), 0.4f),
+                    _ => baseColor,
+                };
                 if (_soilMesh.GetSurfaceOverrideMaterial(0) is not StandardMaterial3D mat)
                 {
                     mat = new StandardMaterial3D();

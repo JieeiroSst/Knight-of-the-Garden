@@ -33,3 +33,7 @@ res://scripts/ui/FarmStorageBoard.cs
 res://scripts/systems/FarmStorage.cs
 res://scripts/systems/WarehouseDatabase.cs
 res://scripts/entities/TownCitizenNpc.cs
+res://scripts/entities/FarmWorkerNpc.cs
+res://scripts/entities/Pig.cs
+res://scripts/entities/EstateWorkerNpc.cs
+res://scripts/entities/Sheep.cs

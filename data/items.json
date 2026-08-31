@@ -107,6 +107,76 @@
     "SellPrice": 8,
     "IconPath": "res://assets/items/coins.png"
   },
+  {
+    "Id": "wool",
+    "Name": "Len Cuu",
+    "Description": "Len cat tu dan cuu trong trang trai, do nguoi chan nuoi thu duoc.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 12,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "cheese",
+    "Name": "Pho Mai",
+    "Description": "Pho mai lam tu sua bo tuoi.",
+    "Type": "Material",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 25,
+    "IconPath": "res://assets/items/potion.png"
+  },
+  {
+    "Id": "honey",
+    "Name": "Mat Ong",
+    "Description": "Mat ong tu vuon nuoi ong trong trang trai.",
+    "Type": "Material",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 18,
+    "IconPath": "res://assets/items/potion.png"
+  },
+  {
+    "Id": "beeswax",
+    "Name": "Sap Ong",
+    "Description": "Sap ong nguyen chat, nguyen lieu lam nen/thuoc.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 10,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "grape",
+    "Name": "Nho",
+    "Description": "Chum nho chin tu vuon nho trang trai.",
+    "Type": "Crop",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 15,
+    "IconPath": "res://assets/crops/tomato.png"
+  },
+  {
+    "Id": "wine",
+    "Name": "Ruou Vang",
+    "Description": "Ruou vang ep tu nho vuon nha, dac san vung que.",
+    "Type": "Material",
+    "Rarity": "Rare",
+    "MaxStack": 99,
+    "SellPrice": 45,
+    "IconPath": "res://assets/items/potion.png"
+  },
+  {
+    "Id": "apple",
+    "Name": "Tao",
+    "Description": "Tao chin tu vuon cay an qua trong trang trai.",
+    "Type": "Crop",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 12,
+    "IconPath": "res://assets/crops/tomato.png"
+  },
 
   {
     "Id": "pumpkin",
