@@ -26,6 +26,13 @@ namespace HiepSiVeVuon.Core
         public int RealYear => System.DateTime.Now.Year;
         public bool IsNight => Hour < 6 || Hour >= 19;
 
+        // Thoi tiet don gian: 1 co "co dang mua" hay khong, doi MOI NGAY THAT (khong doi giua
+        // ngay), tinh xac dinh theo Day (cung 1 ngay luon cho cung 1 ket qua) - dung cho Henri
+        // (bao ve trang trai) doi hanh vi ban ngay khi troi mua (xem RepairmanNpc/GuardNpc).
+        // Khong co hieu ung hinh anh (khong doi bau troi/hat mua) - chi anh huong hanh vi NPC.
+        public bool IsRaining { get; private set; }
+        [Signal] public delegate void WeatherChangedEventHandler(bool isRaining);
+
         private System.DateTime _lastDate = System.DateTime.Now.Date;
         private int _lastHour = System.DateTime.Now.Hour;
 
@@ -38,6 +45,13 @@ namespace HiepSiVeVuon.Core
         public override void _EnterTree()
         {
             Instance = this;
+            RollWeather();
+        }
+
+        private void RollWeather()
+        {
+            var rng = new RandomNumberGenerator { Seed = (ulong)Day };
+            IsRaining = rng.Randf() < 0.3f; // ~30% so ngay la ngay mua
         }
 
         public override void _Process(double delta)
@@ -107,7 +121,9 @@ namespace HiepSiVeVuon.Core
         public void NextDay()
         {
             Day++;
+            RollWeather();
             EmitSignal(SignalName.DayChanged, Day);
+            EmitSignal(SignalName.WeatherChanged, IsRaining);
             EmitSignal(SignalName.StatsChanged);
         }
 

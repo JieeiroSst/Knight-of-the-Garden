@@ -51,6 +51,15 @@ namespace HiepSiVeVuon.Core
         private PackedScene _playerScene = GD.Load<PackedScene>("res://scenes/Player.tscn");
         private PackedScene _cowScene = GD.Load<PackedScene>("res://scenes/Cow.tscn");
         private PackedScene _farmhandScene = GD.Load<PackedScene>("res://scenes/FarmhandNpc.tscn");
+        // 4 NPC nhan vien quan trong cua trang trai (Jean/Marcel/Antoine/Henri) - xem
+        // BuildFarmStaff. Fence marker: "cam bien" vo hinh de Marcel biet cho nao can sua.
+        private PackedScene _farmStewardScene = GD.Load<PackedScene>("res://scenes/FarmStewardNpc.tscn");
+        private PackedScene _repairmanScene = GD.Load<PackedScene>("res://scenes/RepairmanNpc.tscn");
+        private PackedScene _warehouseManagerScene = GD.Load<PackedScene>("res://scenes/WarehouseManagerNpc.tscn");
+        private PackedScene _guardNpcScene = GD.Load<PackedScene>("res://scenes/GuardNpc.tscn");
+        private PackedScene _fenceMarkerScene = GD.Load<PackedScene>("res://scenes/FenceMarker.tscn");
+        // Vung thong bao ten cong trinh khi nguoi choi lai gan - xem AddBuildingLabelZone.
+        private PackedScene _buildingLabelZoneScene = GD.Load<PackedScene>("res://scenes/BuildingLabelZone.tscn");
         private PackedScene _horseScene = GD.Load<PackedScene>("res://scenes/Horse.tscn");
         private PackedScene _stablehandScene = GD.Load<PackedScene>("res://scenes/StablehandNpc.tscn");
         private PackedScene _dogScene = GD.Load<PackedScene>("res://scenes/Dog.tscn");
@@ -242,6 +251,7 @@ namespace HiepSiVeVuon.Core
             SafeBuildStep(BuildToolAndWoodpileArea, nameof(BuildToolAndWoodpileArea));
             SafeBuildStep(BuildHerbGarden, nameof(BuildHerbGarden));
             SafeBuildStep(BuildWorkerDormsAndStaff, nameof(BuildWorkerDormsAndStaff));
+            SafeBuildStep(BuildFarmStaff, nameof(BuildFarmStaff));
             SafeBuildStep(BuildBigVineyard, nameof(BuildBigVineyard));
             SafeBuildStep(BuildEstateLandscaping, nameof(BuildEstateLandscaping));
             SafeBuildStep(BuildFarmOutbuildings, nameof(BuildFarmOutbuildings));
@@ -311,11 +321,13 @@ namespace HiepSiVeVuon.Core
             // Nha nong dan (nha nguoi choi) - model nha that chi tiet hon, to them 20%, xoay 180 do
             AddDecor(_farmhouseScene, FarmhousePos, 66f, 180f, FarmhouseFootprint);
             AddBuildingEntrance(FarmhousePos, 180f, 150f, 120f, RoomKind.Farmhouse);
+            AddBuildingLabelZone(FarmhousePos, 170f, "Nha Nong Dan");
 
             // Nha kho (barn) - dat canh ruong, cach hang rao ruong dung 5m (100 don vi) ve phia tay
             var barnPos = new Vector3(-482, 0, 250);
             AddDecor(_barnScene, barnPos, 24f, 0f, BarnFootprint);
             AddBuildingEntrance(barnPos, 0f, 150f, 110f, RoomKind.Barn);
+            AddBuildingLabelZone(barnPos, 170f, "Nha Kho");
 
             // Bu nhin dung giua ruong (khe ho giua cac o dat) & cay that quanh nha
             AddDecor(_scarecrowScene, new Vector3(70, 0, 330), 13f);
@@ -361,6 +373,7 @@ namespace HiepSiVeVuon.Core
             var townHallPos = VillageAnchor + new Vector3(0, 0, -180);
             AddDecor(_bigBarnScene, townHallPos, 18f, 0f, BarnFootprint); // Toa Thi Chinh
             AddBuildingEntrance(townHallPos, 0f, 120f, 90f, RoomKind.TownHall);
+            AddBuildingLabelZone(townHallPos, 150f, "Toa Thi Chinh");
 
             // Vong trong
             AddSmallHouse(VillageAnchor + new Vector3(-170, 0, -60)); // gia lang
@@ -1205,6 +1218,28 @@ namespace HiepSiVeVuon.Core
             _streetLamps.Add(light);
         }
 
+        // Vung thong bao ten cong trinh (xem BuildingLabelZone.cs/HUD.ShowBuildingName) - nguoi
+        // choi lai gan trong pham vi "radius" se thay ten cong trinh hien tren man hinh, ra khoi
+        // pham vi thi tu an di. Ap dung cho cac cong trinh/dia diem NOI BAT (nha, chuong trai,
+        // thap canh, coi xay gio...) - KHONG ap dung cho tung can nha dan lap lai trong khu do
+        // thi/lang que Phap hay tung chuong ve tinh rieng le, tranh hien thong bao lien tuc gay
+        // roi mat khi di qua khu vuc day nha giong het nhau.
+        private void AddBuildingLabelZone(Vector3 pos, float radius, string name)
+        {
+            if (_buildingLabelZoneScene == null) return;
+            var zone = _buildingLabelZoneScene.Instantiate<BuildingLabelZone>();
+            zone.Position = pos;
+            var collision = zone.GetNodeOrNull<CollisionShape3D>("Collision");
+            // QUAN TRONG: tao SphereShape3D MOI thay vi sua truc tiep collision.Shape - sub-
+            // resource nap tu .tscn (SphereShape3D_1) duoc CHIA SE giua MOI lan Instantiate() cua
+            // CUNG 1 PackedScene (Godot mac dinh KHONG tach rieng resource cho tung instance tru
+            // khi danh dau resource_local_to_scene) - neu sua truc tiep, moi zone da dat truoc do
+            // se BI DOI THEO ban kinh cua zone dat SAU CUNG (tat ca dung chung 1 Shape resource).
+            if (collision != null) collision.Shape = new SphereShape3D { Radius = radius };
+            zone.BuildingLabel = name;
+            _world.AddChild(zone);
+        }
+
         private static Node FindNodeByName(Node root, string name)
         {
             if (root.Name == name) return root;
@@ -1544,6 +1579,7 @@ namespace HiepSiVeVuon.Core
             var policePos = VillageAnchor + new Vector3(policePlot.X, 0, policePlot.Y);
             AddDecor(_farmhouseScene, policePos, 66f, 90f, FarmhouseFootprint);
             var policeInterior = AddBuildingEntrance(policePos, 90f, 130f, 100f, RoomKind.TownHall);
+            AddBuildingLabelZone(policePos, 160f, "Tru Canh Sat");
             _cityHousePositions.Add(policePos + new Vector3(0, 0, 55));
             _cityHouseInteriors.Add(policeInterior);
 
@@ -1690,6 +1726,7 @@ namespace HiepSiVeVuon.Core
             AddStreetLamp(new Vector3(gateX - 35, 0, maxZ), 90f);
             AddStreetLamp(new Vector3(gateX + 35, 0, maxZ), -90f);
             AddPenCenterLight(CowPastureCenter, CowPastureHalf);
+            AddBuildingLabelZone(CowPastureCenter, CowPastureHalf + 20f, "Chuong Bo");
 
             // 12 con (tang tu 4 theo yeu cau) - rai deu theo vong tron trong hang rao, ban kinh
             // nho hon PastureHalfExtent de khong dung sat hang rao.
@@ -1712,6 +1749,7 @@ namespace HiepSiVeVuon.Core
         {
             AddDecor(_smallBarnScene, CowherdHousePos, 12f, 90f, SmallBarnFootprint);
             var interiorHomePos = AddBuildingEntrance(CowherdHousePos, 90f, 80f, 50f, RoomKind.Village);
+            AddBuildingLabelZone(CowherdHousePos, 100f, "Nha Nguoi Cham Bo");
 
             var npc = _farmhandScene.Instantiate<FarmhandNpc>();
             npc.NpcId = "cowherd";
@@ -1761,6 +1799,7 @@ namespace HiepSiVeVuon.Core
             AddStreetLamp(new Vector3(gateX - 35, 0, maxZ), 90f);
             AddStreetLamp(new Vector3(gateX + 35, 0, maxZ), -90f);
             AddPenCenterLight(HorseStableCenter, HorseStableHalf);
+            AddBuildingLabelZone(HorseStableCenter, HorseStableHalf + 20f, "Chuong Ngua");
 
             Vector3[] horseStarts =
             {
@@ -1788,6 +1827,7 @@ namespace HiepSiVeVuon.Core
         {
             AddDecor(_smallBarnScene, StablehandHousePos, 12f, 90f, SmallBarnFootprint);
             var interiorHomePos = AddBuildingEntrance(StablehandHousePos, 90f, 80f, 50f, RoomKind.Village);
+            AddBuildingLabelZone(StablehandHousePos, 100f, "Nha Nguoi Cham Ngua");
 
             var npc = _stablehandScene.Instantiate<StablehandNpc>();
             npc.NpcId = "stablehand";
@@ -1843,6 +1883,7 @@ namespace HiepSiVeVuon.Core
             AddStreetLamp(new Vector3(gateX - 35, 0, maxZ), 90f);
             AddStreetLamp(new Vector3(gateX + 35, 0, maxZ), -90f);
             AddPenCenterLight(ChickenCoopCenter, ChickenCoopHalf);
+            AddBuildingLabelZone(ChickenCoopCenter, ChickenCoopHalf + 20f, "Chuong Ga");
 
             // 30 con (tang tu 10 theo yeu cau).
             var rng = new RandomNumberGenerator();
@@ -1908,6 +1949,7 @@ namespace HiepSiVeVuon.Core
         {
             AddDecor(_smallBarnScene, PoultryKeeperHousePos, 12f, 90f, SmallBarnFootprint);
             var interiorHomePos = AddBuildingEntrance(PoultryKeeperHousePos, 90f, 80f, 50f, RoomKind.Village);
+            AddBuildingLabelZone(PoultryKeeperHousePos, 100f, "Nha Nguoi Cham Ga");
 
             if (_poultryKeeperScene == null) { GD.PushError("Khong tai duoc PoultryKeeperNpc.tscn"); return; }
             var npc = _poultryKeeperScene.Instantiate<PoultryKeeperNpc>();
@@ -2008,6 +2050,7 @@ namespace HiepSiVeVuon.Core
             float maxZ = SunflowerFieldCenter.Z + SunflowerFieldHalfZ;
 
             WorldStreamer.ExclusionZones.Add((SunflowerFieldCenter, 395f));
+            AddBuildingLabelZone(SunflowerFieldCenter, 350f, "Canh Dong Huong Duong");
 
             // Nen dat mau nau sam trai dai duoi ca canh dong - phan biet ro voi co xanh xung
             // quanh, giong 1 canh dong that su duoc canh tac chu khong phai hoa moc hoang.
@@ -2402,6 +2445,7 @@ namespace HiepSiVeVuon.Core
                 _extraPenZones.Add((pos, footprintRadius));
                 float rotY = rng.RandfRange(0f, 360f);
                 AddWindmill(pos, rotY, windmillScale);
+                AddBuildingLabelZone(pos, footprintRadius, "Coi Xay Gio");
             }
         }
 
@@ -2449,6 +2493,7 @@ namespace HiepSiVeVuon.Core
                 avoid.Add((pos, footprintRadius));
                 _extraPenZones.Add((pos, footprintRadius));
                 AddWindmill(pos, rng.RandfRange(0f, 360f), windmillScale);
+                AddBuildingLabelZone(pos, footprintRadius, "Coi Xay Gio");
             }
         }
 
@@ -2534,6 +2579,7 @@ namespace HiepSiVeVuon.Core
                 _world.AddChild(body);
 
                 AddBeaconFire(corner + Vector3.Up * (towerHeight - 8f));
+                AddBuildingLabelZone(corner, 120f, "Thap Canh");
             }
         }
 
@@ -2630,6 +2676,7 @@ namespace HiepSiVeVuon.Core
         {
             AddDecor(_smallBarnScene, FarmWorkerHousePos, 12f, 0f, SmallBarnFootprint);
             var interiorHomePos = AddBuildingEntrance(FarmWorkerHousePos, 0f, 80f, 50f, RoomKind.Village);
+            AddBuildingLabelZone(FarmWorkerHousePos, 100f, "Nha Nguoi Lam Ruong");
 
             var npc = _farmWorkerScene.Instantiate<FarmWorkerNpc>();
             npc.NpcId = "farmworker";
@@ -2674,6 +2721,7 @@ namespace HiepSiVeVuon.Core
             AddStreetLamp(new Vector3(gateX - 35, 0, maxZ), 90f);
             AddStreetLamp(new Vector3(gateX + 35, 0, maxZ), -90f);
             AddPenCenterLight(SheepPigPastureCenter, SheepPigPastureHalf);
+            AddBuildingLabelZone(SheepPigPastureCenter, SheepPigPastureHalf + 20f, "Chuong Cuu/Heo");
 
             // 20 cuu + 10 heo (tang tu 2+2 theo yeu cau) - rai deu vong tron trong hang rao.
             var spRng = new RandomNumberGenerator { Seed = 9701 };
@@ -2716,6 +2764,7 @@ namespace HiepSiVeVuon.Core
 
         private void BuildOrchard()
         {
+            AddBuildingLabelZone(OrchardCenter, 160f, "Vuon Cay An Qua");
             var rng = new RandomNumberGenerator { Seed = 9001 };
             int idx = 0;
             for (int row = -1; row <= 1; row++)
@@ -2775,6 +2824,7 @@ namespace HiepSiVeVuon.Core
 
         private void BuildVineyard()
         {
+            AddBuildingLabelZone(VineyardCenter, 130f, "Vuon Nho");
             var postMat = GetCachedMaterial(new Color(0.3f, 0.2f, 0.1f), 1f);
             var rng = new RandomNumberGenerator { Seed = 9002 };
             for (int row = -1; row <= 1; row++)
@@ -2860,6 +2910,7 @@ namespace HiepSiVeVuon.Core
         {
             AddDecor(_smallBarnScene, EstateWorkerHousePos, 12f, 90f, SmallBarnFootprint);
             var interiorHomePos = AddBuildingEntrance(EstateWorkerHousePos, 90f, 80f, 50f, RoomKind.Village);
+            AddBuildingLabelZone(EstateWorkerHousePos, 100f, "Nha Nguoi Lam Vuon");
 
             var npc = _estateWorkerScene.Instantiate<EstateWorkerNpc>();
             npc.NpcId = "estateworker";
@@ -3087,6 +3138,152 @@ namespace HiepSiVeVuon.Core
             return node;
         }
 
+        // 4 NHAN VIEN QUAN TRONG cua trang trai (theo yeu cau), moi nguoi 1 cong viec cu the:
+        //   - Jean (quan gia, 55 tuoi): di tuan qua cac diem moc chinh, tinh cach diem tinh/ky
+        //     luat/thuc te/khong thich lang phi/thinh thoang phan nan - xem FarmStewardNpc.cs
+        //     de biet ro PHAM VI THAT SU (loi thoai phan anh vai tro, KHONG phai 1 AI trung tam
+        //     dieu khien cac NPC khac).
+        //   - Marcel (tho sua chua): theo doi 5 FenceMarker (Hp hao mon moi ngay that), tu di
+        //     lay go -> lay bua -> den hang rao hu nhat -> sua -> ve kho - xem RepairmanNpc.cs.
+        //   - Antoine (quan ly kho): dung ngay tai kho, moi lan noi chuyen doc SO LIEU THAT tu
+        //     FarmStorage (da noi FarmPlot.Harvest/FarmhandNpc.DoWorkWander vao de co so lieu
+        //     that thay vi gia lap) - xem WarehouseManagerNpc.cs.
+        //   - Henri (bao ve): ban ngay tuan tra cong/hang rao, troi mua chuyen sang khu dung cu
+        //     (dung GameManager.IsRaining moi them), ban dem di DUNG lo trinh 5 diem theo thu tu
+        //     yeu cau - xem GuardNpc.cs.
+        private void BuildFarmStaff()
+        {
+            var avoid = KnownOccupiedZones();
+            var rng = new RandomNumberGenerator { Seed = 10600 };
+
+            Vector3 NextHousePos()
+            {
+                var pos = FindOpenSpot(avoid, 90f, rng);
+                avoid.Add((pos, 90f));
+                _extraPenZones.Add((pos, 90f));
+                return pos;
+            }
+
+            var toolAreaPos = BarnPos2Vec() + new Vector3(150, 0, -60);
+            var woodpilePos = toolAreaPos + new Vector3(-90, 0, 0);
+            var forestEdgePos = new Vector3(FarmWallCenter.X - FarmWallHalfSize, 0, FarmWallCenter.Z);
+            var fieldCenterPos = FarmOrigin + new Vector3((FarmGridW - 1) * FarmSpacing / 2f, 0, (FarmGridH - 1) * FarmSpacing / 2f);
+
+            // ---- Jean: quan gia ----
+            SafeBuildStep(() =>
+            {
+                var housePos = NextHousePos();
+                AddDecor(_smallBarnScene, housePos, 12f, 0f, SmallBarnFootprint);
+                var interior = AddBuildingEntrance(housePos, 0f, 80f, 50f, RoomKind.Village);
+                AddBuildingLabelZone(housePos, 100f, "Nha Quan Gia");
+
+                var jean = _farmStewardScene.Instantiate<FarmStewardNpc>();
+                jean.NpcId = "jean_steward";
+                jean.NpcName = "Jean";
+                jean.DialogueLow = new[]
+                {
+                    "Ta la Jean, quan gia trang trai nay. Moi thu o day deu can co trat tu.",
+                    "Cu tu tin lam viec, ta se de mat toi moi ngoc ngach cua trang trai.",
+                };
+                jean.DialogueMid = new[]
+                {
+                    "Trang trai dao nay on dinh, cu giu dung nhip la duoc.",
+                    "Ta khong thich lang phi - do dung, cong suc, hay thoi gian deu vay.",
+                    "Anh lam vic kha day, nhung nho don dep gon gang sau khi xong nhe.",
+                };
+                jean.DialogueHigh = new[]
+                {
+                    "Ta co kinh nghiem quan ly trang trai lau nam roi, cu yen tam.",
+                    "Thuc ra... anh hay bo do lai linh tinh lam. Lan sau nho de dung cho.",
+                    "Neu anh bot lang phi hat giong mot chut, vu sau se loi nhieu hon day.",
+                    "Trang trai nay la tam huyet ca doi ta - ta se khong de no xuong cap dau.",
+                };
+                jean.HomePos = housePos + new Vector3(0, 0, 55);
+                jean.InteriorHomePos = interior;
+                jean.PatrolPoints = new[] { FarmhousePos, BarnPos2Vec(), CowPastureCenter, fieldCenterPos };
+                _world.AddChild(jean);
+            }, "BuildFarmStaff[Jean]");
+
+            // ---- Marcel: tho sua chua ----
+            SafeBuildStep(() =>
+            {
+                var housePos = NextHousePos();
+                AddDecor(_smallBarnScene, housePos, 12f, 0f, SmallBarnFootprint);
+                var interior = AddBuildingEntrance(housePos, 0f, 80f, 50f, RoomKind.Village);
+                AddBuildingLabelZone(housePos, 100f, "Nha Tho Sua Chua");
+
+                var marcel = _repairmanScene.Instantiate<RepairmanNpc>();
+                marcel.NpcId = "marcel_repairman";
+                marcel.NpcName = "Marcel";
+                marcel.DialogueLow = new[] { "Ta la Marcel, tho sua chua o day. Hang rao hu la ta biet ngay." };
+                marcel.DialogueMid = new[] { "Vua sua xong 1 doan hang rao, gio moi chac chan hon nhieu." };
+                marcel.DialogueHigh = new[] { "Cu de y hang rao cho ta, anh lo may vu khac di." };
+                marcel.HomePos = BarnPos2Vec() + new Vector3(0, 0, 60);
+                marcel.InteriorHomePos = interior;
+                marcel.WoodpilePos = woodpilePos;
+                marcel.ToolAreaPos = toolAreaPos;
+                _world.AddChild(marcel);
+            }, "BuildFarmStaff[Marcel]");
+
+            // ---- Antoine: quan ly kho ----
+            SafeBuildStep(() =>
+            {
+                var housePos = NextHousePos();
+                AddDecor(_smallBarnScene, housePos, 12f, 0f, SmallBarnFootprint);
+                var interior = AddBuildingEntrance(housePos, 0f, 80f, 50f, RoomKind.Village);
+                AddBuildingLabelZone(housePos, 100f, "Nha Quan Ly Kho");
+
+                var antoine = _warehouseManagerScene.Instantiate<WarehouseManagerNpc>();
+                antoine.NpcId = "antoine_warehouse";
+                antoine.NpcName = "Antoine";
+                antoine.HomePos = BarnPos2Vec() + new Vector3(-60, 0, 40);
+                antoine.InteriorHomePos = interior;
+                _world.AddChild(antoine);
+            }, "BuildFarmStaff[Antoine]");
+
+            // ---- Henri: bao ve ----
+            SafeBuildStep(() =>
+            {
+                var henri = _guardNpcScene.Instantiate<GuardNpc>();
+                henri.NpcId = "henri_guard";
+                henri.NpcName = "Henri";
+                henri.DialogueLow = new[] { "Ta la Henri, bao ve trang trai nay. Cu yen tam ma lam viec." };
+                henri.DialogueMid = new[] { "Cong va hang rao ta kiem tra deu dan, chua thay gi bat thuong." };
+                henri.DialogueHigh = new[] { "Co gi kha nghi ta se bao anh ngay, cu tin ta." };
+                henri.DialogueRain = new[]
+                {
+                    "Troi mua thi khong tuoi cay duoc, ta tranh thu sua sang cong cu, chuong trai.",
+                    "Mua the nay ta o quanh day don kho, doi tanh roi tuan tra tiep.",
+                };
+                henri.DialogueNight = new[]
+                {
+                    "Dem hom ta di tuan dung 1 vong: cong - kho - dong - bia rung - nha chinh.",
+                    "Ban dem phai canh ky hon, thu du gi cung co the tho tham.",
+                };
+                henri.HomePos = FarmGatePos;
+                henri.DayCheckpoints = new[] { FarmGatePos, forestEdgePos };
+                henri.NightPatrolPoints = new[] { FarmGatePos, BarnPos2Vec(), fieldCenterPos, forestEdgePos, FarmhousePos };
+                henri.RainHelpPos = toolAreaPos;
+                _world.AddChild(henri);
+            }, "BuildFarmStaff[Henri]");
+
+            // ---- 5 FenceMarker: "cam bien" de Marcel biet cho nao can sua ----
+            AddFenceMarker("Hang rao ruong", FarmGatePos);
+            AddFenceMarker("Chuong bo", CowPastureCenter);
+            AddFenceMarker("Chuong ngua", HorseStableCenter);
+            AddFenceMarker("Chuong ga", ChickenCoopCenter);
+            AddFenceMarker("Chuong cuu heo", SheepPigPastureCenter);
+        }
+
+        private void AddFenceMarker(string name, Vector3 pos)
+        {
+            if (_fenceMarkerScene == null) return;
+            var marker = _fenceMarkerScene.Instantiate<FenceMarker>();
+            marker.FenceName = name;
+            marker.Position = pos;
+            _world.AddChild(marker);
+        }
+
         // Vuon nho lon (~1.1 hecta, 1980 goc nho + 720 cot go) - dat o khu dat trong phia NAM
         // hang rao ruong (chua co gi khac o do), vi day la khu vuc RONG duy nhat con lai trong
         // pham vi tuong da 10 hecta khong dung cham voi bat ky cong trinh/khu vuc nao da xay
@@ -3102,6 +3299,7 @@ namespace HiepSiVeVuon.Core
 
         private void BuildBigVineyard()
         {
+            AddBuildingLabelZone(BigVineyardCenter, 700f, "Vuon Nho Lon");
             var vineMesh = ExtractMesh(_grapesScene);
             var postMesh = new CylinderMesh { TopRadius = 2f, BottomRadius = 2.4f, Height = 26f };
             var postMat = GetCachedMaterial(new Color(0.3f, 0.2f, 0.1f), 1f);

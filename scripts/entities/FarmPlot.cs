@@ -140,6 +140,10 @@ namespace HiepSiVeVuon.Entities
             if (_growsInto != null)
             {
                 Inventory.Instance.AddItem(_growsInto, 1);
+                // Cung cong don vao kho nong san chung (xem FarmStorage) - de Antoine (nguoi
+                // quan ly kho) co so lieu THAT de bao cao, bat ke ai thu hoach (nguoi choi bam
+                // Space hay NPC lam ruong tu dong qua ScheduledFarmNpc/FarmWorkerNpc).
+                FarmStorage.Instance.Add(_growsInto, 1);
                 QuestSystem.Instance.OnItemCollected(_growsInto);
                 var def = ItemDatabase.Instance.GetItem(_growsInto);
                 GD.Print($"Thu hoach: {def?.Name}!");

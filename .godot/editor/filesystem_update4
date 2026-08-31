@@ -39,3 +39,9 @@ res://scripts/entities/EstateWorkerNpc.cs
 res://scripts/entities/Sheep.cs
 res://scripts/entities/ScheduledFarmNpc.cs
 res://scripts/entities/WindmillBlades.cs
+res://scripts/entities/WarehouseManagerNpc.cs
+res://scripts/entities/FarmStewardNpc.cs
+res://scripts/entities/RepairmanNpc.cs
+res://scripts/entities/GuardNpc.cs
+res://scripts/entities/FenceMarker.cs
+res://scripts/entities/BuildingLabelZone.cs

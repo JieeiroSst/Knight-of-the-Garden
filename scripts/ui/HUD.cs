@@ -18,13 +18,41 @@ namespace HiepSiVeVuon.UI
         private Control _compass;
         private static readonly Vector2 CompassCenter = new(900, 40);
 
+        // Bang ten cong trinh: hien khi nguoi choi lai gan (xem BuildingLabelZone.cs) - dung 1
+        // DANH SACH (khong phai 1 co don) vi nguoi choi co the dung o vung giao nhau cua 2 cong
+        // trinh gan nhau cung luc; luon hien ten cong trinh MOI VAO GAN DAY NHAT.
+        private Label _buildingNameLabel;
+        private readonly System.Collections.Generic.List<string> _nearbyBuildings = new();
+
         public override void _Ready()
         {
+            AddToGroup("hud");
             BuildUI();
             GameManager.Instance.StatsChanged += Refresh;
             QuestSystem.Instance.QuestUpdated += _ => Refresh();
             QuestSystem.Instance.QuestCompleted += _ => Refresh();
             Refresh();
+        }
+
+        public void ShowBuildingName(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return;
+            _nearbyBuildings.Remove(name);
+            _nearbyBuildings.Add(name);
+            RefreshBuildingLabel();
+        }
+
+        public void HideBuildingName(string name)
+        {
+            _nearbyBuildings.Remove(name);
+            RefreshBuildingLabel();
+        }
+
+        private void RefreshBuildingLabel()
+        {
+            if (_nearbyBuildings.Count == 0) { _buildingNameLabel.Visible = false; return; }
+            _buildingNameLabel.Text = _nearbyBuildings[^1];
+            _buildingNameLabel.Visible = true;
         }
 
         public override void _Process(double delta)
@@ -73,6 +101,21 @@ namespace HiepSiVeVuon.UI
             _hint.CustomMinimumSize = new Vector2(940, 0);
             _hint.Scale = new Vector2(0.6f, 0.6f); // thu nho dong huong dan xuong con 60%
             AddChild(_hint);
+
+            // Ten cong trinh khi lai gan (xem BuildingLabelZone.cs) - hien giua man hinh, phia
+            // tren, chu to de de doc thoang qua khi di ngang.
+            _buildingNameLabel = new Label
+            {
+                Text = "",
+                Position = new Vector2(360, 60),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                CustomMinimumSize = new Vector2(400, 0),
+                Visible = false
+            };
+            _buildingNameLabel.AddThemeFontSizeOverride("font_size", 26);
+            _buildingNameLabel.AddThemeColorOverride("font_outline_color", Colors.Black);
+            _buildingNameLabel.AddThemeConstantOverride("outline_size", 6);
+            AddChild(_buildingNameLabel);
 
             // Mui ten la ban chi huong toi "diem den" nguoi choi bam chon tren ban do (xem
             // MapUI.Waypoint) - KHONG tu dong dan duong, chi xoay theo huong that + hien

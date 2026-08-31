@@ -30,5 +30,14 @@ namespace HiepSiVeVuon.Systems
         }
 
         public int GetCount(string itemId) => _counts.TryGetValue(itemId, out int cur) ? cur : 0;
+
+        // Antoine (nguoi quan ly kho, xem WarehouseManagerNpc.cs) dung 2 ham nay de bao cao tinh
+        // trang kho va de xuat "dua ra cho" khi gan day - CapacityPerItem la 1 gioi han GIA DINH
+        // (kho thuc te khong gioi han so luong, xem ghi chu tren) chi dung lam moc so sanh de tao
+        // canh bao % cho trong con y nghia.
+        public const int CapacityPerItem = 300;
+        public float GetFullness(string itemId) => Mathf.Clamp((float)GetCount(itemId) / CapacityPerItem, 0f, 1f);
+
+        public System.Collections.Generic.IReadOnlyDictionary<string, int> AllCounts => _counts;
     }
 }

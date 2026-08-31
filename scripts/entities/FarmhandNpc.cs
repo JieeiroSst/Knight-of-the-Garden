@@ -1,5 +1,6 @@
 using Godot;
 using HiepSiVeVuon.Core;
+using HiepSiVeVuon.Systems;
 
 namespace HiepSiVeVuon.Entities
 {
@@ -132,6 +133,9 @@ namespace HiepSiVeVuon.Entities
             {
                 var jitter = new Vector3((float)GD.RandRange(-14, 14), 0f, (float)GD.RandRange(-14, 14));
                 DroppedItem.Spawn(GetTree().CurrentScene, TroughPos + jitter, ProduceItemId, 1);
+                // Cung cong don vao kho nong san chung (xem FarmStorage) - de Antoine co so lieu
+                // THAT ve sua/len, khong chi trung (truoc day chi PoultryKeeperNpc lam dieu nay).
+                FarmStorage.Instance.Add(ProduceItemId, 1);
                 _milkCooldown = MilkIntervalSec;
             }
 

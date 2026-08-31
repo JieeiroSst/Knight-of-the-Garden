@@ -98,7 +98,10 @@ namespace HiepSiVeVuon.Entities
                 OpenShop();
         }
 
-        private string PickDialogue()
+        // protected virtual: cho phep NPC con (vd WarehouseManagerNpc) ghi de de tra ve cau thoai
+        // DONG (chua so lieu that, vd ton kho hien tai) thay vi chi chon ngau nhien tu 1 mang co
+        // dinh nhu mac dinh.
+        protected virtual string PickDialogue()
         {
             string[] pool = Trust >= 60 ? DialogueHigh
                           : Trust >= 25 ? DialogueMid

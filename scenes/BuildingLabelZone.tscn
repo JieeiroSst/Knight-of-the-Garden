@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3 uid="uid://bbuildinglabelzonehsvv01"]
+
+[ext_resource type="Script" path="res://scripts/entities/BuildingLabelZone.cs" id="1"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_1"]
+radius = 140.0
+
+[node name="BuildingLabelZone" type="Area3D"]
+script = ExtResource("1")
+collision_layer = 0
+collision_mask = 1
+monitorable = false
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_1")
