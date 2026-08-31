@@ -15,6 +15,8 @@ namespace HiepSiVeVuon.UI
         private Label _timeLabel;
         private Label _questLabel;
         private Label _hint;
+        private Control _compass;
+        private static readonly Vector2 CompassCenter = new(900, 40);
 
         public override void _Ready()
         {
@@ -33,6 +35,8 @@ namespace HiepSiVeVuon.UI
             string dayNight = GameManager.Instance.IsNight ? "Dem" : "Ngay";
             _dayLabel.Text = $"{now:dd/MM/yyyy}";
             _timeLabel.Text = $"{now:HH:mm:ss} ({dayNight})";
+
+            _compass.QueueRedraw();
         }
 
         private void BuildUI()
@@ -69,6 +73,46 @@ namespace HiepSiVeVuon.UI
             _hint.CustomMinimumSize = new Vector2(940, 0);
             _hint.Scale = new Vector2(0.6f, 0.6f); // thu nho dong huong dan xuong con 60%
             AddChild(_hint);
+
+            // Mui ten la ban chi huong toi "diem den" nguoi choi bam chon tren ban do (xem
+            // MapUI.Waypoint) - KHONG tu dong dan duong, chi xoay theo huong that + hien
+            // khoang cach, giup nguoi choi tu chay toi.
+            _compass = new Control { Position = Vector2.Zero, CustomMinimumSize = Vector2.Zero };
+            _compass.Draw += DrawCompass;
+            AddChild(_compass);
+        }
+
+        // Quy uoc goc xoay: dung TRUC TIEP (worldDir.X, worldDir.Z) lam vector man hinh (khop
+        // dung quy uoc cua MapUI.WorldToMap: X the gioi -> X ban do/man hinh, Z the gioi tang ->
+        // Y ban do/man hinh tang xuong duoi) - camera cua Player la OFFSET CO DINH (0,140,115)
+        // khong xoay theo huong nhan vat va khong lech truc X, nen huong the gioi anh xa gan
+        // dung sang huong man hinh theo cach nay.
+        private void DrawCompass()
+        {
+            var mapUi = GetTree().GetFirstNodeInGroup("map_ui") as MapUI;
+            var player = GetTree().GetFirstNodeInGroup("player") as Node3D;
+            if (mapUi == null || !mapUi.HasWaypoint || player == null) return;
+
+            Vector3 diff = mapUi.Waypoint - player.GlobalPosition;
+            var dir2 = new Vector2(diff.X, diff.Z);
+            float dist = dir2.Length();
+            if (dist < 40f) return; // da toi noi (~2m) - an mui ten, khong con can chi huong nua
+
+            float angle = dir2.Angle();
+            Vector2[] shape =
+            {
+                new(18, 0), new(-9, -11), new(-3, 0), new(-9, 11)
+            };
+            var pts = new Vector2[shape.Length];
+            for (int i = 0; i < shape.Length; i++)
+                pts[i] = CompassCenter + shape[i].Rotated(angle);
+
+            _compass.DrawColoredPolygon(pts, new Color(1f, 0.82f, 0.15f));
+            _compass.DrawPolyline(new[] { pts[0], pts[1], pts[2], pts[3], pts[0] }, Colors.Black, 1.5f);
+
+            float distMeters = dist / 20f; // quy doi 20 don vi/met (dung chung ca game)
+            _compass.DrawString(ThemeDB.FallbackFont, CompassCenter + new Vector2(-16, 30),
+                $"{distMeters:0}m", HorizontalAlignment.Left, -1, 14, Colors.White);
         }
 
         private void Refresh()

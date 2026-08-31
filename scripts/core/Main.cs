@@ -166,6 +166,7 @@ namespace HiepSiVeVuon.Core
                 BuildStablehand();
                 BuildChickenCoop();
                 BuildPoultryKeeper();
+                BuildPlateaus();
             }
             catch (System.Exception e)
             {
@@ -1580,6 +1581,73 @@ namespace HiepSiVeVuon.Core
             npc.InteriorHomePos = interiorHomePos;
             npc.WorkPos = ChickenCoopCenter + new Vector3(0, 0, 25);
             _world.AddChild(npc);
+        }
+
+        // Cao nguyen (plateau) hoang da, cach hang rao nong trai it nhat 10m (200 don vi, quy
+        // doi 20 don vi/met) ve phia dong - nam NGOAI vung reserved cua WorldStreamer (xem
+        // WorldStreamer.ReservedZones), nen dang ky rieng vung LOAI TRU (ExclusionZones) de
+        // cay/da/quai ngau nhien cua vung hoang da khong moc xuyen qua chan cao nguyen.
+        private void BuildPlateaus()
+        {
+            AddPlateau(new Vector3(1600, 0, -350), 240f, 200f, 4, 5101);
+            AddPlateau(new Vector3(2650, 0, 750), 210f, 170f, 3, 5102);
+            AddPlateau(new Vector3(1750, 0, 1950), 260f, 220f, 5, 5103);
+        }
+
+        // 1 cao nguyen: khoi hinh non cut (frustum - CylinderMesh voi TopRadius < BottomRadius)
+        // tao mat nghieng THOAI (ti le run:rise = 2.2, tuong duong ~24 do - an toan hon nhieu so
+        // voi gioi han leo duoc mac dinh cua CharacterBody3D la 45 do) de nguoi choi leo tu chan
+        // len dinh mot cach tu nhien, khong can bac thang rieng. Tren mat phang dinh rai vai "go
+        // dat" (mound) - phan LO RA tren mat luon > 100 don vi (5m) dung yeu cau, dung SphereMesh
+        // ep dep lam mo phong go dat tu nhien, chim ~20% duoi mat cho khong lo goc day tron.
+        // Khong tim duoc model dia hinh CC0 phu hop (dia hinh procedural, kich thuoc/vi tri can
+        // tuy chinh chinh xac theo tung noi) nen dung primitive, giong cach lam mang an/cot hang
+        // rao/mat troi truoc do.
+        private void AddPlateau(Vector3 center, float topRadius, float height, int moundCount, int seed)
+        {
+            float bottomRadius = topRadius + height * 2.2f;
+
+            var plateauMesh = new CylinderMesh { TopRadius = topRadius, BottomRadius = bottomRadius, Height = height };
+            var plateau = new MeshInstance3D
+            {
+                Mesh = plateauMesh,
+                Position = center + Vector3.Up * (height / 2f),
+                MaterialOverride = GetCachedMaterial(new Color(0.46f, 0.38f, 0.3f), 1f)
+            };
+            _world.AddChild(plateau);
+
+            // Va cham KHOP DUNG HINH DANG that (non cut, khong phai tru tron) de nguoi choi leo
+            // duoc theo dung mat doc thoai.
+            var body = new StaticBody3D { Position = plateau.Position };
+            body.AddChild(new CollisionShape3D { Shape = plateauMesh.CreateConvexShape() });
+            _world.AddChild(body);
+
+            WorldStreamer.ExclusionZones.Add((center, bottomRadius + 40f));
+
+            var rng = new RandomNumberGenerator { Seed = (ulong)seed };
+            var moundMat = GetCachedMaterial(new Color(0.38f, 0.3f, 0.22f), 1f);
+            for (int i = 0; i < moundCount; i++)
+            {
+                float moundHeight = rng.RandfRange(130f, 220f); // phan lo ra tren mat luon > 100 (5m)
+                float moundRadius = moundHeight * rng.RandfRange(0.5f, 0.7f);
+                float angle = rng.RandfRange(0f, Mathf.Tau);
+                float dist = rng.RandfRange(0f, topRadius * 0.55f); // giu trong pham vi mat phang tren dinh
+                var moundBase = center + Vector3.Up * height
+                    + new Vector3(Mathf.Cos(angle) * dist, 0, Mathf.Sin(angle) * dist);
+                // Chim ~20% duoi mat, lo ra ~80% chieu cao (>100 vi moundHeight>=130) cho tu nhien.
+                var moundPos = moundBase + Vector3.Up * (moundHeight * 0.3f);
+
+                _world.AddChild(new MeshInstance3D
+                {
+                    Mesh = new SphereMesh { Radius = moundRadius, Height = moundHeight },
+                    Position = moundPos,
+                    MaterialOverride = moundMat
+                });
+
+                var moundBody = new StaticBody3D { Position = moundPos };
+                moundBody.AddChild(new CollisionShape3D { Shape = new SphereShape3D { Radius = moundRadius * 0.9f } });
+                _world.AddChild(moundBody);
+            }
         }
 
         private void SpawnCow(Vector3 pos, bool isAdult)

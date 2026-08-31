@@ -28,6 +28,25 @@ namespace HiepSiVeVuon.Core
         // tung cong trinh (chi khac o do cao Y) - da nam san trong 2 vung reserved o tren, khong
         // can vung rieng nua.
 
+        // Vung LOAI TRU dot 1 (tron, tam+ban kinh) - KHONG sinh cay/da/quai trong pham vi nay,
+        // NHUNG van sinh nen dat/co binh thuong (khac ReservedZones - reserved bo qua CA CHUNK,
+        // khong co nen dat, phai tu ve rieng nhu DrawTownGround). Dung cho cac dia hinh dac biet
+        // dung san NAM NGOAI vung reserved (vd cao nguyen - xem Main.BuildPlateaus) de cay/da/
+        // quai ngau nhien khong moc xuyen qua dia hinh do. Main.cs dang ky vao day TRUOC khi
+        // WorldStreamer kip sinh chunk (dang ky trong _Ready(), WorldStreamer chi sinh chunk tu
+        // _Process() o frame sau).
+        public static readonly List<(Vector3 Center, float Radius)> ExclusionZones = new();
+
+        private static bool IsExcluded(Vector3 worldPos)
+        {
+            foreach (var (center, radius) in ExclusionZones)
+            {
+                float dx = worldPos.X - center.X, dz = worldPos.Z - center.Z;
+                if (dx * dx + dz * dz < radius * radius) return true;
+            }
+            return false;
+        }
+
         private struct DecorOption
         {
             public string Path;
@@ -176,6 +195,7 @@ namespace HiepSiVeVuon.Core
                 if (scene == null) continue;
                 var opt = _decorOptions[idx];
                 var localPos = new Vector3(rng.RandfRange(-half, half), 0f, rng.RandfRange(-half, half));
+                if (IsExcluded(center + localPos)) continue; // vd nam trong chan 1 cao nguyen
                 float scale = rng.RandfRange(opt.MinScale, opt.MaxScale);
                 float rotY = rng.RandfRange(0f, Mathf.Tau);
 
@@ -207,9 +227,10 @@ namespace HiepSiVeVuon.Core
                 float enemyHalf = ChunkSize / 2f - 40f;
                 for (int i = 0; i < enemyCount; i++)
                 {
+                    var localPos = new Vector3(rng.RandfRange(-enemyHalf, enemyHalf), 0f, rng.RandfRange(-enemyHalf, enemyHalf));
+                    if (IsExcluded(center + localPos)) continue; // vd nam trong chan 1 cao nguyen
                     var e = _enemyScene.Instantiate<Enemy>();
                     e.EnemyId = rng.Randf() < 0.85f ? "mud_monster" : "spiky_monster";
-                    var localPos = new Vector3(rng.RandfRange(-enemyHalf, enemyHalf), 0f, rng.RandfRange(-enemyHalf, enemyHalf));
                     e.Position = center + localPos;
                     root.AddChild(e);
                 }
