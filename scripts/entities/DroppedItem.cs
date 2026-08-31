@@ -12,6 +12,7 @@ namespace HiepSiVeVuon.Entities
 
         public override void _Ready()
         {
+            AddToGroup("dropped_items");
             _sprite = GetNodeOrNull<Sprite3D>("Sprite");
             if (_sprite == null)
             {
@@ -33,7 +34,11 @@ namespace HiepSiVeVuon.Entities
                 col.Shape = shape;
                 AddChild(col);
             }
-            BodyEntered += _ => PickUp();
+            // CHI nguoi choi moi tu dong nhat khi cham - truoc day loc theo BAT KY body nao, nen
+            // vat nuoi/NPC (cung layer mac dinh=1) di ngang qua se VO TINH nhat mat vat pham vao
+            // thang tui do NGUOI CHOI (vd ga tu "nhat" luon qua trung no vua de). Can loc rieng
+            // de NPC thu hoach (xem PoultryKeeperNpc.HarvestNearbyEggs) hoat dong dung.
+            BodyEntered += body => { if (body is Player) PickUp(); };
 
             // Hieu ung nhun nhe
             var tw = CreateTween().SetLoops();

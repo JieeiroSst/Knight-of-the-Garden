@@ -171,7 +171,7 @@ namespace HiepSiVeVuon.Entities
                 // truoc/sau cua model) - xoay dan ve huong muon den (gioi han toc do quay), KHONG
                 // gan tuc thi. Neu muc tieu o phia sau, huong nay se quay dan tai cho truoc (giong
                 // dong vat that) thay vi truot lui ve phia do.
-                _facing = _facing.Slerp(desiredDir, Mathf.Clamp(TurnSpeed * dt, 0f, 1f)).Normalized();
+                _facing = SteeringUtil.SmoothTurn(_facing, desiredDir, TurnSpeed * dt);
             }
 
             // Model rieng co the duoc dung nguoc quy uoc "-Z la truoc" - FlipModelFacing bu lai

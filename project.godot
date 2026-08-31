@@ -28,6 +28,8 @@ Inventory="*res://scripts/systems/Inventory.cs"
 QuestSystem="*res://scripts/systems/QuestSystem.cs"
 SaveSystem="*res://scripts/systems/SaveSystem.cs"
 MusicPlayer="*res://scripts/systems/MusicPlayer.cs"
+FarmStorage="*res://scripts/systems/FarmStorage.cs"
+WarehouseDatabase="*res://scripts/systems/WarehouseDatabase.cs"
 
 [display]
 

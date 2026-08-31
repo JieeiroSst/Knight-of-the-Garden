@@ -97,6 +97,16 @@
     "SellPrice": 10,
     "IconPath": "res://assets/items/potion.png"
   },
+  {
+    "Id": "egg",
+    "Name": "Trung Ga",
+    "Description": "Trung ga tuoi tu chuong ga, do nguoi cham ga thu duoc moi ngay.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 8,
+    "IconPath": "res://assets/items/coins.png"
+  },
 
   {
     "Id": "pumpkin",

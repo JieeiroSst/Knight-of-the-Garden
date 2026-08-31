@@ -1,0 +1,65 @@
+[
+  {
+    "Id": "sack",
+    "Name": "Bao Tai",
+    "Category": "Container",
+    "ModelPath": "res://assets3d/quaternius/furniture/sack_trench.glb",
+    "Scale": 5,
+    "ScatterCount": 10,
+    "UseInGrid": false
+  },
+  {
+    "Id": "crate",
+    "Name": "Thung Go",
+    "Category": "Container",
+    "ModelPath": "res://assets3d/quaternius/furniture/crate.glb",
+    "Scale": 100,
+    "ScatterCount": 8,
+    "UseInGrid": true
+  },
+  {
+    "Id": "barrel",
+    "Name": "Thung Phi Go",
+    "Category": "Container",
+    "ModelPath": "res://assets3d/quaternius/furniture/barrel.glb",
+    "Scale": 100,
+    "ScatterCount": 8,
+    "UseInGrid": true
+  },
+  {
+    "Id": "hay",
+    "Name": "Kien Rom",
+    "Category": "Feed",
+    "ModelPath": "res://assets3d/quaternius/furniture/hay.glb",
+    "Scale": 115,
+    "ScatterCount": 6,
+    "UseInGrid": true
+  },
+  {
+    "Id": "pumpkin_stock",
+    "Name": "Bi Ngo Thu Hoach",
+    "Category": "Crop",
+    "ModelPath": "res://assets3d/quaternius/furniture/pumpkin.glb",
+    "Scale": 5.3,
+    "ScatterCount": 4,
+    "UseInGrid": false
+  },
+  {
+    "Id": "wheat_stock",
+    "Name": "Lua Mi Thu Hoach",
+    "Category": "Crop",
+    "ModelPath": "res://assets3d/quaternius/furniture/wheat.glb",
+    "Scale": 11,
+    "ScatterCount": 2,
+    "UseInGrid": false
+  },
+  {
+    "Id": "egg",
+    "Name": "Trung Ga",
+    "Category": "Product",
+    "ModelPath": "",
+    "Scale": 0,
+    "ScatterCount": 0,
+    "UseInGrid": false
+  }
+]

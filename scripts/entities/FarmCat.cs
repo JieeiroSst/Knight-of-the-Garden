@@ -103,7 +103,7 @@ namespace HiepSiVeVuon.Entities
 
             bool wantsToMove = desiredDir != Vector3.Zero;
             if (wantsToMove)
-                _facing = _facing.Slerp(desiredDir, Mathf.Clamp(TurnSpeed * dt, 0f, 1f)).Normalized();
+                _facing = SteeringUtil.SmoothTurn(_facing, desiredDir, TurnSpeed * dt);
 
             if (_model != null && _facing != Vector3.Zero)
             {

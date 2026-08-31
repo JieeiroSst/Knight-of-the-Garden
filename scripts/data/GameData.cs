@@ -61,6 +61,21 @@ namespace HiepSiVeVuon.Data
         public int Max = 1;
     }
 
+    // Dinh nghia 1 loai hang hoa trong nha kho (vat dung trang tri nhu thung/bao/rom, HOAC san
+    // pham thuc duoc theo doi so luong that qua FarmStorage nhu trung ga) - data-driven, nap tu
+    // warehouse_products.json. Nha kho (xem Main.BuildRoomForKind - RoomKind.Barn) doc du lieu
+    // tu day de tu sap xep hang hoa thay vi hard-code danh sach truc tiep trong code.
+    public class WarehouseProductDef
+    {
+        public string Id;
+        public string Name;
+        public string Category;      // "Container" | "Feed" | "Crop" | "Product"
+        public string ModelPath;     // res:// duong dan model 3D (rong neu la san pham ao nhu trung, khong co the hien vat ly rieng)
+        public float Scale = 1f;
+        public int ScatterCount = 0; // so luong dat rai rac ngau nhien (xem Main.ScatterBarnStock) - 0 = khong dung kieu nay
+        public bool UseInGrid = false; // co dua vao ke hang chinh dang luoi khong (xem Main.BuildWarehouseGrid)
+    }
+
     // Dinh nghia nhiem vu
     public class QuestDef
     {

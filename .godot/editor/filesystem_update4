@@ -27,3 +27,8 @@ res://scripts/entities/FarmCat.cs
 res://scripts/ui/MapUI.cs
 res://scripts/entities/StablehandNpc.cs
 res://scripts/entities/Horse.cs
+res://scripts/entities/Chicken.cs
+res://scripts/entities/PoultryKeeperNpc.cs
+res://scripts/ui/FarmStorageBoard.cs
+res://scripts/systems/FarmStorage.cs
+res://scripts/systems/WarehouseDatabase.cs

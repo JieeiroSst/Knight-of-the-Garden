@@ -1,6 +1,7 @@
 using Godot;
 using System.Collections.Generic;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using HiepSiVeVuon.Data;
 
 namespace HiepSiVeVuon.Systems
@@ -19,7 +20,17 @@ namespace HiepSiVeVuon.Systems
         {
             PropertyNameCaseInsensitive = true,
             ReadCommentHandling = JsonCommentHandling.Skip,
-            AllowTrailingCommas = true
+            AllowTrailingCommas = true,
+            // ItemDef/EnemyDef/QuestDef dung PUBLIC FIELD (khong phai { get; set; } property) -
+            // System.Text.Json MAC DINH CHI doc property, BO QUA field va de nguyen gia tri null
+            // neu thieu co nay - khien MOI Id deserialize thanh null, roi Items[it.Id]=it nem
+            // ArgumentNullException ngay tu phan tu dau tien (loi goc gay "Vat pham khong ton
+            // tai"/"Enemy def khong tim thay" xuat hien tu truoc gio).
+            IncludeFields = true,
+            // ItemDef.Type/Rarity la enum, nhung items.json ghi bang CHUOI ("Weapon", "Rare"...)
+            // - System.Text.Json MAC DINH chi doc enum duoi dang SO (0,1,2...), nem
+            // JsonException "khong the chuyen doi sang ItemType" neu khong co converter nay.
+            Converters = { new JsonStringEnumConverter() }
         };
 
         public override void _EnterTree()
