@@ -27,6 +27,7 @@ ItemDatabase="*res://scripts/systems/ItemDatabase.cs"
 Inventory="*res://scripts/systems/Inventory.cs"
 QuestSystem="*res://scripts/systems/QuestSystem.cs"
 SaveSystem="*res://scripts/systems/SaveSystem.cs"
+MusicPlayer="*res://scripts/systems/MusicPlayer.cs"
 
 [display]
 

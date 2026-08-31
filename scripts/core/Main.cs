@@ -55,6 +55,14 @@ namespace HiepSiVeVuon.Core
         private PackedScene _hayScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/hay.glb");
         private PackedScene _sackScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/sack_trench.glb");
         private PackedScene _stairsScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/stairs.glb");
+        // Vat dung nong nghiep that (dung cu + nong san) rieng cho nha kho, CC0.
+        private PackedScene _pitchforkScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/pitchfork.glb");
+        private PackedScene _hoeScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/hoe.glb");
+        private PackedScene _wateringCanScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/watering_can.glb");
+        private PackedScene _pumpkinScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/pumpkin.glb");
+        private PackedScene _wheatScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/wheat.glb");
+        private PackedScene _cartScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/cart.glb");
+        private PackedScene _woodLogScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/wood_log.glb");
 
         private Node3D _world;
 
@@ -349,27 +357,74 @@ namespace HiepSiVeVuon.Core
                     break;
 
                 case RoomKind.Barn:
-                    // Dac biet theo yeu cau: rom (Hay) + bao thoc (Sack Trench) that - khong
-                    // giong bat ky nha nao khac hay Toa Thi Chinh. Mau go do dam, khop mau vo
-                    // ngoai cua Barn - cam giac day la kho chua do that. Tang 2 la gac lung
-                    // chua them rom/bao - dung 1 kieu kho, khac han cac tang 2 nha o/hoi truong.
-                    BuildRoom(groundAnchor, 420f, 170f,
+                    // Dac biet theo yeu cau: kho chua VAT DUNG NONG NGHIEP (cao/cuoc/binh tuoi)
+                    // + SAN PHAM NONG NGHIEP (bi ngo, lua mi) that, cong voi rom/bao thoc/thung/
+                    // thung go/xe day/cui go - lap day ca 4 buc tuong va khoang giua phong, khong
+                    // giong bat ky nha nao khac hay Toa Thi Chinh. Phong nay to HAN HAN cac phong
+                    // khac (900 thay vi ~400) vi can du dien tich xep hang ke that su (xem
+                    // BuildWarehouseGrid ben duoi) - phong noi that la khong gian rieng, khong
+                    // gan voi kich thuoc vo ngoai that su cua nha kho nen phong to bao nhieu cung
+                    // duoc. Tranh 2 vung: goc Tay Bac (cau thang) va loi vao truoc cua o giua
+                    // tuong Nam.
+                    BuildRoom(groundAnchor, 900f, 220f,
                         wallColor: new Color(0.5f, 0.28f, 0.2f),
                         floorColor: new Color(0.42f, 0.3f, 0.18f),
                         rugColor: null,
                         backTarget: default, backIsExit: true, upTarget: floor2Anchor,
                         furnish: a =>
                         {
-                            AddDecor(_hayScene, a + new Vector3(-150, 0, -150), 118f);
-                            AddDecor(_hayScene, a + new Vector3(-95, 0, -160), 110f, 30f);
-                            AddDecor(_hayScene, a + new Vector3(150, 0, 150), 120f, 60f);
-                            AddDecor(_sackScene, a + new Vector3(140, 0, -140), 5f);
-                            AddDecor(_sackScene, a + new Vector3(150, 0, -95), 5f, 40f);
-                            AddDecor(_sackScene, a + new Vector3(-140, 0, 145), 5f, -25f);
-                            AddDecor(_crateScene, a + new Vector3(-150, 0, 100), 100f);
-                            AddDecor(_barrelScene, a + new Vector3(150, 0, 90), 100f);
-                            AddDecor(_barrelScene, a + new Vector3(100, 0, 150), 100f, 15f);
-                            AddDecor(_crateScene, a + new Vector3(0, 0, -165), 100f);
+                            // Tuong Bac
+                            AddDecor(_hayScene, a + new Vector3(-40, 0, -185), 118f);
+                            AddDecor(_sackScene, a + new Vector3(10, 0, -185), 5f, 20f);
+                            AddDecor(_hayScene, a + new Vector3(80, 0, -180), 120f, -15f);
+                            AddDecor(_crateScene, a + new Vector3(150, 0, -185), 100f);
+                            // Tuong Tay (phia duoi goc cau thang)
+                            AddDecor(_barrelScene, a + new Vector3(-185, 0, -30), 100f);
+                            AddDecor(_sackScene, a + new Vector3(-185, 0, 30), 5f, -20f);
+                            AddDecor(_crateScene, a + new Vector3(-185, 0, 90), 100f);
+                            AddDecor(_woodLogScene, a + new Vector3(-180, 0, 150), 5.7f, 40f);
+                            // Tuong Dong
+                            AddDecor(_crateScene, a + new Vector3(185, 0, -150), 100f, 10f);
+                            AddDecor(_barrelScene, a + new Vector3(185, 0, -85), 100f);
+                            AddDecor(_hayScene, a + new Vector3(180, 0, -20), 115f, 60f);
+                            AddDecor(_barrelScene, a + new Vector3(185, 0, 60), 100f, 15f);
+                            AddDecor(_sackScene, a + new Vector3(185, 0, 130), 5f);
+                            // Tuong Nam (2 ben cua ra vao o giua)
+                            AddDecor(_wheatScene, a + new Vector3(-150, 0, 180), 11f);
+                            AddDecor(_wheatScene, a + new Vector3(-125, 0, 185), 11f, 30f);
+                            AddDecor(_pumpkinScene, a + new Vector3(-95, 0, 180), 5.3f);
+                            AddDecor(_wheatScene, a + new Vector3(100, 0, 180), 11f, -20f);
+                            AddDecor(_pumpkinScene, a + new Vector3(130, 0, 182), 5.3f, 20f);
+                            AddDecor(_pumpkinScene, a + new Vector3(150, 0, 175), 5.3f, -30f);
+                            // Nong san thu hoach chat dong giua khu vuc Tay - dung loai cay trong
+                            // da co san trong game (pumpkin_seed)
+                            AddDecor(_pumpkinScene, a + new Vector3(-155, 0, -140), 5.3f);
+                            AddDecor(_pumpkinScene, a + new Vector3(-135, 0, -155), 5.3f, 40f);
+                            // Xe day cho hang giua phong - diem nhan trung tam
+                            AddDecor(_cartScene, a + new Vector3(20, 0, 20), 39f, 25f);
+                            AddDecor(_woodLogScene, a + new Vector3(-40, 0, 60), 5.7f, -20f);
+                            // Dung cu lao dong that dung gan cua ra vao, nhu vua duoc dem ve
+                            AddDecor(_pitchforkScene, a + new Vector3(60, 0, 155), 10f, 15f);
+                            AddDecor(_hoeScene, a + new Vector3(75, 0, 160), 19f, -10f);
+                            AddDecor(_wateringCanScene, a + new Vector3(50, 0, 165), 23f);
+                            // Chat them ~38 kien hang nua (rai ngau nhien co seed co dinh, tranh
+                            // goc cau thang va loi vao) cho kho day ap hang hoa nhu 1 nha kho that
+                            // su dang hoat dong, khong con trong trai.
+                            ScatterBarnStock(a, 210f, 4001,
+                                new Vector3(-145, 0, -145), 95f, new Vector3(0, 0, 185), 70f,
+                                (_sackScene, 5f, 10), (_crateScene, 100f, 8), (_barrelScene, 100f, 8),
+                                (_hayScene, 115f, 6), (_pumpkinScene, 5.3f, 4), (_wheatScene, 11f, 2));
+
+                            // Khu vuc ke hang chinh (nhu 1 nha kho that su): cac cot hang xep
+                            // CHONG CAO 8 tang, dung tung hang (crate/barrel/hay) rieng theo cot
+                            // - hang xep ke, hang de loi di - cho ~1000 kien hang nhung van
+                            // "gon gang" (co loi di ro rang giua cac day ke, khong chong len
+                            // nhau) thay vi 1 dong hang lon xon. Bo qua khu vuc gan cua/trung tam
+                            // (da co do dac dot 1) va goc cau thang.
+                            BuildWarehouseGrid(a, 450f,
+                                new Vector3(-385, 0, -385), 90f, new Vector3(0, 0, 425), 80f, 200f,
+                                50f, 50f, 60f, 10, 17f,
+                                (_crateScene, 100f), (_barrelScene, 100f), (_hayScene, 115f));
                         });
                     BuildRoom(floor2Anchor, 340f, 140f,
                         wallColor: new Color(0.45f, 0.25f, 0.18f),
@@ -378,10 +433,26 @@ namespace HiepSiVeVuon.Core
                         backTarget: groundAnchor, backIsExit: false, upTarget: null,
                         furnish: a =>
                         {
-                            AddDecor(_hayScene, a + new Vector3(-110, 0, -100), 115f, 20f);
-                            AddDecor(_hayScene, a + new Vector3(100, 0, 100), 112f, -30f);
-                            AddDecor(_sackScene, a + new Vector3(100, 0, -100), 5f);
-                            AddDecor(_sackScene, a + new Vector3(-100, 0, 110), 5f, 20f);
+                            // Tuong Bac
+                            AddDecor(_hayScene, a + new Vector3(-100, 0, -150), 115f, 20f);
+                            AddDecor(_sackScene, a + new Vector3(-30, 0, -150), 5f);
+                            AddDecor(_hayScene, a + new Vector3(50, 0, -145), 112f, -30f);
+                            // Tuong Tay
+                            AddDecor(_sackScene, a + new Vector3(-150, 0, -60), 5f, 20f);
+                            AddDecor(_crateScene, a + new Vector3(-150, 0, 20), 95f);
+                            AddDecor(_barrelScene, a + new Vector3(-150, 0, 90), 95f);
+                            // Nong san & rom chat quanh gac lung (tranh goc Dong Nam la cau thang xuong)
+                            AddDecor(_pumpkinScene, a + new Vector3(0, 0, -100), 5.3f);
+                            AddDecor(_pumpkinScene, a + new Vector3(25, 0, -85), 5.3f, 30f);
+                            AddDecor(_wheatScene, a + new Vector3(-60, 0, 100), 11f);
+                            AddDecor(_wheatScene, a + new Vector3(-30, 0, 110), 11f, 25f);
+                            AddDecor(_woodLogScene, a + new Vector3(60, 0, -60), 5.5f);
+                            AddDecor(_sackScene, a + new Vector3(90, 0, 0), 5f, -15f);
+                            // Chat them ~24 kien hang nua tren gac (tranh goc cau thang xuong)
+                            ScatterBarnStock(a, 170f, 4002,
+                                new Vector3(105, 0, 105), 95f, new Vector3(9999, 0, 9999), 0f,
+                                (_sackScene, 5f, 7), (_crateScene, 95f, 5), (_barrelScene, 95f, 5),
+                                (_hayScene, 112f, 4), (_pumpkinScene, 5.3f, 2), (_wheatScene, 11f, 1));
                         });
                     break;
 
@@ -632,6 +703,65 @@ namespace HiepSiVeVuon.Core
             var stairs = _stairsScene.Instantiate<Node3D>();
             stairs.Position = new Vector3(0, -0.69126f, -2.87656f);
             wrapper.AddChild(stairs);
+        }
+
+        // Rai ngau nhien (seed co dinh -> luon giong nhau moi lan vao, khong doi lung tung khi
+        // tai lai) nhieu kien hang trong 1 phong vuong (roomHalf) - dung de lap day nha kho cho
+        // dung so luong yeu cau ma khong phai go tay tung toa do. Tranh 2 vung tron (goc cau
+        // thang, khu vuc cua ra vao) bang cach thu lai vi tri toi da 10 lan neu rot vao vung cam.
+        private void ScatterBarnStock(Vector3 anchor, float roomHalf, int seed,
+            Vector3 avoidA, float avoidARadius, Vector3 avoidB, float avoidBRadius,
+            params (PackedScene scene, float scale, int count)[] items)
+        {
+            var rng = new RandomNumberGenerator { Seed = (ulong)seed };
+            foreach (var (scene, scale, count) in items)
+            {
+                if (scene == null) continue;
+                for (int i = 0; i < count; i++)
+                {
+                    Vector3 local = Vector3.Zero;
+                    for (int tries = 0; tries < 10; tries++)
+                    {
+                        local = new Vector3(
+                            rng.RandfRange(-roomHalf + 30f, roomHalf - 30f), 0,
+                            rng.RandfRange(-roomHalf + 30f, roomHalf - 30f));
+                        if (local.DistanceTo(avoidA) >= avoidARadius && local.DistanceTo(avoidB) >= avoidBRadius)
+                            break;
+                    }
+                    AddDecor(scene, anchor + local, scale * rng.RandfRange(0.9f, 1.1f), rng.RandfRange(0f, 360f));
+                }
+            }
+        }
+
+        // Ke hang nha kho that su: 1 luoi cot hang, moi cot la 1 chong hang xep CAO "layers"
+        // tang (1 loai hang/cot, xoay vong qua shelfTypes de co nhieu loai khac nhau tung day).
+        // CHI dat cot o hang chan (rowIdx%2==0) - hang le bo trong lam LOI DI - giu bo cuc gon
+        // gang, di lai duoc giua cac day ke thay vi 1 khoi hang dac kin ca phong. Tranh vung
+        // tron quanh cua/cau thang va 1 vung tron trung tam (noi da co do dac dot 1 dat rieng).
+        private void BuildWarehouseGrid(Vector3 anchor, float roomHalf,
+            Vector3 avoidA, float avoidARadius, Vector3 avoidB, float avoidBRadius, float centerExcludeRadius,
+            float rowSpacing, float colSpacing, float margin, int layers, float layerHeight,
+            params (PackedScene scene, float scale)[] shelfTypes)
+        {
+            int typeIndex = 0;
+            int rowIdx = 0;
+            for (float z = -roomHalf + margin; z <= roomHalf - margin; z += rowSpacing, rowIdx++)
+            {
+                if (rowIdx % 2 != 0) continue; // hang le = loi di, khong dat hang
+                for (float x = -roomHalf + margin; x <= roomHalf - margin; x += colSpacing)
+                {
+                    var basePos = new Vector3(x, 0, z);
+                    if (basePos.Length() < centerExcludeRadius) continue;
+                    if (basePos.DistanceTo(avoidA) < avoidARadius) continue;
+                    if (basePos.DistanceTo(avoidB) < avoidBRadius) continue;
+
+                    var (scene, scale) = shelfTypes[typeIndex % shelfTypes.Length];
+                    typeIndex++;
+                    if (scene == null) continue;
+                    for (int layer = 0; layer < layers; layer++)
+                        AddDecor(scene, anchor + basePos + Vector3.Up * (layer * layerHeight), scale);
+                }
+            }
         }
 
         private void AddInteriorLight(Vector3 pos, float range, float energy)
