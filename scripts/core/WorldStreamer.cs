@@ -15,10 +15,15 @@ namespace HiepSiVeVuon.Core
         [Export] public int WorldSeed = 1337;
         [Export] public float UpdateInterval = 0.5f;
 
-        // Vung do Main.cs da dung san (nong trai/NPC/nha/lau dai + mat dat 1600x1088) -
-        // WorldStreamer khong dong vao day.
-        private const int ReservedMinCx = -2, ReservedMaxCx = 1;
-        private const int ReservedMinCz = -2, ReservedMaxCz = 1;
+        // Cac vung do Main.cs da dung san (khong lien nhau - nong trai va thi tran cach xa nhau
+        // ~500m, noi voi nhau bang 1 con duong dai chay xuyen qua vung hoang da). WorldStreamer
+        // khong sinh chunk trong cac vung nay. PHAI khop chinh xac voi Main.cs.DrawGround /
+        // DrawTownGround, neu khong se ho ra "vuc" o ranh gioi.
+        private static readonly (int MinCx, int MaxCx, int MinCz, int MaxCz)[] ReservedZones =
+        {
+            (-3, 2, -3, 2),     // khu nong trai (quanh goc toa do)
+            (15, 21, 4, 10),    // khu thi tran (quanh VillageAnchor, xem Main.cs)
+        };
 
         private struct DecorOption
         {
@@ -108,8 +113,14 @@ namespace HiepSiVeVuon.Core
             }
         }
 
-        private static bool IsReserved(int cx, int cz) =>
-            cx >= ReservedMinCx && cx <= ReservedMaxCx && cz >= ReservedMinCz && cz <= ReservedMaxCz;
+        private static bool IsReserved(int cx, int cz)
+        {
+            foreach (var z in ReservedZones)
+            {
+                if (cx >= z.MinCx && cx <= z.MaxCx && cz >= z.MinCz && cz <= z.MaxCz) return true;
+            }
+            return false;
+        }
 
         private static ulong ChunkSeed(int worldSeed, int cx, int cz)
         {

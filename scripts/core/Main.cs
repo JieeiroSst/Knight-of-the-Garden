@@ -13,7 +13,11 @@ namespace HiepSiVeVuon.Core
         private PackedScene _npcScene = GD.Load<PackedScene>("res://scenes/NPC.tscn");
         private PackedScene _playerScene = GD.Load<PackedScene>("res://scenes/Player.tscn");
 
-        private PackedScene _scarecrowScene = GD.Load<PackedScene>("res://scenes/decor/Scarecrow.tscn");
+        // Model that (Poly by Google, giay phep CC-BY - can ghi cong, khac cac asset con lai
+        // deu CC0 - chon vi khong tim duoc ban CC0 phu hop sau 2 lan tim, va bu nhin nguyen thuy
+        // ghep tu khoi hop khong dat yeu cau hinh anh). Ghi cong: "Scarecrow" by Poly by Google,
+        // CC-BY (poly.pizza/m/7qFs_DjjuVp).
+        private PackedScene _scarecrowScene = GD.Load<PackedScene>("res://assets3d/polybygoogle/scarecrow.glb");
         private PackedScene _barnScene = GD.Load<PackedScene>("res://assets3d/quaternius/farm/Barn.fbx");
         private PackedScene _bigBarnScene = GD.Load<PackedScene>("res://assets3d/quaternius/farm/BigBarn.fbx");
         private PackedScene _smallBarnScene = GD.Load<PackedScene>("res://assets3d/quaternius/farm/SmallBarn.fbx");
@@ -21,14 +25,15 @@ namespace HiepSiVeVuon.Core
         private PackedScene _treeScene2 = GD.Load<PackedScene>("res://assets3d/quaternius/nature/tree_birch_1.glb");
         private PackedScene _fenceScene = GD.Load<PackedScene>("res://assets3d/quaternius/farm/fence.glb");
         private PackedScene _bridgeScene = GD.Load<PackedScene>("res://assets3d/quaternius/farm/bridge.glb");
+        private PackedScene _roadTileScene = GD.Load<PackedScene>("res://assets3d/quaternius/road/path_straight.glb");
 
         private Node3D _world;
 
         // Nha nong dan la tam neo cho toan bo bo cuc (ruong quanh nha, kieu Stardew Valley)
         private static readonly Vector3 FarmhousePos = new(-300, 0, -60);
-        private static readonly Vector3 FarmOrigin = new(-260, 0, 140); // goc luoi ruong (gx=0, gz=0) - lui xa nha kho
+        private static readonly Vector3 FarmOrigin = new(-260, 0, 180); // goc luoi ruong (gx=0, gz=0) - lui xa nha kho them 2m
         private const float FarmSpacing = 60f;
-        private const int FarmGridW = 6;
+        private const int FarmGridW = 12; // rong them ~9m nua (tong ~18m so voi ban dau)
         private const int FarmGridH = 6;
 
         // Cong nam cua hang rao ruong (khop cong thuc trong BuildFarmFence) & tam khu lang
@@ -36,7 +41,12 @@ namespace HiepSiVeVuon.Core
             FarmOrigin.X + (FarmGridW - 1) * FarmSpacing * 0.5f,
             0,
             FarmOrigin.Z + (FarmGridH - 1) * FarmSpacing + 30f);
-        private static readonly Vector3 VillageAnchor = new(550, 0, 150);
+        // Tam quang truong thi tran - cach nha nong dan ~500m (quy doi 20 don vi/met, nhan vat
+        // cao ~40 don vi ~ 2m). Nam trong 1 "dao" dat rieng (xem DrawTownGround), khong dinh lien
+        // voi khu nong trai - giua 2 khu la vung hoang da vo han that su cua WorldStreamer, noi
+        // voi nhau bang 1 con duong dai (xem AddRoad).
+        private static readonly Vector3 VillageAnchor = new(9250, 0, 3750);
+        private const float TownGroundSize = 3500f; // phai khop voi vung reserved (15..21, 4..10) trong WorldStreamer.cs
 
         public override void _Ready()
         {
@@ -44,6 +54,11 @@ namespace HiepSiVeVuon.Core
             AddChild(_world);
 
             DrawGround();
+            DrawTownGround();
+            // Duong bat dau cach cong ruong 50m (1000 don vi, quy doi 20 don vi/met) chu khong
+            // sat ngay ruong - doan tu cong ra diem nay chi la co, chua trai duong.
+            var roadStart = FarmGatePos + (VillageAnchor - FarmGatePos).Normalized() * 1000f;
+            AddRoad(roadStart, VillageAnchor);
             SpawnPlayer();
             BuildFarm();
             BuildFarmFence();
@@ -78,11 +93,11 @@ namespace HiepSiVeVuon.Core
 
         private void DrawGround()
         {
-            // Phai khop CHINH XAC voi vung WorldStreamer bo qua (4 chunk x 500 = 2000, xem
+            // Phai khop CHINH XAC voi vung WorldStreamer bo qua (6 chunk x 500 = 3000, xem
             // ReservedMinCx/MaxCx/Cz trong WorldStreamer.cs) - neu nho hon se ho ra mot vanh
             // dai khong co dat ("vuc") giua San chinh va cac chunk vung hoang da.
-            const float width = 2000f;
-            const float depth = 2000f;
+            const float width = 3000f;
+            const float depth = 3000f;
 
             var groundMesh = new MeshInstance3D
             {
@@ -107,38 +122,71 @@ namespace HiepSiVeVuon.Core
             floorBody.AddChild(floorShape);
             _world.AddChild(floorBody);
 
-            // Duong dat noi cong ruong (canh cua BuildFarmFence) sang tam khu lang
-            AddPath(FarmGatePos, VillageAnchor, 50f);
-
-            // Cau go nho bac ngang giua duong - diem nhan trang tri (Quaternius, CC0)
-            {
-                var pathDir = (VillageAnchor - FarmGatePos).Normalized();
-                var bridgeAngle = Mathf.RadToDeg(Mathf.Atan2(-pathDir.Z, pathDir.X));
-                AddDecor(_bridgeScene, (FarmGatePos + VillageAnchor) / 2f, 19f, bridgeAngle);
-            }
-
             // Nha nong dan (nha nguoi choi) - dung model Barn that, to hon han nguoi choi (cao ~40)
             AddDecor(_barnScene, FarmhousePos, 14f);
 
-            // Nha kho (barn) canh nha nong dan - model that (Quaternius Farm Buildings, CC0)
-            AddDecor(_barnScene, FarmhousePos + new Vector3(0, 0, -210), 24f);
+            // Nha kho (barn) - dat canh ruong, cach hang rao ruong dung 5m (100 don vi) ve phia tay
+            AddDecor(_barnScene, new Vector3(-482, 0, 250), 24f);
 
-            // Bu nhin canh hang rao & cay that quanh nha, deu cach xa nha/ruong de khong chong lan
-            AddDecor(_scarecrowScene, new Vector3(-330, 0, 290), 1f);
+            // Bu nhin dung giua ruong (khe ho giua cac o dat) & cay that quanh nha
+            AddDecor(_scarecrowScene, new Vector3(70, 0, 330), 13f);
             AddDecor(_treeScene, new Vector3(-470, 0, -90), 34f);
             AddDecor(_treeScene2, new Vector3(-160, 0, -260), 38f);
 
-            // Toa nha chinh cua lang (BigBarn - to nhat trong lang) & cay trang tri quanh khu lang
-            AddDecor(_bigBarnScene, VillageAnchor + new Vector3(0, 0, -260), 16f);
-            AddDecor(_treeScene2, VillageAnchor + new Vector3(-180, 0, -220), 38f);
-            AddDecor(_treeScene, VillageAnchor + new Vector3(250, 0, 0), 34f);
+        }
 
-            // Nha rieng cho tung dan lang (gan cho khop voi vi tri NPC trong SpawnNpcs) - SmallBarn that
-            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(-200, 0, -120), 12f); // gia lang
-            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(200, 0, -100), 12f);  // thuong nhan
-            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(-220, 0, 140), 12f);  // tho ren
-            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(180, 0, 160), 12f);   // ba lang
-            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(0, 0, 280), 12f);     // nguoi gac rung
+        // Thi tran: mot "dao" dat rieng, cach xa khu nong trai (~500m), noi voi nhau qua AddRoad.
+        // Quang truong trung tam, Toa Thi Chinh (BigBarn) o phia bac, 3 vong nha dan quanh -
+        // tat ca deu cach nhau >=180 de khong chong lan du nha da phong to.
+        private void DrawTownGround()
+        {
+            var groundMesh = new MeshInstance3D
+            {
+                Name = "TownGround",
+                Mesh = new PlaneMesh { Size = new Vector2(TownGroundSize, TownGroundSize) },
+                Position = VillageAnchor
+            };
+            groundMesh.MaterialOverride = GroundMaterial.CreateGrass(TownGroundSize, TownGroundSize);
+            _world.AddChild(groundMesh);
+
+            var earthMass = GroundMaterial.CreateEarthMass(TownGroundSize, TownGroundSize);
+            earthMass.Position += VillageAnchor;
+            _world.AddChild(earthMass);
+
+            var floorBody = new StaticBody3D { Name = "TownGroundCollision" };
+            floorBody.AddChild(new CollisionShape3D
+            {
+                Shape = new BoxShape3D { Size = new Vector3(TownGroundSize, GroundMaterial.EarthDepth, TownGroundSize) },
+                Position = VillageAnchor + new Vector3(0, -GroundMaterial.EarthDepth / 2f, 0)
+            });
+            _world.AddChild(floorBody);
+
+            AddDecor(_bigBarnScene, VillageAnchor + new Vector3(0, 0, -180), 18f); // Toa Thi Chinh
+
+            // Vong trong
+            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(-170, 0, -60), 12f); // gia lang
+            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(170, 0, -60), 12f);  // thuong nhan
+            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(-170, 0, 140), 12f); // tho ren
+            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(170, 0, 140), 12f);  // ba lang
+            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(0, 0, 220), 12f);    // nguoi gac rung
+
+            // Vong giua
+            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(-350, 0, 20), 12f);  // chu quan tro
+            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(350, 0, 20), 12f);   // tho moc
+            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(0, 0, 400), 12f);    // hoc gia
+
+            // Vong ngoai (nha + NPC moi them)
+            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(-500, 0, 250), 12f); // tho may
+            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(500, 0, 250), 12f);  // nguoi chan cuu
+
+            AddDecor(_treeScene2, VillageAnchor + new Vector3(-300, 0, -140), 38f);
+            AddDecor(_treeScene, VillageAnchor + new Vector3(300, 0, -140), 34f);
+            AddDecor(_treeScene, VillageAnchor + new Vector3(-460, 0, 120), 34f);
+            AddDecor(_treeScene2, VillageAnchor + new Vector3(460, 0, 120), 38f);
+            AddDecor(_treeScene, VillageAnchor + new Vector3(-160, 0, 480), 34f);
+            AddDecor(_treeScene2, VillageAnchor + new Vector3(160, 0, 480), 38f);
+            AddDecor(_treeScene2, VillageAnchor + new Vector3(-650, 0, 350), 38f);
+            AddDecor(_treeScene, VillageAnchor + new Vector3(650, 0, 350), 34f);
         }
 
         private void AddDecor(PackedScene scene, Vector3 pos, float scale, float rotationYDegrees = 0f)
@@ -165,6 +213,42 @@ namespace HiepSiVeVuon.Core
                 Roughness = 1f
             };
             _world.AddChild(mesh);
+        }
+
+        // Duong noi nong trai - thi tran: nen dat phang mong (dam bao khong ho suot quang duong
+        // dai) + rai tam duong da mon 3D that (Quaternius Path Straight, CC0 - nho gon, phong
+        // cach dong que, hop voi cac asset khac) len tren, cong go bac giua duong lam diem nhan.
+        private void AddRoad(Vector3 from, Vector3 to)
+        {
+            const float nativeLength = 0.901f; // truc dai la +Z cua model
+            const float nativeWidth = 0.496f;
+            const float targetTileLength = 45f; // nho gon hon duong cu (50 -> ~25 be rong)
+            float tileScale = targetTileLength / nativeLength;
+            float roadWidth = nativeWidth * tileScale;
+
+            AddPath(from, to, roadWidth);
+
+            if (_roadTileScene != null)
+            {
+                float dist = from.DistanceTo(to);
+                int count = Mathf.Max(1, Mathf.RoundToInt(dist / targetTileLength));
+                float actualTileLength = dist / count;
+                float actualScale = actualTileLength / nativeLength;
+                Vector3 dir = (to - from).Normalized();
+                float angleDeg = Mathf.RadToDeg(Mathf.Atan2(dir.X, dir.Z));
+                for (int i = 0; i < count; i++)
+                {
+                    var inst = _roadTileScene.Instantiate<Node3D>();
+                    inst.Position = from + dir * (actualTileLength * (i + 0.5f)) + Vector3.Up * 0.15f;
+                    inst.RotationDegrees = new Vector3(0, angleDeg, 0);
+                    inst.Scale = Vector3.One * actualScale;
+                    _world.AddChild(inst);
+                }
+            }
+
+            var pathDir = (to - from).Normalized();
+            var bridgeAngle = Mathf.RadToDeg(Mathf.Atan2(-pathDir.Z, pathDir.X));
+            AddDecor(_bridgeScene, (from + to) / 2f, 19f, bridgeAngle);
         }
 
         // Rai lien tiep mot doan hang rao go (Quaternius Fence, truc dai la +X cua model)
@@ -271,7 +355,7 @@ namespace HiepSiVeVuon.Core
             elder.DialogueLow = new[] { "Chao nguoi la. Vung nay dao nay nhieu quai bun lam." };
             elder.DialogueMid = new[] { "Cau giup lang thi tot qua. Diet lu quai bun giup ta." };
             elder.DialogueHigh = new[] { "Ta tin cau. Nghe don Hang Gai Tim phia dong co kho bau..." };
-            elder.Position = VillageAnchor + new Vector3(-106, 0, -64);
+            elder.Position = VillageAnchor + new Vector3(-110, 0, -20);
             _world.AddChild(elder);
 
             // Thuong nhan - cua hang hat giong & do
@@ -283,7 +367,7 @@ namespace HiepSiVeVuon.Core
             merchant.DialogueLow = new[] { "Mua gi khong? Hat giong tot day!" };
             merchant.DialogueMid = new[] { "Khach quen roi! Xem hang di." };
             merchant.DialogueHigh = new[] { "Ban tot, ta se de gia re cho cau." };
-            merchant.Position = VillageAnchor + new Vector3(102, 0, -51);
+            merchant.Position = VillageAnchor + new Vector3(110, 0, -20);
             _world.AddChild(merchant);
 
             // Tho ren - ban/bo do vu khi & giap
@@ -294,7 +378,7 @@ namespace HiepSiVeVuon.Core
             blacksmith.DialogueLow = new[] { "Muon vu khi tot thi tim dung nguoi roi day. Nhung ta chua quen cau lam." };
             blacksmith.DialogueMid = new[] { "Thep tot can lua tot. Cau ghe thuong xuyen nhi." };
             blacksmith.DialogueHigh = new[] { "Vi tinh ban, ta se ren cho cau mon do ngon nhat xuong." };
-            blacksmith.Position = VillageAnchor + new Vector3(-127, 0, 81);
+            blacksmith.Position = VillageAnchor + new Vector3(-110, 0, 100);
             _world.AddChild(blacksmith);
 
             // Ba lang thao duoc - ban thuoc hoi mau
@@ -305,7 +389,7 @@ namespace HiepSiVeVuon.Core
             herbalist.DialogueLow = new[] { "Thao duoc trong vuon ta co the cuu mang nguoi day, nhung phai biet dung luc." };
             herbalist.DialogueMid = new[] { "Cau lai ghe mua thuoc a? Ta se bot chut dinh gia." };
             herbalist.DialogueHigh = new[] { "Ta se day cau vai bai thuoc bi truyen, ban tre." };
-            herbalist.Position = VillageAnchor + new Vector3(98, 0, 87);
+            herbalist.Position = VillageAnchor + new Vector3(110, 0, 100);
             _world.AddChild(herbalist);
 
             // Nguoi gac rung - giao nhiem vu san quai Gai Tim ngoai hoang da
@@ -316,8 +400,61 @@ namespace HiepSiVeVuon.Core
             ranger.DialogueLow = new[] { "Vung hoang da phia bac day quai vat lam. Coi chung day." };
             ranger.DialogueMid = new[] { "Cau da chung to ban linh roi. Rung sau con nhieu bi mat." };
             ranger.DialogueHigh = new[] { "Ta tin cau du suc doi mat voi bay quai Gai Tim. Di san di." };
-            ranger.Position = VillageAnchor + new Vector3(0, 0, 170);
+            ranger.Position = VillageAnchor + new Vector3(0, 0, 150);
             _world.AddChild(ranger);
+
+            // Chu quan tro - ban thuoc/do uong, tro chuyen phiem
+            var innkeeper = _npcScene.Instantiate<NPC>();
+            innkeeper.NpcId = "innkeeper";
+            innkeeper.NpcName = "Chu Quan Tro";
+            innkeeper.ShopItems = new[] { "potion" };
+            innkeeper.DialogueLow = new[] { "Chao mung den quan tro. Nguoi la it khi ghe qua day." };
+            innkeeper.DialogueMid = new[] { "Uong chut gi cho khoe di, khach quen!" };
+            innkeeper.DialogueHigh = new[] { "Chuyen phiem voi cau vui that. Lan sau ta moi ruou ngon." };
+            innkeeper.Position = VillageAnchor + new Vector3(-270, 0, 60);
+            _world.AddChild(innkeeper);
+
+            // Tho moc - sua chua/ban do go, mua go nguoi choi chat duoc (he thong ban do da co san)
+            var carpenter = _npcScene.Instantiate<NPC>();
+            carpenter.NpcId = "carpenter";
+            carpenter.NpcName = "Tho Moc";
+            carpenter.ShopItems = new[] { "shield" };
+            carpenter.DialogueLow = new[] { "Co go tot thi mang den day, ta mua het." };
+            carpenter.DialogueMid = new[] { "Go cau chat chat luong day. Con bao nhieu mang toi nhe." };
+            carpenter.DialogueHigh = new[] { "Ta se dong cho cau mot mon do go dep nhat xuong lang." };
+            carpenter.Position = VillageAnchor + new Vector3(270, 0, 60);
+            _world.AddChild(carpenter);
+
+            // Hoc gia - nhan vat ke chuyen/lore, khong ban hang, khong nhiem vu
+            var scholar = _npcScene.Instantiate<NPC>();
+            scholar.NpcId = "scholar";
+            scholar.NpcName = "Hoc Gia";
+            scholar.DialogueLow = new[] { "Ta danh ca doi nghien cuu vung dat nay. Co gi thac mac cu hoi ta." };
+            scholar.DialogueMid = new[] { "Cau ngay cang gan gui voi vung dat nay roi day." };
+            scholar.DialogueHigh = new[] { "Trong sach co ke ve mot hiep si bao ve khu vuon huyen thoai... co le la cau." };
+            scholar.Position = VillageAnchor + new Vector3(0, 0, 320);
+            _world.AddChild(scholar);
+
+            // Tho may - ban trang phuc/phu kien (dung lai vat pham giap co san)
+            var tailor = _npcScene.Instantiate<NPC>();
+            tailor.NpcId = "tailor";
+            tailor.NpcName = "Tho May";
+            tailor.ShopItems = new[] { "ring", "shield" };
+            tailor.DialogueLow = new[] { "Vai vor toi cung co the may cho cau mot bo dep." };
+            tailor.DialogueMid = new[] { "Do cau mac cung kha day, nhung de ta chinh lai chut." };
+            tailor.DialogueHigh = new[] { "Rieng cho cau, ta se may mon do dac biet nhat tiem." };
+            tailor.Position = VillageAnchor + new Vector3(-420, 0, 210);
+            _world.AddChild(tailor);
+
+            // Nguoi chan cuu - flavor, khong ban hang/nhiem vu
+            var shepherd = _npcScene.Instantiate<NPC>();
+            shepherd.NpcId = "shepherd";
+            shepherd.NpcName = "Nguoi Chan Cuu";
+            shepherd.DialogueLow = new[] { "Dan cuu cua ta thich gam co ngoai dong lam." };
+            shepherd.DialogueMid = new[] { "Cau co ve hop voi cuoc song dong que roi day." };
+            shepherd.DialogueHigh = new[] { "Bao gio ranh, ghe tham dan cuu cua ta nhe." };
+            shepherd.Position = VillageAnchor + new Vector3(420, 0, 210);
+            _world.AddChild(shepherd);
         }
 
         private void SpawnEnemies()
