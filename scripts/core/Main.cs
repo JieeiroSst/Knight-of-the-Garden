@@ -43,6 +43,18 @@ namespace HiepSiVeVuon.Core
         private PackedScene _crateScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/crate.glb");
         private PackedScene _barrelScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/barrel.glb");
         private PackedScene _bagScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/bag.glb");
+        // Them do noi that rieng biet cho tung loai phong (Quaternius Ultimate House Interior
+        // Pack + do vat nong trai rieng, deu CC0) - nha o co giuong/ban/ghe/lo suoi, nha kho co
+        // rom/bao thoc rieng biet khong giong nha dan hay Toa Thi Chinh.
+        private PackedScene _tableScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/table_round.glb");
+        private PackedScene _chairScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/chair.glb");
+        private PackedScene _bedScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/bed_single.glb");
+        private PackedScene _rugScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/rug.glb");
+        private PackedScene _chandelierScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/chandelier.glb");
+        private PackedScene _fireplaceScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/fireplace.glb");
+        private PackedScene _hayScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/hay.glb");
+        private PackedScene _sackScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/sack_trench.glb");
+        private PackedScene _stairsScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/stairs.glb");
 
         private Node3D _world;
 
@@ -257,11 +269,21 @@ namespace HiepSiVeVuon.Core
         // bi lech voi tuong nha truoc day) + 1 cua 3D that (Quaternius Door Round, CC0).
         private void AddBuildingEntrance(Vector3 buildingPos, float rotationYDegrees, float triggerRadius, float doorDistance, RoomKind kind)
         {
-            var interiorAnchor = new Vector3(_nextInteriorIndex * 500f, -600f, 0f);
+            // Phong noi that dat NGAY PHIA TREN vi tri that cua chinh ngoi nha nay (cung X,Z) -
+            // gan lien voi ngoi nha thay vi giau o mot khu vuc tach biet rat xa. Khong the nhin
+            // xuyen tuong vao trong (model vo ngoai dac, khong co lo hong that), nhung it nhat
+            // toa do gan dung vi tri that. Do cac nha trong lang co the dung gan nhau hon kich
+            // thuoc phong (vd 2 nha dan cach nhau 200 don vi nhung phong rong toi 380), moi cong
+            // trinh dung 1 do cao (Y) RIENG - each 900 don vi - de phong cua nha nay khong bao
+            // gio de vao khong gian cua nha ke ben du toa do X,Z co gan nhau.
+            var interiorAnchor = new Vector3(buildingPos.X, 500f + _nextInteriorIndex * 900f, buildingPos.Z);
             _nextInteriorIndex++;
 
             AddBuildingDoor(buildingPos, triggerRadius, isExit: false, interiorAnchor);
-            BuildRoomForKind(interiorAnchor, kind);
+            // Tang 2: cung 1 vi tri X,Z, nam cao han 400 don vi (du xa moi wallHeight toi da 200 +
+            // du choi de khong cham tran tang 1).
+            var floor2Anchor = interiorAnchor + Vector3.Up * 400f;
+            BuildRoomForKind(interiorAnchor, floor2Anchor, kind);
 
             if (_doorScene != null)
             {
@@ -274,9 +296,9 @@ namespace HiepSiVeVuon.Core
             }
         }
 
-        private void AddBuildingDoor(Vector3 pos, float triggerRadius, bool isExit, Vector3 interiorAnchor = default)
+        private void AddBuildingDoor(Vector3 pos, float triggerRadius, bool isExit, Vector3 interiorAnchor = default, bool isFloorChange = false, bool isAutoTrigger = false)
         {
-            var door = new BuildingDoor { IsExit = isExit, InteriorAnchor = interiorAnchor };
+            var door = new BuildingDoor { IsExit = isExit, InteriorAnchor = interiorAnchor, IsFloorChange = isFloorChange, IsAutoTrigger = isAutoTrigger };
             door.Position = pos;
             door.AddChild(new CollisionShape3D { Shape = new SphereShape3D { Radius = triggerRadius } });
             _world.AddChild(door);
@@ -285,8 +307,10 @@ namespace HiepSiVeVuon.Core
         // Chon kich thuoc/mau sac/do dac theo LOAI cong trinh, de moi loai nha co khong gian
         // rieng thay vi 1 phong dung chung y het nhau cho tat ca (nha nong dan am cung, nha kho
         // chat day thung/bao nhu kho that, Toa Thi Chinh rong va trang trong, nha dan don gian
-        // hon va co vai bien the mau/do dac khac nhau giua cac nha).
-        private void BuildRoomForKind(Vector3 anchor, RoomKind kind)
+        // hon va co vai bien the mau/do dac khac nhau giua cac nha). Moi cong trinh co 2 tang:
+        // tang tret (groundAnchor, co cua ra ngoai + cau thang len) va tang 2 (floor2Anchor, co
+        // cau thang xuong) - noi that tang 2 la 1 bo rieng, khac tang tret.
+        private void BuildRoomForKind(Vector3 groundAnchor, Vector3 floor2Anchor, RoomKind kind)
         {
             switch (kind)
             {
@@ -296,67 +320,109 @@ namespace HiepSiVeVuon.Core
                     // roomSize/2 < 115 thi camera se nam NGOAI phong (xuyen qua tuong sau lung),
                     // nhin thay mat trong cua tuong o cu ly cuc gan -> day chinh la nguyen nhan
                     // "khong gian nha bi vo" da xay ra o moi phong truoc day.
-                    BuildRoom(anchor, 380f, 150f,
+                    // Tang tret: phong khach/an - ban ghe + lo suoi. Tang 2: phong ngu rieng.
+                    BuildRoom(groundAnchor, 380f, 150f,
                         wallColor: new Color(0.83f, 0.74f, 0.58f),
                         floorColor: new Color(0.5f, 0.34f, 0.19f),
                         rugColor: new Color(0.55f, 0.15f, 0.15f),
+                        backTarget: default, backIsExit: true, upTarget: floor2Anchor,
                         furnish: a =>
                         {
-                            AddDecor(_benchScene, a + new Vector3(-120, 0, -135), 95f);
-                            AddDecor(_benchScene, a + new Vector3(120, 0, -135), 95f, 180f);
-                            AddDecor(_bagScene, a + new Vector3(130, 0, -80), 95f);
-                            AddDecor(_bagScene, a + new Vector3(-135, 0, -30), 95f, 15f);
-                            AddDecor(_barrelScene, a + new Vector3(-130, 0, 100), 95f);
-                            AddDecor(_barrelScene, a + new Vector3(-90, 0, 130), 95f, 30f);
-                            AddDecor(_crateScene, a + new Vector3(120, 0, 110), 95f, 25f);
-                            AddDecor(_crateScene, a + new Vector3(135, 0, 60), 95f, -20f);
+                            AddDecor(_fireplaceScene, a + new Vector3(0, 0, -145), 9f);
+                            AddDecor(_tableScene, a + new Vector3(110, 0, -90), 12f);
+                            AddDecor(_chairScene, a + new Vector3(110, 0, -55), 10f, 180f);
+                            AddDecor(_chairScene, a + new Vector3(75, 0, -90), 10f, 90f);
+                            AddDecor(_rugScene, a + new Vector3(0, 0, 30), 11f);
+                            AddDecor(_bagScene, a + new Vector3(-135, 0, 110), 95f);
+                            AddDecor(_barrelScene, a + new Vector3(130, 0, 120), 95f);
+                        });
+                    BuildRoom(floor2Anchor, 300f, 130f,
+                        wallColor: new Color(0.86f, 0.78f, 0.64f),
+                        floorColor: new Color(0.55f, 0.4f, 0.24f),
+                        rugColor: new Color(0.35f, 0.3f, 0.55f),
+                        backTarget: groundAnchor, backIsExit: false, upTarget: null,
+                        furnish: a =>
+                        {
+                            AddDecor(_bedScene, a + new Vector3(-100, 0, -90), 10f, 90f);
+                            AddDecor(_bagScene, a + new Vector3(90, 0, 100), 90f);
                         });
                     break;
 
                 case RoomKind.Barn:
-                    // Mau go do dam, khop mau vo ngoai cua Barn - cam giac day la kho chua do that.
-                    BuildRoom(anchor, 420f, 170f,
+                    // Dac biet theo yeu cau: rom (Hay) + bao thoc (Sack Trench) that - khong
+                    // giong bat ky nha nao khac hay Toa Thi Chinh. Mau go do dam, khop mau vo
+                    // ngoai cua Barn - cam giac day la kho chua do that. Tang 2 la gac lung
+                    // chua them rom/bao - dung 1 kieu kho, khac han cac tang 2 nha o/hoi truong.
+                    BuildRoom(groundAnchor, 420f, 170f,
                         wallColor: new Color(0.5f, 0.28f, 0.2f),
                         floorColor: new Color(0.42f, 0.3f, 0.18f),
                         rugColor: null,
+                        backTarget: default, backIsExit: true, upTarget: floor2Anchor,
                         furnish: a =>
                         {
-                            AddDecor(_crateScene, a + new Vector3(-145, 0, -145), 100f);
-                            AddDecor(_crateScene, a + new Vector3(-100, 0, -150), 100f, 15f);
-                            AddDecor(_crateScene, a + new Vector3(-150, 0, -100), 100f, -20f);
-                            AddDecor(_barrelScene, a + new Vector3(145, 0, -140), 100f);
-                            AddDecor(_barrelScene, a + new Vector3(150, 0, -90), 100f, 30f);
-                            AddDecor(_bagScene, a + new Vector3(-145, 0, 145), 100f);
-                            AddDecor(_bagScene, a + new Vector3(-95, 0, 150), 100f, -20f);
-                            AddDecor(_crateScene, a + new Vector3(145, 0, 140), 100f, 40f);
-                            AddDecor(_barrelScene, a + new Vector3(95, 0, 150), 100f, 10f);
-                            AddDecor(_bagScene, a + new Vector3(0, 0, -160), 100f);
+                            AddDecor(_hayScene, a + new Vector3(-150, 0, -150), 118f);
+                            AddDecor(_hayScene, a + new Vector3(-95, 0, -160), 110f, 30f);
+                            AddDecor(_hayScene, a + new Vector3(150, 0, 150), 120f, 60f);
+                            AddDecor(_sackScene, a + new Vector3(140, 0, -140), 5f);
+                            AddDecor(_sackScene, a + new Vector3(150, 0, -95), 5f, 40f);
+                            AddDecor(_sackScene, a + new Vector3(-140, 0, 145), 5f, -25f);
+                            AddDecor(_crateScene, a + new Vector3(-150, 0, 100), 100f);
+                            AddDecor(_barrelScene, a + new Vector3(150, 0, 90), 100f);
+                            AddDecor(_barrelScene, a + new Vector3(100, 0, 150), 100f, 15f);
+                            AddDecor(_crateScene, a + new Vector3(0, 0, -165), 100f);
+                        });
+                    BuildRoom(floor2Anchor, 340f, 140f,
+                        wallColor: new Color(0.45f, 0.25f, 0.18f),
+                        floorColor: new Color(0.4f, 0.28f, 0.16f),
+                        rugColor: null,
+                        backTarget: groundAnchor, backIsExit: false, upTarget: null,
+                        furnish: a =>
+                        {
+                            AddDecor(_hayScene, a + new Vector3(-110, 0, -100), 115f, 20f);
+                            AddDecor(_hayScene, a + new Vector3(100, 0, 100), 112f, -30f);
+                            AddDecor(_sackScene, a + new Vector3(100, 0, -100), 5f);
+                            AddDecor(_sackScene, a + new Vector3(-100, 0, 110), 5f, 20f);
                         });
                     break;
 
                 case RoomKind.TownHall:
-                    // Phong rong, tuong da xam, ghe xep doi xung 2 ben nhu 1 sanh lon trang trong.
-                    BuildRoom(anchor, 440f, 200f,
+                    // Phong rong, tuong da xam, den chum treo giua tran - trang trong khac han
+                    // nha o / nha kho, dung ghe dai xep doi xung nhu 1 sanh hop. Tang 2 la phong
+                    // hop nho hon phia tren.
+                    BuildRoom(groundAnchor, 440f, 200f,
                         wallColor: new Color(0.62f, 0.6f, 0.58f),
                         floorColor: new Color(0.4f, 0.36f, 0.32f),
                         rugColor: new Color(0.5f, 0.1f, 0.12f),
+                        backTarget: default, backIsExit: true, upTarget: floor2Anchor,
                         furnish: a =>
                         {
+                            AddDecor(_tableScene, a + new Vector3(0, 0, -20), 15f);
                             AddDecor(_benchScene, a + new Vector3(-130, 0, -60), 105f, 90f);
                             AddDecor(_benchScene, a + new Vector3(130, 0, -60), 105f, -90f);
                             AddDecor(_benchScene, a + new Vector3(-130, 0, 60), 105f, 90f);
                             AddDecor(_benchScene, a + new Vector3(130, 0, 60), 105f, -90f);
-                            AddDecor(_crateScene, a + new Vector3(-40, 0, -160), 100f);
-                            AddDecor(_crateScene, a + new Vector3(40, 0, -160), 100f);
-                            AddDecor(_barrelScene, a + new Vector3(-160, 0, -160), 100f);
-                            AddDecor(_barrelScene, a + new Vector3(160, 0, -160), 100f);
+                            AddDecor(_rugScene, a + new Vector3(0, 0, -10), 14f);
+                            AddDecor(_crateScene, a + new Vector3(-160, 0, -160), 100f);
+                            AddDecor(_crateScene, a + new Vector3(160, 0, -160), 100f);
+                        });
+                    BuildRoom(floor2Anchor, 360f, 170f,
+                        wallColor: new Color(0.66f, 0.63f, 0.6f),
+                        floorColor: new Color(0.44f, 0.4f, 0.35f),
+                        rugColor: new Color(0.45f, 0.12f, 0.14f),
+                        backTarget: groundAnchor, backIsExit: false, upTarget: null,
+                        furnish: a =>
+                        {
+                            AddDecor(_tableScene, a + new Vector3(0, 0, 0), 13f);
+                            AddDecor(_benchScene, a + new Vector3(-90, 0, -80), 95f, 90f);
+                            AddDecor(_benchScene, a + new Vector3(90, 0, -80), 95f, -90f);
                         });
                     break;
 
                 case RoomKind.Village:
                 default:
-                    // 3 bien the mau/do dac khac nhau xoay vong theo thu tu nha, de day khong
-                    // phai 9-10 can nha giong het nhau tung centimet.
+                    // 3 bien the do dac/mau sac khac nhau xoay vong theo thu tu nha, moi nha co
+                    // giuong/ban rieng theo bien the - khong phai 9-10 can nha giong het nhau.
+                    // Tang tret la khong gian sinh hoat, tang 2 la phong ngu rieng.
                     int variant = _nextInteriorIndex % 3;
                     var palette = variant == 0
                         ? new Color(0.8f, 0.7f, 0.55f)
@@ -364,41 +430,54 @@ namespace HiepSiVeVuon.Core
                     var rug = variant == 0
                         ? new Color(0.4f, 0.35f, 0.55f)
                         : variant == 1 ? new Color(0.35f, 0.45f, 0.4f) : new Color(0.5f, 0.35f, 0.3f);
-                    BuildRoom(anchor, 380f, 140f,
+                    BuildRoom(groundAnchor, 380f, 140f,
                         wallColor: palette,
                         floorColor: new Color(0.47f, 0.32f, 0.18f),
                         rugColor: rug,
+                        backTarget: default, backIsExit: true, upTarget: floor2Anchor,
                         furnish: a =>
                         {
                             if (variant == 0)
                             {
-                                AddDecor(_benchScene, a + new Vector3(-120, 0, -130), 90f);
-                                AddDecor(_bagScene, a + new Vector3(125, 0, 120), 90f);
-                                AddDecor(_bagScene, a + new Vector3(90, 0, 135), 90f, 20f);
-                                AddDecor(_crateScene, a + new Vector3(-130, 0, 100), 90f, -15f);
+                                AddDecor(_tableScene, a + new Vector3(110, 0, 110), 11f);
+                                AddDecor(_chairScene, a + new Vector3(110, 0, 145), 10f, 180f);
+                                AddDecor(_bagScene, a + new Vector3(125, 0, -120), 90f);
+                                AddDecor(_barrelScene, a + new Vector3(-125, 0, -120), 90f);
                             }
                             else if (variant == 1)
                             {
-                                AddDecor(_crateScene, a + new Vector3(-120, 0, -130), 90f, 20f);
-                                AddDecor(_crateScene, a + new Vector3(-90, 0, -110), 90f, -10f);
+                                AddDecor(_tableScene, a + new Vector3(-110, 0, -110), 11f);
+                                AddDecor(_chairScene, a + new Vector3(-110, 0, -75), 10f, 180f);
+                                AddDecor(_chairScene, a + new Vector3(-75, 0, -110), 10f, 90f);
                                 AddDecor(_barrelScene, a + new Vector3(120, 0, 110), 90f);
-                                AddDecor(_bagScene, a + new Vector3(-130, 0, 110), 90f);
                             }
                             else
                             {
-                                AddDecor(_barrelScene, a + new Vector3(-120, 0, 110), 90f, -20f);
-                                AddDecor(_barrelScene, a + new Vector3(-90, 0, 135), 90f, 10f);
-                                AddDecor(_bagScene, a + new Vector3(120, 0, -110), 90f);
-                                AddDecor(_benchScene, a + new Vector3(0, 0, -135), 90f);
+                                AddDecor(_fireplaceScene, a + new Vector3(0, 0, 135), 8f, 180f);
+                                AddDecor(_bagScene, a + new Vector3(-120, 0, -110), 90f);
+                                AddDecor(_barrelScene, a + new Vector3(-130, 0, 130), 90f, -20f);
                             }
+                        });
+                    BuildRoom(floor2Anchor, 260f, 120f,
+                        wallColor: palette,
+                        floorColor: new Color(0.5f, 0.36f, 0.2f),
+                        rugColor: rug,
+                        backTarget: groundAnchor, backIsExit: false, upTarget: null,
+                        furnish: a =>
+                        {
+                            AddDecor(_bedScene, a + new Vector3(-70, 0, -75), 9f, 90f);
                         });
                     break;
             }
         }
 
-        // Khung phong dung chung (san/tran/tuong/den/tham/cua) - tham so mau sac/kich thuoc/do
-        // dac khac nhau theo tung loai cong trinh (xem BuildRoomForKind).
-        private void BuildRoom(Vector3 anchor, float roomSize, float wallHeight, Color wallColor, Color floorColor, Color? rugColor, System.Action<Vector3> furnish)
+        // Khung phong dung chung (san/tran/tuong/den chum 3D/den/tham/cua) - tham so mau sac/
+        // kich thuoc/do dac khac nhau theo tung loai cong trinh (xem BuildRoomForKind).
+        // backTarget/backIsExit: cua o tuong nam - IsExit=true dan ra ngoai troi (tang tret),
+        // false dan toi backTarget (vd cau thang xuong tang duoi). upTarget: neu co, them cau
+        // thang that (Quaternius Stairs, CC0) + 1 diem [E] de len upTarget (vd tang tren).
+        private void BuildRoom(Vector3 anchor, float roomSize, float wallHeight, Color wallColor, Color floorColor, Color? rugColor,
+            Vector3 backTarget, bool backIsExit, Vector3? upTarget, System.Action<Vector3> furnish)
         {
             var floorMat = new StandardMaterial3D
             {
@@ -465,6 +544,16 @@ namespace HiepSiVeVuon.Core
             AddInteriorLight(anchor + new Vector3(-cornerOffset, lightHeight, cornerOffset), roomSize * 0.6f, 1.8f);
             AddInteriorLight(anchor + new Vector3(cornerOffset, lightHeight, cornerOffset), roomSize * 0.6f, 1.8f);
 
+            // Den chum 3D that (Quaternius Chandelier, CC0) treo o dung vi tri den chinh giua
+            // tran - moi phong vao deu co, dung nhu yeu cau "den sang la den chum 3D".
+            if (_chandelierScene != null)
+            {
+                var chandelier = _chandelierScene.Instantiate<Node3D>();
+                chandelier.Position = anchor + Vector3.Up * lightHeight;
+                chandelier.Scale = Vector3.One * 15f;
+                _world.AddChild(chandelier);
+            }
+
             if (rugColor.HasValue)
             {
                 var rug = new MeshInstance3D
@@ -481,9 +570,11 @@ namespace HiepSiVeVuon.Core
                 _world.AddChild(rug);
             }
 
-            // Cua vao (mat trong) - dat sat tuong doi dien cua thoat, cho cam giac day la
-            // "cua ban vua di qua" thay vi mot can phong khong ro loi vao/ra.
-            if (_doorScene != null)
+            // Cua vao (mat trong) - CHI o tang co cua thoat that (backIsExit=true) - dat sat
+            // tuong doi dien cua thoat, cho cam giac day la "cua ban vua di qua" thay vi mot
+            // can phong khong ro loi vao/ra. Tang tren khong co cua nay (xem cau thang xuong
+            // ben duoi thay the, hop ly hon vi tang tren khong the co "cua ra ngoai troi").
+            if (backIsExit && _doorScene != null)
             {
                 var innerDoor = _doorScene.Instantiate<Node3D>();
                 innerDoor.Position = anchor + new Vector3(0, 0, roomSize / 2f - 6f);
@@ -494,8 +585,53 @@ namespace HiepSiVeVuon.Core
 
             furnish(anchor);
 
-            // Cua thoat: nhan [E] khi dung gan de tro ve dung vi tri ngoai troi da vao
-            AddBuildingDoor(anchor + new Vector3(0, 0, roomSize / 2f - 25f), 55f, isExit: true);
+            // Cau thang len tang tren (Quaternius Stairs, CC0) - dat o goc phong (Tay Bac), xa
+            // noi that va xa cua chinh o tuong Nam. Vung kich hoat bao TRON ca chan cau thang
+            // (ban kinh lon hon than cau thang) va TU DONG dua len tang tren ngay khi cham vao
+            // (khong can bam [E]) - giong nhu buoc chan len bac thang dau tien la tu nhien di
+            // len, khong phai mot thao tac rieng nhu mo cua.
+            if (upTarget.HasValue && _stairsScene != null)
+            {
+                var stairPos = anchor + new Vector3(-(roomSize / 2f - 65f), 0, -(roomSize / 2f - 65f));
+                AddStairs(stairPos, 90f);
+                AddBuildingDoor(stairPos, 65f, isExit: false, upTarget.Value, isFloorChange: true, isAutoTrigger: true);
+            }
+
+            if (backIsExit)
+            {
+                // Tang co cua ra ngoai that (tang tret): nhan [E] gan cua o tuong Nam de ra ngoai troi.
+                AddBuildingDoor(anchor + new Vector3(0, 0, roomSize / 2f - 25f), 55f, isExit: true);
+            }
+            else
+            {
+                // Tang tren: cau thang XUONG that (cung model Stairs, xoay nguoc huong voi cau
+                // thang len) o goc Dong Nam - doi dien cau thang len o goc Tay Bac de khong dam
+                // vao do dac. Tu dong xuong tang duoi ngay khi cham vao, giong het cau thang len.
+                var downPos = anchor + new Vector3(roomSize / 2f - 65f, 0, roomSize / 2f - 65f);
+                AddStairs(downPos, -90f);
+                AddBuildingDoor(downPos, 65f, isExit: false, backTarget, isFloorChange: true, isAutoTrigger: true);
+            }
+        }
+
+        // Model cau thang (Quaternius Stairs, CC0) khong co tam mat bao (bbox) nam o goc toa do
+        // rieng cua no - tam that lech ve phia +Z khoang 2.9 don vi (o scale goc). Neu dat thang
+        // "Position" cho model nay, sau khi xoay 90 do no se bi LECH SANG NGANG rat nhieu (~78
+        // don vi o scale 27), nhin nhu nam GIUA phong thay vi trong goc. Bao boc trong 1 Node3D
+        // trung gian roi bu lai dung do lech nay de tam cau thang luon nam DUNG vi tri da chi
+        // dinh, bat ke xoay huong nao.
+        private void AddStairs(Vector3 pos, float rotationYDegrees, float scale = 27f)
+        {
+            if (_stairsScene == null) return;
+            var wrapper = new Node3D
+            {
+                Position = pos,
+                RotationDegrees = new Vector3(0, rotationYDegrees, 0),
+                Scale = Vector3.One * scale
+            };
+            _world.AddChild(wrapper);
+            var stairs = _stairsScene.Instantiate<Node3D>();
+            stairs.Position = new Vector3(0, -0.69126f, -2.87656f);
+            wrapper.AddChild(stairs);
         }
 
         private void AddInteriorLight(Vector3 pos, float range, float energy)

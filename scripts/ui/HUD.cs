@@ -62,7 +62,7 @@ namespace HiepSiVeVuon.UI
 
             _hint = new Label
             {
-                Text = "[WASD] Di | [J/Chuot] Danh | [Space] Cong cu | [E] Tuong tac/Mo cua vao-ra nha | [I] Tui do | [F5] Luu"
+                Text = "[WASD] Di | [J/Chuot] Danh | [Space] Cong cu | [E] Tuong tac/Cua/Cau thang | [I] Tui do | [F5] Luu"
             };
             _hint.AutowrapMode = TextServer.AutowrapMode.Word;
             _hint.Position = new Vector2(10, 500);

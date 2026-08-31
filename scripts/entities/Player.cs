@@ -217,6 +217,7 @@ namespace HiepSiVeVuon.Entities
                 if (area is BuildingDoor door)
                 {
                     if (door.IsExit) ExitBuilding();
+                    else if (door.IsFloorChange) ChangeFloor(door.InteriorAnchor);
                     else EnterBuilding(door.InteriorAnchor);
                     return;
                 }
@@ -242,6 +243,23 @@ namespace HiepSiVeVuon.Entities
             if (_camera != null) _camera.Position = OutdoorCameraOffset;
             TeleportWithFade(_returnPos);
         }
+
+        // Doi tang trong CUNG mot cong trinh (cau thang) - khac EnterBuilding/ExitBuilding: KHONG
+        // dong cham den _indoors hay _returnPos (van dang o trong cung cong trinh, van dung
+        // camera thu nho nhu luc o tang tret), chi doi vi tri sang phong tang khac.
+        private bool _changingFloor = false;
+        private void ChangeFloor(Vector3 targetAnchor)
+        {
+            if (_changingFloor) return;
+            _changingFloor = true;
+            TeleportWithFade(targetAnchor + Vector3.Up * 8f);
+            GetTree().CreateTimer(0.5).Timeout += () => _changingFloor = false;
+        }
+
+        // Goi tu BuildingDoor khi nguoi choi CHAM VAO cau thang (tu dong len tang, khong can [E]
+        // - xem BuildingDoor.IsAutoTrigger) - giu hanh dong "buoc len cau thang" tu nhien nhu
+        // con nguoi that, khong phai mot thao tac tuong tac rieng biet nhu mo cua.
+        public void TriggerFloorChange(Vector3 targetAnchor) => ChangeFloor(targetAnchor);
 
         private void TryUseTool()
         {
