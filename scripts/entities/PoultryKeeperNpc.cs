@@ -82,12 +82,7 @@ namespace HiepSiVeVuon.Entities
             if (wantsToMove)
                 _facing = SteeringUtil.SmoothTurn(_facing, desiredDir, TurnSpeed * dt);
 
-            if (_model != null && _facing != Vector3.Zero)
-            {
-                var lookDir = FlipModelFacing ? -_facing : _facing;
-                var targetBasis = Basis.LookingAt(lookDir, Vector3.Up);
-                _model.Basis = _model.Basis.Orthonormalized().Slerp(targetBasis, Mathf.Clamp(TurnSpeed * dt, 0f, 1f));
-            }
+            SteeringUtil.ApplyStandingOrLyingPose(_model, _workState == WorkState.AtHome, _facing, FlipModelFacing, TurnSpeed * dt);
 
             Vector3 targetVel = wantsToMove ? _facing * targetSpeed : Vector3.Zero;
             var horizontal = new Vector3(Velocity.X, 0f, Velocity.Z)
