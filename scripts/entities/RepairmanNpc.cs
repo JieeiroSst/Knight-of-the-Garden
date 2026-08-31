@@ -41,6 +41,8 @@ namespace HiepSiVeVuon.Entities
         private double _checkCooldown;
         private Vector3 _facing = Vector3.Back;
 
+        private readonly HiepSiVeVuon.Core.SteeringUtil.StuckDetector _stuckDetector = new();
+
         public override void _Ready()
         {
             base._Ready();
@@ -79,6 +81,8 @@ namespace HiepSiVeVuon.Entities
             var (desiredDir, targetSpeed) = _onDuty ? DoWork(dt) : (Vector3.Zero, 0f);
 
             bool wantsToMove = desiredDir != Vector3.Zero;
+            desiredDir = _stuckDetector.ApplyEscape(desiredDir, GlobalPosition, wantsToMove, dt);
+            wantsToMove = desiredDir != Vector3.Zero;
             if (wantsToMove)
                 _facing = SteeringUtil.SmoothTurn(_facing, desiredDir, TurnSpeed * dt);
 

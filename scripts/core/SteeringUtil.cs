@@ -44,5 +44,61 @@ namespace HiepSiVeVuon.Core
             var targetBasis = Basis.LookingAt(lookDir, Vector3.Up);
             model.Basis = model.Basis.Orthonormalized().Slerp(targetBasis, Mathf.Clamp(turnAmount, 0f, 1f));
         }
+
+        // Phat hien "bi ket" + tu thoat: MOI NPC/vat nuoi trong game chi biet "quay huong ve muc
+        // tieu roi buoc thang toi" (khong co pathfinding that su tranh vat can) - the gioi cang
+        // ngay cang day cong trinh/hang rao/coi xay gio/thap canh hon qua tung lan bo sung, nen
+        // 1 muc tieu (wander target/diem tuan tra/nha/cho lam viec) ngay cang de roi vao "sau"
+        // mot vat can, khien NPC dung yen dam mai vao 1 cho ma khong bao gio toi duoc. StuckDetector
+        // theo doi quang duong DI THAT su duoc trong 1 khoang thoi gian - neu qua it du dang
+        // "muon di", tu dong tra ve 1 huong "lach" tam thoi (xoay lech so voi huong that su muon
+        // di) trong vai giay de NPC truot qua vat can, roi tra huong dieu khien ve lai binh
+        // thuong. Ap dung truc tiep vao "desiredDir" ngay truoc khi dung de xoay/di chuyen, khong
+        // can biet NPC dang o trang thai/muc tieu gi (wander/patrol/goto deu dung chung duoc).
+        public class StuckDetector
+        {
+            private Vector3 _checkpointPos;
+            private double _timer;
+            private bool _initialized;
+            private double _escapeCooldown;
+            private Vector3 _escapeDir;
+
+            public Vector3 ApplyEscape(Vector3 desiredDir, Vector3 currentPos, bool wantsToMove, float dt,
+                float minMoveDist = 10f, double windowSec = 1.5, double escapeDurationSec = 1.2)
+            {
+                if (!_initialized) { _checkpointPos = currentPos; _initialized = true; }
+
+                if (!wantsToMove)
+                {
+                    _checkpointPos = currentPos;
+                    _timer = 0;
+                }
+                else
+                {
+                    _timer += dt;
+                    if (_timer >= windowSec)
+                    {
+                        float moved = new Vector2(currentPos.X - _checkpointPos.X, currentPos.Z - _checkpointPos.Z).Length();
+                        _checkpointPos = currentPos;
+                        _timer = 0;
+                        if (moved < minMoveDist && desiredDir != Vector3.Zero)
+                        {
+                            var rng = new RandomNumberGenerator();
+                            rng.Randomize();
+                            float angle = rng.RandfRange(Mathf.Pi * 0.5f, Mathf.Pi * 0.85f) * (rng.Randf() < 0.5f ? 1f : -1f);
+                            _escapeDir = desiredDir.Rotated(Vector3.Up, angle);
+                            _escapeCooldown = escapeDurationSec;
+                        }
+                    }
+                }
+
+                if (_escapeCooldown > 0)
+                {
+                    _escapeCooldown -= dt;
+                    return _escapeDir;
+                }
+                return desiredDir;
+            }
+        }
     }
 }

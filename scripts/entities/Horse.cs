@@ -59,6 +59,8 @@ namespace HiepSiVeVuon.Entities
         private Player _player;
         private double _neighCooldownLeft = 0;
 
+        private readonly HiepSiVeVuon.Core.SteeringUtil.StuckDetector _stuckDetector = new();
+
         public override void _Ready()
         {
             AddToGroup("horses");
@@ -153,6 +155,8 @@ namespace HiepSiVeVuon.Entities
         private void MoveWithFacing(Vector3 desiredDir, float targetSpeed, float dt)
         {
             bool wantsToMove = desiredDir != Vector3.Zero;
+            desiredDir = _stuckDetector.ApplyEscape(desiredDir, GlobalPosition, wantsToMove, dt);
+            wantsToMove = desiredDir != Vector3.Zero;
             if (wantsToMove)
                 _facing = SteeringUtil.SmoothTurn(_facing, desiredDir, TurnSpeed * dt);
 

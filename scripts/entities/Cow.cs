@@ -72,6 +72,8 @@ namespace HiepSiVeVuon.Entities
         private Player _player;
         private double _mooCooldownLeft = 0;
 
+        private readonly HiepSiVeVuon.Core.SteeringUtil.StuckDetector _stuckDetector = new();
+
         public override void _Ready()
         {
             AddToGroup("cows");
@@ -168,6 +170,8 @@ namespace HiepSiVeVuon.Entities
             };
 
             bool wantsToMove = desiredDir != Vector3.Zero;
+            desiredDir = _stuckDetector.ApplyEscape(desiredDir, GlobalPosition, wantsToMove, dt);
+            wantsToMove = desiredDir != Vector3.Zero;
             if (wantsToMove)
             {
                 // _facing la huong DI CHUYEN THAT (mot vector thuan, khong phu thuoc vao quy uoc

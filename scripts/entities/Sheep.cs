@@ -38,6 +38,8 @@ namespace HiepSiVeVuon.Entities
         public Vector3 HomeCenter = new(float.NaN, 0, float.NaN);
         public float PastureHalfExtent = 999999f;
 
+        private readonly HiepSiVeVuon.Core.SteeringUtil.StuckDetector _stuckDetector = new();
+
         public override void _Ready()
         {
             AddToGroup("sheep");
@@ -75,6 +77,8 @@ namespace HiepSiVeVuon.Entities
             };
 
             bool wantsToMove = desiredDir != Vector3.Zero;
+            desiredDir = _stuckDetector.ApplyEscape(desiredDir, GlobalPosition, wantsToMove, dt);
+            wantsToMove = desiredDir != Vector3.Zero;
             if (wantsToMove)
                 _facing = SteeringUtil.SmoothTurn(_facing, desiredDir, TurnSpeed * dt);
 

@@ -42,6 +42,7 @@ namespace HiepSiVeVuon.Entities
         private Vector3 _wanderTarget;
         private ulong _nextWanderTime = 0;
         private double _milkCooldown = 0;
+        private readonly SteeringUtil.StuckDetector _stuckDetector = new();
 
         public override void _Ready()
         {
@@ -85,6 +86,11 @@ namespace HiepSiVeVuon.Entities
             };
 
             bool wantsToMove = desiredDir != Vector3.Zero;
+            // Neu gan nhu khong nhuc nhich duoc trong 1 khoang thoi gian du dang "muon di" (bi
+            // hang rao/cong trinh/NPC khac chan), tu dong lach sang huong khac 1 chut - xem
+            // SteeringUtil.StuckDetector.
+            desiredDir = _stuckDetector.ApplyEscape(desiredDir, GlobalPosition, wantsToMove, dt);
+            wantsToMove = desiredDir != Vector3.Zero;
             if (wantsToMove)
                 _facing = SteeringUtil.SmoothTurn(_facing, desiredDir, TurnSpeed * dt);
 

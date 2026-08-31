@@ -41,6 +41,8 @@ namespace HiepSiVeVuon.Entities
         private bool _atPoint = false;
         private double _pauseLeft = 0;
 
+        private readonly HiepSiVeVuon.Core.SteeringUtil.StuckDetector _stuckDetector = new();
+
         public override void _Ready()
         {
             base._Ready();
@@ -76,6 +78,8 @@ namespace HiepSiVeVuon.Entities
             var (desiredDir, targetSpeed) = _phase == DayPhase.Patrol ? DoPatrol(dt) : (Vector3.Zero, 0f);
 
             bool wantsToMove = desiredDir != Vector3.Zero;
+            desiredDir = _stuckDetector.ApplyEscape(desiredDir, GlobalPosition, wantsToMove, dt);
+            wantsToMove = desiredDir != Vector3.Zero;
             if (wantsToMove)
                 _facing = SteeringUtil.SmoothTurn(_facing, desiredDir, TurnSpeed * dt);
 
