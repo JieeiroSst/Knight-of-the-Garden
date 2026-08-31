@@ -21,10 +21,10 @@ namespace HiepSiVeVuon.UI
         private static readonly Vector2 BarnPos2D = new(-482, 250);
         private static readonly Vector2 CowPasturePos2D = new(-820, -250);
         private static readonly Vector2 CowherdHousePos2D = new(-1100, -250);
-        private static readonly Vector2 HorseStablePos2D = new(-820, -650);
-        private static readonly Vector2 StablehandHousePos2D = new(-1100, -650);
-        private static readonly Vector2 ChickenCoopPos2D = new(-820, -990);
-        private static readonly Vector2 PoultryKeeperHousePos2D = new(-1100, -990);
+        private static readonly Vector2 HorseStablePos2D = new(-820, -724);
+        private static readonly Vector2 StablehandHousePos2D = new(-1100, -724);
+        private static readonly Vector2 ChickenCoopPos2D = new(-820, -1186);
+        private static readonly Vector2 PoultryKeeperHousePos2D = new(-1100, -1186);
         private static readonly Vector2 VillageAnchor2D = new(9250, 3750);
         private static readonly Vector2 TownHallPos2D = new(9250, 3570);
 
@@ -43,9 +43,9 @@ namespace HiepSiVeVuon.UI
 
         // Khu chan nuoi phu (cuu/heo) + vuon cay/vuon nho + nha nguoi lam vuon (xem
         // Main.SheepPigPastureCenter/OrchardCenter/VineyardCenter/EstateWorkerHousePos).
-        private static readonly Vector2 SheepPigPos2D = new(-820, -1330);
-        private static readonly Vector2 OrchardVineyardPos2D = new(-810, -1330);
-        private static readonly Vector2 EstateWorkerHousePos2D = new(-1100, -1330);
+        private static readonly Vector2 SheepPigPos2D = new(-820, -1636);
+        private static readonly Vector2 OrchardVineyardPos2D = new(-810, -1636);
+        private static readonly Vector2 EstateWorkerHousePos2D = new(-1100, -1636);
 
         // Vung toa do the gioi hien thi tren ban do (bao ca nong trai lan thi tran + le).
         // WorldMinX mo rong tu -2200 -> -3000 de bao ca canh dong huong duong o -2552 (xem

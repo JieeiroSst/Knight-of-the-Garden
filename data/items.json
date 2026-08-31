@@ -208,6 +208,36 @@
     "SellPrice": 15,
     "IconPath": "res://assets/crops/wheat.png"
   },
+  {
+    "Id": "carrot",
+    "Name": "Ca Rot",
+    "Description": "Ca rot tuoi, gion ngot.",
+    "Type": "Crop",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 18,
+    "IconPath": "res://assets/crops/tomato.png"
+  },
+  {
+    "Id": "potato",
+    "Name": "Khoai Tay",
+    "Description": "Khoai tay dao len tu dat.",
+    "Type": "Crop",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 16,
+    "IconPath": "res://assets/crops/pumpkin.png"
+  },
+  {
+    "Id": "cabbage",
+    "Name": "Bap Cai",
+    "Description": "Bap cai xanh muot, la cuon chat.",
+    "Type": "Crop",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 22,
+    "IconPath": "res://assets/crops/wheat.png"
+  },
 
   {
     "Id": "pumpkin_seed",
@@ -247,5 +277,44 @@
     "IconPath": "res://assets/crops/wheat.png",
     "GrowsIntoCropId": "wheat",
     "GrowDays": 2
+  },
+  {
+    "Id": "carrot_seed",
+    "Name": "Hat Ca Rot",
+    "Description": "Trong sau 2 ngay se ra ca rot.",
+    "Type": "Seed",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 3,
+    "BuyPrice": 9,
+    "IconPath": "res://assets/crops/tomato.png",
+    "GrowsIntoCropId": "carrot",
+    "GrowDays": 2
+  },
+  {
+    "Id": "potato_seed",
+    "Name": "Hat Khoai Tay",
+    "Description": "Trong sau 3 ngay se ra khoai tay.",
+    "Type": "Seed",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 3,
+    "BuyPrice": 10,
+    "IconPath": "res://assets/crops/pumpkin.png",
+    "GrowsIntoCropId": "potato",
+    "GrowDays": 3
+  },
+  {
+    "Id": "cabbage_seed",
+    "Name": "Hat Bap Cai",
+    "Description": "Trong sau 3 ngay se ra bap cai.",
+    "Type": "Seed",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 4,
+    "BuyPrice": 11,
+    "IconPath": "res://assets/crops/wheat.png",
+    "GrowsIntoCropId": "cabbage",
+    "GrowDays": 3
   }
 ]

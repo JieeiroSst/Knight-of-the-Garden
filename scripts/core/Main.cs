@@ -137,6 +137,7 @@ namespace HiepSiVeVuon.Core
         private PackedScene _shovelScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/shovel.glb");
         private PackedScene _flowerScene = GD.Load<PackedScene>("res://assets3d/kenney/nature/flower_yellowA.glb");
         private PackedScene _herbBushScene = GD.Load<PackedScene>("res://assets3d/kenney/nature/plant_bush.glb");
+        private PackedScene _grassClumpScene = GD.Load<PackedScene>("res://assets3d/kenney/nature/grass_large.glb");
         private PackedScene _scheduledFarmNpcScene = GD.Load<PackedScene>("res://scenes/ScheduledFarmNpc.tscn");
 
         private Node3D _world;
@@ -218,6 +219,11 @@ namespace HiepSiVeVuon.Core
                 BuildToolAndWoodpileArea();
                 BuildHerbGarden();
                 BuildWorkerDormsAndStaff();
+                BuildBigVineyard();
+                BuildEstateLandscaping();
+                BuildFarmOutbuildings();
+                BuildExtraPastures();
+                BuildExtraSheepPens();
             }
             catch (System.Exception e)
             {
@@ -1247,19 +1253,32 @@ namespace HiepSiVeVuon.Core
             }
         }
 
+        // Ruong chia thanh 10 KHU rieng biet ("tang len 10 khu" theo dung yeu cau) - moi khu la
+        // 1 giai cot doc (het chieu sau 6 hang) chuyen trong 1 LOAI CAY rieng, dung y tuong "chia
+        // dat thanh cac khu trong rieng biet" trong yeu cau truoc (Wheat/Carrot/Potato/Cabbage...).
+        // Chia theo cot (khong doi vi tri/kich thuoc hang rao/cong ruong hien co - AN TOAN, vi
+        // rat nhieu he thong khac (tuong da 10 hecta, kenh nuoc, cong lang...) da dinh vi theo
+        // toa do field hien tai, doi kich thuoc field se lam sai lech hang loat).
+        private static readonly string[] FieldZoneSeeds =
+        {
+            "pumpkin_seed", "tomato_seed", "wheat_seed", "carrot_seed", "potato_seed",
+            "cabbage_seed", "pumpkin_seed", "tomato_seed", "wheat_seed", "carrot_seed",
+        };
+        private const int FieldZoneCount = 10;
+
         private void BuildFarm()
         {
-            // Luoi ruong 6x6 ngay truoc nha nong dan (kieu Stardew Valley)
+            // Luoi ruong 12x6 ngay truoc nha nong dan (kieu Stardew Valley)
             for (int gx = 0; gx < FarmGridW; gx++)
             {
+                int zone = gx * FieldZoneCount / FarmGridW;
                 for (int gz = 0; gz < FarmGridH; gz++)
                 {
                     var plot = _farmScene.Instantiate<FarmPlot>();
                     plot.GridX = gx;
                     plot.GridY = gz;
                     plot.Position = FarmOrigin + new Vector3(gx * FarmSpacing, 0, gz * FarmSpacing);
-                    // Xen ke loai giong mac dinh
-                    plot.DefaultSeedId = (gx + gz) % 2 == 0 ? "pumpkin_seed" : "tomato_seed";
+                    plot.DefaultSeedId = FieldZoneSeeds[zone];
                     // Loai dat: phan bo CO DINH theo mau tren luoi (khong ngau nhien, giu nguyen
                     // moi lan tai lai) - da so binh thuong, xen ke cac loai dac biet (theo dung
                     // yeu cau "chia dat thanh nhieu loai"). Xem FarmPlot.SoilType.
@@ -1274,6 +1293,46 @@ namespace HiepSiVeVuon.Core
                     };
                     _world.AddChild(plot);
                 }
+            }
+
+            AddFieldZoneMarkers();
+        }
+
+        // 1 bien go nho o dau moi khu (canh Bac cua ruong), ghi ten loai cay trong khu do, cho
+        // nguoi choi de nhan biet 10 khu rieng biet.
+        private void AddFieldZoneMarkers()
+        {
+            var postMat = GetCachedMaterial(new Color(0.32f, 0.22f, 0.12f), 1f);
+            for (int zone = 0; zone < FieldZoneCount; zone++)
+            {
+                // Tim cot Bac nhat (gz=0) thuoc khu nay de dat bien.
+                int gx = -1;
+                for (int x = 0; x < FarmGridW; x++)
+                {
+                    if (x * FieldZoneCount / FarmGridW == zone) { gx = x; break; }
+                }
+                if (gx < 0) continue;
+
+                var markerPos = FarmOrigin + new Vector3(gx * FarmSpacing, 0, -FarmSpacing * 0.6f);
+                _world.AddChild(new MeshInstance3D
+                {
+                    Mesh = new CylinderMesh { TopRadius = 2.2f, BottomRadius = 3f, Height = 30f },
+                    Position = markerPos + Vector3.Up * 15f,
+                    MaterialOverride = postMat
+                });
+                var seedDef = ItemDatabase.Instance?.GetItem(FieldZoneSeeds[zone]);
+                string cropName = seedDef != null ? seedDef.Name : FieldZoneSeeds[zone];
+                var label = new Label3D
+                {
+                    Text = cropName,
+                    Position = markerPos + Vector3.Up * 32f,
+                    Billboard = BaseMaterial3D.BillboardModeEnum.Enabled,
+                    FontSize = 28,
+                    OutlineSize = 6,
+                    PixelSize = 0.12f,
+                    Modulate = new Color(1f, 0.95f, 0.8f)
+                };
+                _world.AddChild(label);
             }
         }
 
@@ -1295,7 +1354,7 @@ namespace HiepSiVeVuon.Core
             merchant.NpcId = "merchant";
             merchant.NpcName = "Thuong Nhan";
             merchant.QuestToGive = "q_first_harvest";
-            merchant.ShopItems = new[] { "pumpkin_seed", "tomato_seed", "wheat_seed", "potion" };
+            merchant.ShopItems = new[] { "pumpkin_seed", "tomato_seed", "wheat_seed", "carrot_seed", "potato_seed", "cabbage_seed", "potion" };
             merchant.DialogueLow = new[] { "Mua gi khong? Hat giong tot day!" };
             merchant.DialogueMid = new[] { "Khach quen roi! Xem hang di." };
             merchant.DialogueHigh = new[] { "Ban tot, ta se de gia re cho cau." };
@@ -1544,7 +1603,7 @@ namespace HiepSiVeVuon.Core
         // chong lan. Bo (Quaternius Farm Animal Pack, CC0) tu do di lai trong hang rao va tu
         // dong den mang an luc 12h trua/16h chieu theo dong ho THAT (xem Cow.cs).
         private static readonly Vector3 CowPastureCenter = new(-820, 0, -250);
-        private const float CowPastureHalf = 160f;
+        private const float CowPastureHalf = 192f; // tang 20% (160 -> 192)
 
         private void BuildCowPasture()
         {
@@ -1558,8 +1617,8 @@ namespace HiepSiVeVuon.Core
             AddFenceLine(new Vector3(minX, 0, minZ), new Vector3(minX, 0, maxZ), _fenceScene); // tay
             AddFenceLine(new Vector3(maxX, 0, minZ), new Vector3(maxX, 0, maxZ), _fenceScene); // dong
             // Nam - chua cong o giua
-            AddFenceLine(new Vector3(minX, 0, maxZ), new Vector3(gateX - 20f, 0, maxZ), _fenceScene);
-            AddFenceLine(new Vector3(gateX + 20f, 0, maxZ), new Vector3(maxX, 0, maxZ), _fenceScene);
+            AddFenceLine(new Vector3(minX, 0, maxZ), new Vector3(gateX - 22f, 0, maxZ), _fenceScene);
+            AddFenceLine(new Vector3(gateX + 22f, 0, maxZ), new Vector3(maxX, 0, maxZ), _fenceScene);
             AddFencePost(new Vector3(minX, 0, minZ));
             AddFencePost(new Vector3(maxX, 0, minZ));
             AddFencePost(new Vector3(minX, 0, maxZ));
@@ -1572,14 +1631,16 @@ namespace HiepSiVeVuon.Core
             AddStreetLamp(new Vector3(gateX - 35, 0, maxZ), 90f);
             AddStreetLamp(new Vector3(gateX + 35, 0, maxZ), -90f);
 
-            Vector3[] cowStarts =
+            // 12 con (tang tu 4 theo yeu cau) - rai deu theo vong tron trong hang rao, ban kinh
+            // nho hon PastureHalfExtent de khong dung sat hang rao.
+            var cowRng = new RandomNumberGenerator { Seed = 9700 };
+            for (int i = 0; i < 12; i++)
             {
-                CowPastureCenter + new Vector3(-70, 0, -60),
-                CowPastureCenter + new Vector3(70, 0, -50),
-                CowPastureCenter + new Vector3(-50, 0, 70),
-                CowPastureCenter + new Vector3(60, 0, 60),
-            };
-            foreach (var pos in cowStarts) SpawnCow(pos, isAdult: true);
+                float angle = Mathf.Tau * i / 12f;
+                float radius = cowRng.RandfRange(50f, CowPastureHalf - 40f);
+                var pos = CowPastureCenter + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
+                SpawnCow(pos, isAdult: true);
+            }
         }
 
         // Nha o cho nguoi cham bo (SmallBarn - cung model/he thong cua+noi that 2 tang da dung
@@ -1610,8 +1671,10 @@ namespace HiepSiVeVuon.Core
         // Chuong ngua: 1 khu rieng co hang rao rieng, phia bac chuong bo (cach ~80 don vi de
         // khong chong lan). Ngua (Quaternius Farm Animal Pack, CC0) tu do di lai trong hang rao
         // va tu dong den mang an luc 12h trua/16h chieu theo dong ho THAT (xem Horse.cs).
-        private static readonly Vector3 HorseStableCenter = new(-820, 0, -650);
-        private const float HorseStableHalf = 160f;
+        // Z = -724 (lui them 74 so voi -650) - sau khi CowPastureHalf/HorseStableHalf tang 20%
+        // (160->192), khoang cach toi chuong bo bi thu hep. Lui de khoi phuc ~90 don vi.
+        private static readonly Vector3 HorseStableCenter = new(-820, 0, -724);
+        private const float HorseStableHalf = 192f; // tang 20% (160 -> 192)
 
         private void BuildHorseStable()
         {
@@ -1625,8 +1688,8 @@ namespace HiepSiVeVuon.Core
             AddFenceLine(new Vector3(minX, 0, minZ), new Vector3(minX, 0, maxZ), _fenceScene); // tay
             AddFenceLine(new Vector3(maxX, 0, minZ), new Vector3(maxX, 0, maxZ), _fenceScene); // dong
             // Nam - chua cong o giua
-            AddFenceLine(new Vector3(minX, 0, maxZ), new Vector3(gateX - 20f, 0, maxZ), _fenceScene);
-            AddFenceLine(new Vector3(gateX + 20f, 0, maxZ), new Vector3(maxX, 0, maxZ), _fenceScene);
+            AddFenceLine(new Vector3(minX, 0, maxZ), new Vector3(gateX - 22f, 0, maxZ), _fenceScene);
+            AddFenceLine(new Vector3(gateX + 22f, 0, maxZ), new Vector3(maxX, 0, maxZ), _fenceScene);
             AddFencePost(new Vector3(minX, 0, minZ));
             AddFencePost(new Vector3(maxX, 0, minZ));
             AddFencePost(new Vector3(minX, 0, maxZ));
@@ -1658,7 +1721,7 @@ namespace HiepSiVeVuon.Core
 
         // Nha o cho nguoi cham ngua (SmallBarn - cung he thong cua+noi that 2 tang) + NPC AI di
         // lam theo gio hanh chinh that (6h-18h) - xem StablehandNpc.cs.
-        private static readonly Vector3 StablehandHousePos = new(-1100, 0, -650);
+        private static readonly Vector3 StablehandHousePos = new(-1100, 0, -724);
 
         private void BuildStablehand()
         {
@@ -1682,8 +1745,14 @@ namespace HiepSiVeVuon.Core
         // tu do di lai trong hang rao va tu dong den cho thuc an luc 12h trua/16h chieu theo dong
         // ho THAT (xem Chicken.cs). Pham vi nho hon bo/ngua vi ga la con vat nho, khong can san
         // rong.
-        private static readonly Vector3 ChickenCoopCenter = new(-820, 0, -990);
-        private const float ChickenCoopHalf = 100f;
+        // Z = -1050 (lui them 60 don vi ve phia bac so voi -990 truoc day) - sau khi chuong ga
+        // tang kich thuoc 50% (ChickenCoopHalf 100->150), khoang cach toi chuong ngua bi thu hep
+        // tu 80 xuong 30 don vi. Lui vi tri de khoi phuc khoang cach ~90 don vi, du rong de di
+        // chuyen/tiep can cong.
+        // Z = -1186 (lui them tu -1050) - khoang cach toi chuong ngua (moi lui ve -724, ban kinh
+        // moi 192) can duy tri ~90 don vi sau khi ChickenCoopHalf tang 20% (150->180).
+        private static readonly Vector3 ChickenCoopCenter = new(-820, 0, -1186);
+        private const float ChickenCoopHalf = 180f; // tang 50% (100->150) roi tang tiep 20% (150 -> 180)
 
         private void BuildChickenCoop()
         {
@@ -1697,8 +1766,8 @@ namespace HiepSiVeVuon.Core
             AddFenceLine(new Vector3(minX, 0, minZ), new Vector3(minX, 0, maxZ), _fenceScene); // tay
             AddFenceLine(new Vector3(maxX, 0, minZ), new Vector3(maxX, 0, maxZ), _fenceScene); // dong
             // Nam - chua cong o giua
-            AddFenceLine(new Vector3(minX, 0, maxZ), new Vector3(gateX - 20f, 0, maxZ), _fenceScene);
-            AddFenceLine(new Vector3(gateX + 20f, 0, maxZ), new Vector3(maxX, 0, maxZ), _fenceScene);
+            AddFenceLine(new Vector3(minX, 0, maxZ), new Vector3(gateX - 22f, 0, maxZ), _fenceScene);
+            AddFenceLine(new Vector3(gateX + 22f, 0, maxZ), new Vector3(maxX, 0, maxZ), _fenceScene);
             AddFencePost(new Vector3(minX, 0, minZ));
             AddFencePost(new Vector3(maxX, 0, minZ));
             AddFencePost(new Vector3(minX, 0, maxZ));
@@ -1713,9 +1782,10 @@ namespace HiepSiVeVuon.Core
             AddStreetLamp(new Vector3(gateX - 35, 0, maxZ), 90f);
             AddStreetLamp(new Vector3(gateX + 35, 0, maxZ), -90f);
 
+            // 30 con (tang tu 10 theo yeu cau).
             var rng = new RandomNumberGenerator();
             rng.Randomize();
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 30; i++)
             {
                 float angle = rng.RandfRange(0f, Mathf.Tau);
                 float radius = rng.RandfRange(20f, ChickenCoopHalf - 25f);
@@ -1724,14 +1794,17 @@ namespace HiepSiVeVuon.Core
             }
         }
 
-        private void SpawnChicken(Vector3 pos, Vector3 feedPos)
+        // homeCenterOverride/pastureHalfOverride: giong SpawnCow o tren - cho phep dung ham nay
+        // cho CAC CHUONG GA KHAC (xem BuildExtraPastures), tranh loi ga hard-code "nha" ve chuong
+        // ga GOC o xa (gay chuong moi nhin "trong khong co con nao" du da sinh du so luong).
+        private void SpawnChicken(Vector3 pos, Vector3 feedPos, Vector3? homeCenterOverride = null, float? pastureHalfOverride = null)
         {
             if (_chickenScene == null) { GD.PushError("Khong tai duoc Chicken.tscn"); return; }
             var chicken = _chickenScene.Instantiate<Chicken>();
             chicken.Position = pos;
             chicken.FeedPosition = feedPos;
-            chicken.HomeCenter = ChickenCoopCenter;
-            chicken.PastureHalfExtent = ChickenCoopHalf - 20f;
+            chicken.HomeCenter = homeCenterOverride ?? ChickenCoopCenter;
+            chicken.PastureHalfExtent = (pastureHalfOverride ?? ChickenCoopHalf) - 20f;
             _world.AddChild(chicken);
         }
 
@@ -1767,7 +1840,7 @@ namespace HiepSiVeVuon.Core
 
         // Nha o cho nguoi cham ga (SmallBarn - cung he thong cua+noi that 2 tang) + NPC AI di
         // lam theo gio hanh chinh that (6h-18h) - xem PoultryKeeperNpc.cs.
-        private static readonly Vector3 PoultryKeeperHousePos = new(-1100, 0, -990);
+        private static readonly Vector3 PoultryKeeperHousePos = new(-1100, 0, -1186);
 
         private void BuildPoultryKeeper()
         {
@@ -2235,8 +2308,12 @@ namespace HiepSiVeVuon.Core
 
         // Chuong cuu + heo dung chung (khu chan nuoi phu), tiep noi cum chuong bo/ngua/ga ve
         // phia nam (Z am hon), cach chuong ga ~110 don vi de khong chong lan.
-        private static readonly Vector3 SheepPigPastureCenter = new(-820, 0, -1330);
-        private const float SheepPigPastureHalf = 150f;
+        // Z = -1440 (lui them 110 don vi so voi -1330 truoc day) - dam bao khoang cach toi
+        // chuong ga (moi lui ve -1050, ban kinh 150) van ~90 don vi, khong bi ep sat.
+        // Z = -1636 (lui them tu -1440) - khoang cach toi chuong ga (moi lui ve -1186, ban kinh
+        // moi 180) can duy tri ~90 don vi sau khi SheepPigPastureHalf tang 20% (150->180).
+        private static readonly Vector3 SheepPigPastureCenter = new(-820, 0, -1636);
+        private const float SheepPigPastureHalf = 180f; // tang 20% (150 -> 180)
 
         private void BuildSheepPigPasture()
         {
@@ -2249,8 +2326,8 @@ namespace HiepSiVeVuon.Core
             AddFenceLine(new Vector3(minX, 0, minZ), new Vector3(maxX, 0, minZ), _fenceScene);
             AddFenceLine(new Vector3(minX, 0, minZ), new Vector3(minX, 0, maxZ), _fenceScene);
             AddFenceLine(new Vector3(maxX, 0, minZ), new Vector3(maxX, 0, maxZ), _fenceScene);
-            AddFenceLine(new Vector3(minX, 0, maxZ), new Vector3(gateX - 20f, 0, maxZ), _fenceScene);
-            AddFenceLine(new Vector3(gateX + 20f, 0, maxZ), new Vector3(maxX, 0, maxZ), _fenceScene);
+            AddFenceLine(new Vector3(minX, 0, maxZ), new Vector3(gateX - 22f, 0, maxZ), _fenceScene);
+            AddFenceLine(new Vector3(gateX + 22f, 0, maxZ), new Vector3(maxX, 0, maxZ), _fenceScene);
             AddFencePost(new Vector3(minX, 0, minZ));
             AddFencePost(new Vector3(maxX, 0, minZ));
             AddFencePost(new Vector3(minX, 0, maxZ));
@@ -2260,38 +2337,36 @@ namespace HiepSiVeVuon.Core
             AddStreetLamp(new Vector3(gateX - 35, 0, maxZ), 90f);
             AddStreetLamp(new Vector3(gateX + 35, 0, maxZ), -90f);
 
-            Vector3[] starts =
+            // 20 cuu + 10 heo (tang tu 2+2 theo yeu cau) - rai deu vong tron trong hang rao.
+            var spRng = new RandomNumberGenerator { Seed = 9701 };
+            for (int i = 0; i < 20; i++)
             {
-                SheepPigPastureCenter + new Vector3(-80, 0, -70), SheepPigPastureCenter + new Vector3(70, 0, -60),
-                SheepPigPastureCenter + new Vector3(-60, 0, 60), SheepPigPastureCenter + new Vector3(80, 0, 65),
-            };
-            for (int i = 0; i < starts.Length; i++)
+                float angle = Mathf.Tau * i / 20f;
+                float radius = spRng.RandfRange(40f, SheepPigPastureHalf - 35f);
+                var sheep = _sheepScene.Instantiate<Sheep>();
+                sheep.Position = SheepPigPastureCenter + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
+                sheep.TroughPosition = SheepPigPastureCenter;
+                sheep.HomeCenter = SheepPigPastureCenter;
+                sheep.PastureHalfExtent = SheepPigPastureHalf - 35f;
+                _world.AddChild(sheep);
+            }
+            for (int i = 0; i < 10; i++)
             {
-                if (i % 2 == 0)
-                {
-                    var sheep = _sheepScene.Instantiate<Sheep>();
-                    sheep.Position = starts[i];
-                    sheep.TroughPosition = SheepPigPastureCenter;
-                    sheep.HomeCenter = SheepPigPastureCenter;
-                    sheep.PastureHalfExtent = SheepPigPastureHalf - 35f;
-                    _world.AddChild(sheep);
-                }
-                else
-                {
-                    var pig = _pigScene.Instantiate<Pig>();
-                    pig.Position = starts[i];
-                    pig.TroughPosition = SheepPigPastureCenter;
-                    pig.HomeCenter = SheepPigPastureCenter;
-                    pig.PastureHalfExtent = SheepPigPastureHalf - 35f;
-                    _world.AddChild(pig);
-                }
+                float angle = Mathf.Tau * i / 10f + 0.3f;
+                float radius = spRng.RandfRange(30f, SheepPigPastureHalf - 45f);
+                var pig = _pigScene.Instantiate<Pig>();
+                pig.Position = SheepPigPastureCenter + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
+                pig.TroughPosition = SheepPigPastureCenter;
+                pig.HomeCenter = SheepPigPastureCenter;
+                pig.PastureHalfExtent = SheepPigPastureHalf - 35f;
+                _world.AddChild(pig);
             }
         }
 
         // Vuon cay an qua: 5 loai (tao/le/anh dao/dao/hat de) trong theo luoi thua, moi cay la 1
         // than + 1 tan la hinh cau + vai qua nho mau rieng - khong tim duoc model cay an qua CC0
         // phu hop (da tim ky) nen dung primitive, giong cach lam mang an/cot hang rao truoc do.
-        private static readonly Vector3 OrchardCenter = new(-460, 0, -1330);
+        private static readonly Vector3 OrchardCenter = new(-460, 0, -1636);
         private static readonly (string name, Color fruitColor)[] FruitKinds =
         {
             ("Tao", new Color(0.75f, 0.12f, 0.1f)),
@@ -2358,7 +2433,7 @@ namespace HiepSiVeVuon.Core
 
         // Vuon nho ("dac trung Phap") - rai theo hang, dung model Grapes (Kenney, CC0) tren coc
         // go don gian lam gian nho.
-        private static readonly Vector3 VineyardCenter = new(-1160, 0, -1330);
+        private static readonly Vector3 VineyardCenter = new(-1160, 0, -1636);
 
         private void BuildVineyard()
         {
@@ -2441,7 +2516,7 @@ namespace HiepSiVeVuon.Core
 
         // Nha o + NPC cho "nguoi lam vuon/trang trai phu" - quan ly ca cuu/heo/vuon cay/vuon nho/
         // to ong, san xuat xoay vong nhieu loai san pham (len/tao/nho ep ruou/mat ong/sap ong).
-        private static readonly Vector3 EstateWorkerHousePos = new(-1100, 0, -1330);
+        private static readonly Vector3 EstateWorkerHousePos = new(-1100, 0, -1636);
 
         private void BuildEstateWorker()
         {
@@ -2557,8 +2632,8 @@ namespace HiepSiVeVuon.Core
         // Gardener). O chung 2 nha tro cong nhan (10 nguoi/nha, tiep noi hang nha nhan vien tai
         // X=-1100 da co - CowherdHousePos/StablehandHousePos/PoultryKeeperHousePos/
         // EstateWorkerHousePos) thay vi 20 can nha rieng.
-        private static readonly Vector3 WorkerDorm1Pos = new(-1100, 0, -1650);
-        private static readonly Vector3 WorkerDorm2Pos = new(-1100, 0, -1970);
+        private static readonly Vector3 WorkerDorm1Pos = new(-1100, 0, -1846);
+        private static readonly Vector3 WorkerDorm2Pos = new(-1100, 0, -2166);
 
         private void BuildWorkerDormsAndStaff()
         {
@@ -2627,17 +2702,673 @@ namespace HiepSiVeVuon.Core
             return AddBuildingEntrance(dormPos, 90f, 100f, 70f, RoomKind.Village);
         }
 
-        private void SpawnCow(Vector3 pos, bool isAdult)
+        // Lay Mesh THAT tu ben trong 1 PackedScene (vd model .glb) de dung voi MultiMeshInstance3D
+        // - MultiMesh can 1 Mesh resource, khong nhan PackedScene truc tiep. Dung cho cac vat the
+        // SO LUONG CUC LON (vd hang ngan cay nho vuon nho) - CHI 1 draw call cho ca ngan ban sao,
+        // KHONG tao rieng tung Node3D/PackedScene.Instantiate() cho moi ban sao (dung theo yeu
+        // cau "khong spawn tat ca thanh Actor/GameObject rieng" - tranh dong loat tao qua nhieu
+        // Node/Resource cung luc, dung nguyen nhan gay crash da gap va sua truoc do trong phien
+        // lam viec nay).
+        private static Mesh ExtractMesh(PackedScene scene)
+        {
+            if (scene == null) return null;
+            var inst = scene.Instantiate<Node3D>();
+            var mesh = FindFirstMesh(inst);
+            inst.QueueFree();
+            return mesh;
+        }
+
+        private static Mesh FindFirstMesh(Node root)
+        {
+            if (root is MeshInstance3D mi && mi.Mesh != null) return mi.Mesh;
+            foreach (Node child in root.GetChildren())
+            {
+                var found = FindFirstMesh(child);
+                if (found != null) return found;
+            }
+            return null;
+        }
+
+        // Tao 1 MultiMeshInstance3D chua N ban sao cua 1 mesh, moi ban sao co transform rieng
+        // (vi tri/xoay/scale) - dung cho vat trang tri SO LUONG LON (khong can va cham/AI rieng).
+        private MultiMeshInstance3D AddMultiMeshScatter(Mesh mesh, List<Transform3D> transforms, Material overrideMat = null)
+        {
+            if (mesh == null || transforms.Count == 0) return null;
+            var mm = new MultiMesh
+            {
+                TransformFormat = MultiMesh.TransformFormatEnum.Transform3D,
+                Mesh = mesh,
+                InstanceCount = transforms.Count
+            };
+            for (int i = 0; i < transforms.Count; i++)
+                mm.SetInstanceTransform(i, transforms[i]);
+
+            var node = new MultiMeshInstance3D { Multimesh = mm };
+            if (overrideMat != null) node.MaterialOverride = overrideMat;
+            _world.AddChild(node);
+            return node;
+        }
+
+        // Vuon nho lon (~1.1 hecta, 1980 goc nho + 720 cot go) - dat o khu dat trong phia NAM
+        // hang rao ruong (chua co gi khac o do), vi day la khu vuc RONG duy nhat con lai trong
+        // pham vi tuong da 10 hecta khong dung cham voi bat ky cong trinh/khu vuc nao da xay
+        // (nong trai, chuong trai, vuon nho nho/vuon cay cu, canh dong huong duong, duong lang).
+        // Dung MultiMeshInstance3D (1 draw call cho toan bo hang ngan ban sao) THAY VI tao rieng
+        // tung Node3D - dung theo yeu cau "khong spawn tat ca thanh Actor/GameObject rieng".
+        private static readonly Vector3 BigVineyardCenter = new(-400, 0, 2132);
+        private const int VineyardRows = 60;
+        private const int VineyardVinesPerRow = 33;
+        private const float VineyardRowSpacing = 45f;
+        private const float VineyardVineSpacing = 50f;
+        private const int VineyardPostsPerRow = 12;
+
+        private void BuildBigVineyard()
+        {
+            var vineMesh = ExtractMesh(_grapesScene);
+            var postMesh = new CylinderMesh { TopRadius = 2f, BottomRadius = 2.4f, Height = 26f };
+            var postMat = GetCachedMaterial(new Color(0.3f, 0.2f, 0.1f), 1f);
+
+            var rng = new RandomNumberGenerator { Seed = 9500 };
+            float halfRowSpan = (VineyardRows - 1) * VineyardRowSpacing / 2f;
+            float halfVineSpan = (VineyardVinesPerRow - 1) * VineyardVineSpacing / 2f;
+
+            var vineTransforms = new List<Transform3D>(VineyardRows * VineyardVinesPerRow);
+            var postTransforms = new List<Transform3D>(VineyardRows * VineyardPostsPerRow);
+
+            for (int row = 0; row < VineyardRows; row++)
+            {
+                float z = row * VineyardRowSpacing - halfRowSpan;
+                for (int v = 0; v < VineyardVinesPerRow; v++)
+                {
+                    float x = v * VineyardVineSpacing - halfVineSpan;
+                    var pos = BigVineyardCenter + new Vector3(x, 16f, z);
+                    var basis = Basis.Identity.Scaled(Vector3.One * rng.RandfRange(4.5f, 6f))
+                        .Rotated(Vector3.Up, rng.RandfRange(0f, Mathf.Tau));
+                    vineTransforms.Add(new Transform3D(basis, pos));
+                }
+                for (int p = 0; p < VineyardPostsPerRow; p++)
+                {
+                    float x = p * (VineyardVinesPerRow * VineyardVineSpacing / VineyardPostsPerRow) - halfVineSpan;
+                    var pos = BigVineyardCenter + new Vector3(x, 13f, z);
+                    postTransforms.Add(new Transform3D(Basis.Identity, pos));
+                }
+            }
+
+            AddMultiMeshScatter(vineMesh, vineTransforms);
+            AddMultiMeshScatter(postMesh, postTransforms, postMat);
+
+            // Va cham dac 1 khoi hop bao quanh CA khu vuon nho (khong va cham tung goc/cot rieng
+            // - MultiMesh khong ho tro va cham rieng le) de nguoi choi khong "lot" xuyen qua toan
+            // bo khu vuon nhu khong co gi, nhung van co the di lai giua cac hang (chi chan RIA
+            // ngoai cung).
+            var edgeThickness = 20f;
+            float halfX = halfVineSpan + 30f, halfZ = halfRowSpan + 20f;
+            AddVineyardBoundaryWall(BigVineyardCenter + new Vector3(0, 0, -halfZ), new Vector3(halfX * 2, 24f, edgeThickness));
+            AddVineyardBoundaryWall(BigVineyardCenter + new Vector3(0, 0, halfZ), new Vector3(halfX * 2, 24f, edgeThickness));
+            AddVineyardBoundaryWall(BigVineyardCenter + new Vector3(-halfX, 0, 0), new Vector3(edgeThickness, 24f, halfZ * 2));
+            AddVineyardBoundaryWall(BigVineyardCenter + new Vector3(halfX, 0, 0), new Vector3(edgeThickness, 24f, halfZ * 2));
+        }
+
+        private void AddVineyardBoundaryWall(Vector3 pos, Vector3 size)
+        {
+            var body = new StaticBody3D { Position = pos + Vector3.Up * (size.Y / 2f) };
+            body.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = size } });
+            _world.AddChild(body);
+        }
+
+        // Cay canh + cay ven duong xung quanh trang trai (80-120 cay lon, con lai qua
+        // MultiMesh): rai ngau nhien trong pham vi tuong da 10 hecta, TRANH cac vung da xay
+        // (nong trai/chuong trai/vuon nho/canh dong huong duong) qua danh sach vung tron loai
+        // tru. Cay lon (so luong vua phai) van la Node3D rieng (can hinh dang/bong do khac
+        // nhau ro net khi lai gan); bui/hoa/co (so luong RAT lon) dung MultiMesh - dung theo
+        // yeu cau "khong spawn tat ca thanh Actor/GameObject rieng".
+        private void BuildEstateLandscaping()
+        {
+            (Vector3 center, float radius)[] avoidZones =
+            {
+                (new Vector3(202, 0, 390), 750f),      // nong trai + ruong + nha kho + gieng/ao
+                (new Vector3(-820, 0, -1160), 1000f),  // chuong trai + nha o + vuon cay/nho cu
+                (new Vector3(-2552, 0, 390), 420f),    // canh dong huong duong
+                (BigVineyardCenter, 1650f),            // vuon nho lon moi
+            };
+            bool IsAvoided(Vector3 p)
+            {
+                foreach (var (c, r) in avoidZones)
+                    if (new Vector2(p.X - c.X, p.Z - c.Z).LengthSquared() < r * r) return true;
+                return false;
+            }
+
+            float minX = FarmWallCenter.X - FarmWallHalfSize + 80f, maxX = FarmWallCenter.X + FarmWallHalfSize - 80f;
+            float minZ = FarmWallCenter.Z - FarmWallHalfSize + 80f, maxZ = FarmWallCenter.Z + FarmWallHalfSize - 80f;
+            var rng = new RandomNumberGenerator { Seed = 9600 };
+
+            Vector3 RandomOpenSpot(RandomNumberGenerator r)
+            {
+                for (int tries = 0; tries < 20; tries++)
+                {
+                    var p = new Vector3(r.RandfRange(minX, maxX), 0, r.RandfRange(minZ, maxZ));
+                    if (!IsAvoided(p)) return p;
+                }
+                return new Vector3(minX, 0, minZ); // du phong (hiem khi toi day)
+            }
+
+            // Cay lon (100 cay, tai su dung 2 model cay co san - maple/birch)
+            for (int i = 0; i < 100; i++)
+            {
+                var pos = RandomOpenSpot(rng);
+                var scene = rng.Randf() < 0.5f ? _treeScene : _treeScene2;
+                if (scene == null) continue;
+                var inst = scene.Instantiate<Node3D>();
+                inst.Position = pos;
+                inst.RotateY(rng.RandfRange(0f, Mathf.Tau));
+                inst.Scale = Vector3.One * rng.RandfRange(34f, 42f);
+                _world.AddChild(inst);
+            }
+
+            // Cay nho, bui, hoa, co - MultiMesh (khong tao Node/collision rieng cho tung cai)
+            var smallTreeMesh = ExtractMesh(_treeScene2 ?? _treeScene);
+            var bushMesh = ExtractMesh(_herbBushScene);
+            var flowerMesh = ExtractMesh(_flowerScene);
+            var grassMesh = ExtractMesh(_grassClumpScene);
+
+            List<Transform3D> ScatterTransforms(int count, float minScale, float maxScale)
+            {
+                var list = new List<Transform3D>(count);
+                for (int i = 0; i < count; i++)
+                {
+                    var pos = RandomOpenSpot(rng);
+                    var basis = Basis.Identity.Scaled(Vector3.One * rng.RandfRange(minScale, maxScale))
+                        .Rotated(Vector3.Up, rng.RandfRange(0f, Mathf.Tau));
+                    list.Add(new Transform3D(basis, pos));
+                }
+                return list;
+            }
+
+            AddMultiMeshScatter(smallTreeMesh, ScatterTransforms(200, 14f, 22f));
+            AddMultiMeshScatter(bushMesh, ScatterTransforms(400, 12f, 17f));
+            AddMultiMeshScatter(flowerMesh, ScatterTransforms(250, 7f, 10f));
+            AddMultiMeshScatter(grassMesh, ScatterTransforms(750, 10f, 15f));
+        }
+
+        // Cac cong trinh phu con lai theo bang yeu cau (nha phu, barn lon #2, kho lua, kho dung
+        // cu, workshop, 2 nha kho nho, lo ren nho, nha may ep nho, ham ruou, 2 nha kinh, 3 choi
+        // nghi, 2 nha ve sinh, gieng #2, 2 be nuoc). Da co san: Nha chinh(1)/Chuong ngua(1)/
+        // Gieng(1)/Barn(1) tu truoc. PHAN LON la cong trinh CHUC NANG/trang tri KHONG can noi
+        // that day du (tranh cong them hang chuc cap phong noi that nua len tren rat nhieu da
+        // dung hom nay) - chi "Nha phu" va "Ham ruou" co phong that su. Dat trong dai dat trong
+        // phia dong hang rao ruong (giua hang rao va cac cao nguyen), chua dung cham gi truoc do.
+        private static readonly Vector3 OutbuildingsAnchor = new(850, 0, 280);
+
+        private void BuildFarmOutbuildings()
+        {
+            var a = OutbuildingsAnchor;
+
+            // Nha phu (co phong noi that that su) - nha o nho thu 2 canh nha chinh.
+            var auxHousePos = a + new Vector3(-60, 0, -80);
+            AddDecor(_smallBarnScene, auxHousePos, 12f, 0f, SmallBarnFootprint);
+            AddBuildingEntrance(auxHousePos, 0f, 80f, 50f, RoomKind.Village);
+
+            // Barn lon #2 - tai su dung model Barn, KHONG lam noi that 1000 mon nhu barn dau
+            // tien (chi la kho chua ngoai, du 1 barn "sieu thi" la qua du roi).
+            AddDecor(_barnScene, a + new Vector3(140, 0, -70), 22f, 90f, BarnFootprint);
+
+            // Kho lua (grain silo) - thap tron cao, dung primitive (khong co model CC0 phu hop).
+            AddSiloPrimitive(a + new Vector3(-160, 0, 20));
+
+            // Kho dung cu + workshop + 2 nha kho nho - deu la nha nho don gian (SmallBarn), khac
+            // mau/vi tri de phan biet.
+            AddDecor(_smallBarnScene, a + new Vector3(-20, 0, 60), 10f, 90f, SmallBarnFootprint);   // kho dung cu
+            AddDecor(_smallBarnScene, a + new Vector3(60, 0, 90), 11f, 0f, SmallBarnFootprint);     // workshop
+            AddDecor(_smallBarnScene, a + new Vector3(220, 0, 40), 9f, 90f, SmallBarnFootprint);    // nha kho nho 1
+            AddDecor(_smallBarnScene, a + new Vector3(220, 0, 140), 9f, 90f, SmallBarnFootprint);   // nha kho nho 2
+
+            // Lo ren nho - khoi da/gach + ong khoi, dung primitive.
+            AddForgePrimitive(a + new Vector3(140, 0, 130));
+
+            // Nha may ep nho + ham ruou (co phong noi that - "hầm rượu" that su co the vao) - dat
+            // gan vuon nho lon o phia nam.
+            var wineryPos = BigVineyardCenter + new Vector3(0, 0, -1500);
+            AddDecor(_smallBarnScene, wineryPos, 14f, 0f, SmallBarnFootprint);
+            AddWinePressPrimitive(wineryPos + new Vector3(60, 0, 0));
+            var cellarPos = wineryPos + new Vector3(-140, 0, 0);
+            AddDecor(_smallBarnScene, cellarPos, 12f, 0f, SmallBarnFootprint);
+            var cellarInterior = AddBuildingEntrance(cellarPos, 0f, 80f, 50f, RoomKind.Village);
+            // Chat vai thung ruou trong ham (theo dung y "ham ruou chua thung ruou").
+            for (int i = 0; i < 6; i++)
+                AddDecor(_barrelScene, cellarInterior + new Vector3((i % 3 - 1) * 40f, 0, (i / 3) * 40f - 20f), 90f, i * 37f);
+
+            // Nha kinh x2 - khung + kinh mau xanh nhat trong suot, dung primitive (khong co model
+            // CC0 phu hop).
+            AddGreenhousePrimitive(a + new Vector3(-260, 0, 100));
+            AddGreenhousePrimitive(a + new Vector3(-260, 0, 200));
+
+            // Choi nghi x3 - 4 cot + mai, dung primitive don gian.
+            AddRestHutPrimitive(a + new Vector3(300, 0, -40));
+            AddRestHutPrimitive(a + new Vector3(-320, 0, -20));
+            AddRestHutPrimitive(BigVineyardCenter + new Vector3(0, 0, -300));
+
+            // Nha ve sinh x2 - khoi hop nho don gian.
+            AddOuthousePrimitive(a + new Vector3(300, 0, 80));
+            AddOuthousePrimitive(a + new Vector3(-60, 0, 180));
+
+            // Gieng #2 (da co 1 gan nha chinh).
+            if (_wellScene != null)
+            {
+                var well2 = _wellScene.Instantiate<Node3D>();
+                well2.Position = a + new Vector3(180, 0, -10);
+                well2.Scale = Vector3.One * 26f;
+                _world.AddChild(well2);
+            }
+
+            // Be nuoc x2 - tru tru kim loai don gian, dung primitive.
+            AddWaterTankPrimitive(a + new Vector3(100, 0, 190));
+            AddWaterTankPrimitive(a + new Vector3(-140, 0, -110));
+        }
+
+        private void AddSiloPrimitive(Vector3 pos)
+        {
+            var mat = GetCachedMaterial(new Color(0.75f, 0.72f, 0.68f), 0.6f);
+            _world.AddChild(new MeshInstance3D
+            {
+                Mesh = new CylinderMesh { TopRadius = 30f, BottomRadius = 30f, Height = 110f },
+                Position = pos + Vector3.Up * 55f,
+                MaterialOverride = mat
+            });
+            _world.AddChild(new MeshInstance3D
+            {
+                Mesh = new SphereMesh { Radius = 30f, Height = 30f },
+                Position = pos + Vector3.Up * 110f,
+                MaterialOverride = mat
+            });
+            var body = new StaticBody3D { Position = pos };
+            body.AddChild(new CollisionShape3D { Shape = new CylinderShape3D { Radius = 30f, Height = 110f }, Position = Vector3.Up * 55f });
+            _world.AddChild(body);
+        }
+
+        private void AddForgePrimitive(Vector3 pos)
+        {
+            _world.AddChild(new MeshInstance3D
+            {
+                Mesh = new BoxMesh { Size = new Vector3(46f, 34f, 40f) },
+                Position = pos + Vector3.Up * 17f,
+                MaterialOverride = GetCachedMaterial(new Color(0.35f, 0.32f, 0.3f), 1f)
+            });
+            _world.AddChild(new MeshInstance3D
+            {
+                Mesh = new CylinderMesh { TopRadius = 6f, BottomRadius = 8f, Height = 50f },
+                Position = pos + Vector3.Up * 60f + Vector3.Back * 12f,
+                MaterialOverride = GetCachedMaterial(new Color(0.3f, 0.15f, 0.1f), 1f)
+            });
+            var body = new StaticBody3D { Position = pos + Vector3.Up * 17f };
+            body.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(46f, 34f, 40f) } });
+            _world.AddChild(body);
+        }
+
+        private void AddWinePressPrimitive(Vector3 pos)
+        {
+            var woodMat = GetCachedMaterial(new Color(0.42f, 0.28f, 0.15f), 0.9f);
+            _world.AddChild(new MeshInstance3D
+            {
+                Mesh = new CylinderMesh { TopRadius = 24f, BottomRadius = 26f, Height = 20f },
+                Position = pos + Vector3.Up * 10f,
+                MaterialOverride = woodMat
+            });
+            _world.AddChild(new MeshInstance3D
+            {
+                Mesh = new CylinderMesh { TopRadius = 4f, BottomRadius = 4f, Height = 40f },
+                Position = pos + Vector3.Up * 40f,
+                MaterialOverride = woodMat
+            });
+            var body = new StaticBody3D { Position = pos };
+            body.AddChild(new CollisionShape3D { Shape = new CylinderShape3D { Radius = 26f, Height = 20f }, Position = Vector3.Up * 10f });
+            _world.AddChild(body);
+        }
+
+        private void AddGreenhousePrimitive(Vector3 pos)
+        {
+            var glassMat = new StandardMaterial3D
+            {
+                AlbedoColor = new Color(0.7f, 0.9f, 0.85f, 0.35f),
+                Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+                Roughness = 0.1f
+            };
+            var frameMat = GetCachedMaterial(new Color(0.9f, 0.9f, 0.9f), 0.5f);
+            _world.AddChild(new MeshInstance3D
+            {
+                Mesh = new BoxMesh { Size = new Vector3(70f, 40f, 90f) },
+                Position = pos + Vector3.Up * 20f,
+                MaterialOverride = glassMat
+            });
+            _world.AddChild(new MeshInstance3D
+            {
+                Mesh = new PrismMesh { Size = new Vector3(70f, 20f, 90f) },
+                Position = pos + Vector3.Up * 50f,
+                MaterialOverride = glassMat
+            });
+            for (int i = -1; i <= 1; i++)
+            {
+                _world.AddChild(new MeshInstance3D
+                {
+                    Mesh = new BoxMesh { Size = new Vector3(2f, 60f, 2f) },
+                    Position = pos + new Vector3(i * 35f, 30f, 45f),
+                    MaterialOverride = frameMat
+                });
+            }
+            var body = new StaticBody3D { Position = pos + Vector3.Up * 20f };
+            body.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(70f, 40f, 90f) } });
+            _world.AddChild(body);
+        }
+
+        private void AddRestHutPrimitive(Vector3 pos)
+        {
+            var postMat = GetCachedMaterial(new Color(0.35f, 0.24f, 0.14f), 0.9f);
+            var roofMat = GetCachedMaterial(new Color(0.45f, 0.22f, 0.15f), 0.9f);
+            foreach (var offset in new[] { new Vector3(-20, 0, -20), new Vector3(20, 0, -20), new Vector3(-20, 0, 20), new Vector3(20, 0, 20) })
+            {
+                _world.AddChild(new MeshInstance3D
+                {
+                    Mesh = new CylinderMesh { TopRadius = 3f, BottomRadius = 3.5f, Height = 34f },
+                    Position = pos + offset + Vector3.Up * 17f,
+                    MaterialOverride = postMat
+                });
+            }
+            _world.AddChild(new MeshInstance3D
+            {
+                Mesh = new PrismMesh { Size = new Vector3(56f, 16f, 56f) },
+                Position = pos + Vector3.Up * 42f,
+                MaterialOverride = roofMat
+            });
+            if (_benchScene != null) AddDecor(_benchScene, pos, 20f, 0f);
+        }
+
+        private void AddOuthousePrimitive(Vector3 pos)
+        {
+            _world.AddChild(new MeshInstance3D
+            {
+                Mesh = new BoxMesh { Size = new Vector3(22f, 30f, 22f) },
+                Position = pos + Vector3.Up * 15f,
+                MaterialOverride = GetCachedMaterial(new Color(0.55f, 0.4f, 0.25f), 0.9f)
+            });
+            _world.AddChild(new MeshInstance3D
+            {
+                Mesh = new PrismMesh { Size = new Vector3(26f, 8f, 26f) },
+                Position = pos + Vector3.Up * 34f,
+                MaterialOverride = GetCachedMaterial(new Color(0.35f, 0.2f, 0.15f), 0.9f)
+            });
+            var body = new StaticBody3D { Position = pos + Vector3.Up * 15f };
+            body.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(22f, 30f, 22f) } });
+            _world.AddChild(body);
+        }
+
+        private void AddWaterTankPrimitive(Vector3 pos)
+        {
+            var mat = GetCachedMaterial(new Color(0.55f, 0.58f, 0.6f), 0.4f);
+            _world.AddChild(new MeshInstance3D
+            {
+                Mesh = new CylinderMesh { TopRadius = 22f, BottomRadius = 22f, Height = 60f },
+                Position = pos + Vector3.Up * 30f,
+                MaterialOverride = mat
+            });
+            foreach (var offset in new[] { new Vector3(-18, 0, -18), new Vector3(18, 0, -18), new Vector3(-18, 0, 18), new Vector3(18, 0, 18) })
+            {
+                _world.AddChild(new MeshInstance3D
+                {
+                    Mesh = new CylinderMesh { TopRadius = 2f, BottomRadius = 2f, Height = 20f },
+                    Position = pos + offset + Vector3.Up * 10f,
+                    MaterialOverride = GetCachedMaterial(new Color(0.3f, 0.3f, 0.3f), 0.7f)
+                });
+            }
+            var body = new StaticBody3D { Position = pos };
+            body.AddChild(new CollisionShape3D { Shape = new CylinderShape3D { Radius = 22f, Height = 60f }, Position = Vector3.Up * 30f });
+            _world.AddChild(body);
+        }
+
+        // Tim 1 vi tri TRONG (khong dung cham vung nao da dung) trong pham vi tuong da 10 hecta -
+        // dung cho viec them nhieu chuong moi ma khong the dat toa do tay chinh xac an toan (ban
+        // do da qua chat). "avoid" LON DAN theo tung lan goi thanh cong (tham so ByRef qua List)
+        // de cac chuong MOI cung khong dung cham LAN NHAU.
+        private Vector3 FindOpenSpot(List<(Vector3 c, float r)> avoid, float neededRadius, RandomNumberGenerator rng)
+        {
+            float margin = neededRadius + 60f;
+            float minX = FarmWallCenter.X - FarmWallHalfSize + margin, maxX = FarmWallCenter.X + FarmWallHalfSize - margin;
+            float minZ = FarmWallCenter.Z - FarmWallHalfSize + margin, maxZ = FarmWallCenter.Z + FarmWallHalfSize - margin;
+            for (int tries = 0; tries < 600; tries++)
+            {
+                var p = new Vector3(rng.RandfRange(minX, maxX), 0, rng.RandfRange(minZ, maxZ));
+                bool ok = true;
+                foreach (var (c, r) in avoid)
+                {
+                    if (new Vector2(p.X - c.X, p.Z - c.Z).Length() < r + neededRadius) { ok = false; break; }
+                }
+                if (ok) return p;
+            }
+            return new Vector3(minX, 0, minZ); // du phong (rat hiem khi toi day)
+        }
+
+        // Vung da dung san TRONG pham vi tuong da 10 hecta (danh sach tron bao gom moi khu da
+        // xay tu truoc den gio) - dung lam "avoid" ban dau cho FindOpenSpot khi them chuong moi.
+        private List<(Vector3 c, float r)> KnownOccupiedZones() => new()
+        {
+            (new Vector3(202, 0, 390), 780f),          // nong trai + ruong + nha kho + gieng/ao
+            (new Vector3(-820, 0, -250), 240f),        // chuong bo goc
+            (new Vector3(-820, 0, -1450), 1050f),      // chuong ngua/ga/cuu-heo + nha o + vuon
+            (new Vector3(-2552, 0, 390), 460f),        // canh dong huong duong
+            (BigVineyardCenter, 1650f),                // vuon nho lon
+            (new Vector3(850, 0, 280), 320f),          // cac cong trinh phu
+            (new Vector3(1600, 0, -350), 720f),        // cao nguyen 1
+            (new Vector3(2650, 0, 750), 660f),         // cao nguyen 2
+            (new Vector3(1750, 0, 1950), 780f),        // cao nguyen 3
+        };
+
+        // Them 3 chuong nua cho MOI loai gia suc/gia cam (bo/ngua/ga/cuu-heo) - tong 12 chuong
+        // moi, moi chuong tu tim 1 vi tri TRONG con lai trong pham vi tuong da 10 hecta (qua
+        // FindOpenSpot, tranh dung cham voi TAT CA khu da xay + CAC CHUONG MOI vua dat).
+        private void BuildExtraPastures()
+        {
+            var avoid = KnownOccupiedZones();
+            var rng = new RandomNumberGenerator { Seed = 9800 };
+            // Luu lai vi tri+ban kinh CA 12 chuong moi (bat ke loai) de xu ly rieng theo huong
+            // (vd "cac chuong o phia tay") sau khi da dat xong het - xem doan bo sung bo o cuoi ham.
+            var allNewPens = new List<(Vector3 pos, float half)>();
+
+            for (int i = 0; i < 3; i++)
+            {
+                var pos = FindOpenSpot(avoid, 228f, rng);
+                avoid.Add((pos, 200f));
+                allNewPens.Add((pos, 168f));
+                BuildSimplePasture(pos, 168f, "bo", (c, half) =>
+                {
+                    // +5 con nua (11 -> 16) - dam bao dung dung SpawnCow(...homeCenterOverride)
+                    // nen lan nay se KHONG con bi loi "quay ve chuong goc" nhu truoc.
+                    for (int k = 0; k < 16; k++)
+                    {
+                        float angle = Mathf.Tau * k / 16f;
+                        float radius = rng.RandfRange(30f, half - 35f);
+                        SpawnCow(c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius), isAdult: true, homeCenterOverride: c, pastureHalfOverride: half);
+                    }
+                });
+                // Bo sua that su ("de lay sua" theo yeu cau): moi chuong bo moi co RIENG 1 nguoi
+                // van sua (tai su dung FarmhandNpc.cs y het nguoi cham bo chinh - tu dong tha vat
+                // pham "milk" dinh ky khi lam viec), khong chi la bo trang tri di lai. KHONG dung
+                // 1 ngoi nha rieng day du (tranh cong them 3 cap phong noi that nua) - "ngu" bang
+                // cach dung khuat ngay sau 1 diem gan chuong, giong cach lam cho dan lang vung
+                // que Phap (xem SpawnFrenchVillagers).
+                var milkmaid = _farmhandScene.Instantiate<FarmhandNpc>();
+                milkmaid.NpcId = $"extra_cowherd_{i}";
+                milkmaid.NpcName = "Nguoi Van Sua Phu";
+                milkmaid.DialogueLow = new[] { "Toi phu trach van sua o chuong bo nay." };
+                milkmaid.DialogueMid = new[] { "Dan bo o day cho sua deu lam." };
+                milkmaid.DialogueHigh = new[] { "Sua tuoi moi van, anh cu lay dung dung." };
+                milkmaid.WorkPos = pos + new Vector3(0, 0, -40);
+                milkmaid.TroughPos = pos;
+                milkmaid.HomePos = pos + new Vector3(0, 0, 160);
+                milkmaid.InteriorHomePos = pos + new Vector3(0, 8, 190);
+                _world.AddChild(milkmaid);
+            }
+
+            for (int i = 0; i < 3; i++)
+            {
+                var pos = FindOpenSpot(avoid, 228f, rng);
+                avoid.Add((pos, 200f));
+                allNewPens.Add((pos, 168f));
+                BuildSimplePasture(pos, 168f, "ngua", (c, half) =>
+                {
+                    // +5 con nua (9 -> 14)
+                    for (int k = 0; k < 14; k++)
+                    {
+                        float angle = Mathf.Tau * k / 14f;
+                        float radius = rng.RandfRange(30f, half - 35f);
+                        var horse = _horseScene.Instantiate<Horse>();
+                        horse.Position = c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
+                        horse.TroughPosition = c;
+                        horse.HomeCenter = c;
+                        horse.PastureHalfExtent = half - 35f;
+                        _world.AddChild(horse);
+                    }
+                });
+            }
+
+            for (int i = 0; i < 3; i++)
+            {
+                var pos = FindOpenSpot(avoid, 184f, rng);
+                avoid.Add((pos, 160f));
+                allNewPens.Add((pos, 144f));
+                BuildSimplePasture(pos, 144f, "ga", (c, half) =>
+                {
+                    // +5 con nua (15 -> 20)
+                    for (int k = 0; k < 20; k++)
+                    {
+                        float angle = Mathf.Tau * k / 20f;
+                        float radius = rng.RandfRange(20f, half - 25f);
+                        SpawnChicken(c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius), c, homeCenterOverride: c, pastureHalfOverride: half);
+                    }
+                });
+            }
+
+            for (int i = 0; i < 3; i++)
+            {
+                var pos = FindOpenSpot(avoid, 206f, rng);
+                avoid.Add((pos, 180f));
+                allNewPens.Add((pos, 156f));
+                BuildSimplePasture(pos, 156f, "cuu_heo", (c, half) =>
+                {
+                    // +5 con nua tong cong cho chuong ghep (3 cuu + 2 heo): cuu 9->12
+                    for (int k = 0; k < 12; k++)
+                    {
+                        float angle = Mathf.Tau * k / 12f;
+                        float radius = rng.RandfRange(30f, half - 35f);
+                        var sheep = _sheepScene.Instantiate<Sheep>();
+                        sheep.Position = c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
+                        sheep.TroughPosition = c;
+                        sheep.HomeCenter = c;
+                        sheep.PastureHalfExtent = half - 35f;
+                        _world.AddChild(sheep);
+                    }
+                    // ...va heo 6->8
+                    for (int k = 0; k < 8; k++)
+                    {
+                        float angle = Mathf.Tau * k / 8f + 0.4f;
+                        float radius = rng.RandfRange(20f, half - 45f);
+                        var pig = _pigScene.Instantiate<Pig>();
+                        pig.Position = c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
+                        pig.TroughPosition = c;
+                        pig.HomeCenter = c;
+                        pig.PastureHalfExtent = half - 35f;
+                        _world.AddChild(pig);
+                    }
+                });
+            }
+
+            // "Cac chuong moi ben phia TAY (trai) nong trai" - loc trong so 12 chuong vua dat,
+            // chi lay chuong nao co X < tam tuong nong trai (phia tay), them 6 bo/chuong vao MOI
+            // chuong do (bat ke chuong goc la loai gi - vd chuong ngua/ga/cuu-heo o phia tay
+            // cung se co them bo, dung theo dung nghia den cua yeu cau).
+            foreach (var (wPos, wHalf) in allNewPens)
+            {
+                if (wPos.X >= FarmWallCenter.X) continue; // chi chuong o phia TAY (X nho hon tam tuong)
+                for (int k = 0; k < 6; k++)
+                {
+                    float angle = Mathf.Tau * k / 6f + 0.2f;
+                    float radius = rng.RandfRange(20f, wHalf - 40f);
+                    SpawnCow(wPos + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius),
+                        isAdult: true, homeCenterOverride: wPos, pastureHalfOverride: wHalf);
+                }
+            }
+        }
+
+        // 2 chuong cuu RIENG (khong ghep heo nhu chuong ve tinh cu) - moi chuong 10 con, tu tim
+        // vi tri trong (FindOpenSpot) nhu BuildExtraPastures.
+        private void BuildExtraSheepPens()
+        {
+            var avoid = KnownOccupiedZones();
+            var rng = new RandomNumberGenerator { Seed = 9900 };
+
+            for (int i = 0; i < 2; i++)
+            {
+                var pos = FindOpenSpot(avoid, 190f, rng);
+                avoid.Add((pos, 190f));
+                BuildSimplePasture(pos, 140f, "cuu_rieng", (c, half) =>
+                {
+                    for (int k = 0; k < 10; k++)
+                    {
+                        float angle = Mathf.Tau * k / 10f;
+                        float radius = rng.RandfRange(30f, half - 35f);
+                        var sheep = _sheepScene.Instantiate<Sheep>();
+                        sheep.Position = c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
+                        sheep.TroughPosition = c;
+                        sheep.HomeCenter = c;
+                        sheep.PastureHalfExtent = half - 35f;
+                        _world.AddChild(sheep);
+                    }
+                });
+            }
+        }
+
+        // Chuong don gian dung chung: hang rao vuong + 1 cong o giua canh Nam + mang an + 2 cot
+        // den, sau do goi lai "spawnAnimals" de dat vat nuoi rieng cho tung loai.
+        private void BuildSimplePasture(Vector3 center, float half, string tag, System.Action<Vector3, float> spawnAnimals)
+        {
+            float minX = center.X - half, maxX = center.X + half;
+            float minZ = center.Z - half, maxZ = center.Z + half;
+            float gateX = center.X;
+
+            AddFenceLine(new Vector3(minX, 0, minZ), new Vector3(maxX, 0, minZ), _fenceScene);
+            AddFenceLine(new Vector3(minX, 0, minZ), new Vector3(minX, 0, maxZ), _fenceScene);
+            AddFenceLine(new Vector3(maxX, 0, minZ), new Vector3(maxX, 0, maxZ), _fenceScene);
+            AddFenceLine(new Vector3(minX, 0, maxZ), new Vector3(gateX - 22f, 0, maxZ), _fenceScene);
+            AddFenceLine(new Vector3(gateX + 22f, 0, maxZ), new Vector3(maxX, 0, maxZ), _fenceScene);
+            AddFencePost(new Vector3(minX, 0, minZ));
+            AddFencePost(new Vector3(maxX, 0, minZ));
+            AddFencePost(new Vector3(minX, 0, maxZ));
+            AddFencePost(new Vector3(maxX, 0, maxZ));
+
+            AddFeedTrough(center);
+            AddStreetLamp(new Vector3(gateX - 30, 0, maxZ), 90f);
+            AddStreetLamp(new Vector3(gateX + 30, 0, maxZ), -90f);
+
+            spawnAnimals(center, half);
+        }
+
+        // homeCenterOverride/pastureHalfOverride: CHO PHEP goi ham nay cho CAC CHUONG BO KHAC
+        // (xem BuildExtraPastures) - neu KHONG truyen, mac dinh dung dung CowPastureCenter/
+        // CowPastureHalf nhu truoc (khong doi hanh vi cho BuildCowPasture goc). TRUOC DAY luon
+        // hard-code CowPastureCenter bat ke "pos" o dau, khien bo sinh o CAC CHUONG MOI (khac vi
+        // tri) tuong nham "nha" cua no la chuong bo GOC o xa, roi bo di ve huong do (dung sat
+        // hang rao chuong MOI, nhin nhu "chuong bo trong khong co con nao") - day chinh la loi
+        // gay ra bao cao "cac chuong khac van con bo trong".
+        private void SpawnCow(Vector3 pos, bool isAdult, Vector3? homeCenterOverride = null, float? pastureHalfOverride = null)
         {
             var cow = _cowScene.Instantiate<Cow>();
             cow.Position = pos;
-            cow.TroughPosition = CowPastureCenter;
+            var home = homeCenterOverride ?? CowPastureCenter;
+            var half = pastureHalfOverride ?? CowPastureHalf;
+            cow.TroughPosition = home;
             cow.IsAdult = isAdult;
             // Tam wander PHAI la tam that cua hang rao (khong phai vi tri spawn rieng cua tung
-            // con) + gioi han ban kinh nho hon nua be rong hang rao that (160) mot khoang an
-            // toan, de bo khong bao gio wander ra ngoai hang rao.
-            cow.HomeCenter = CowPastureCenter;
-            cow.PastureHalfExtent = CowPastureHalf - 35f;
+            // con) + gioi han ban kinh nho hon nua be rong hang rao that mot khoang an toan, de
+            // bo khong bao gio wander ra ngoai hang rao.
+            cow.HomeCenter = home;
+            cow.PastureHalfExtent = half - 35f;
             _world.AddChild(cow);
         }
 
