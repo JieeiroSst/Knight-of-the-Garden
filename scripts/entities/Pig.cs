@@ -17,7 +17,6 @@ namespace HiepSiVeVuon.Entities
         [Export] public bool FlipModelFacing = true;
         [Export] public float Gravity = 980f;
         [Export] public float ModelScale = 4.4f;
-        [Export] public float WanderRadius = 110f;
         [Export] public double EatDurationSec = 90.0;
 
         private const string AnimPrefix = "AnimalArmature|AnimalArmature|AnimalArmature|";
@@ -112,7 +111,9 @@ namespace HiepSiVeVuon.Entities
             {
                 var rng = new RandomNumberGenerator();
                 rng.Randomize();
-                float half = Mathf.Min(WanderRadius, PastureHalfExtent);
+                // Dung DUNG PastureHalfExtent - khong con gioi han bang 1 WanderRadius nho co
+                // dinh nua (xem ghi chu tuong tu trong Horse.cs).
+                float half = PastureHalfExtent;
                 float angle = rng.RandfRange(0f, Mathf.Tau);
                 float radius = rng.RandfRange(0f, half);
                 _wanderTarget = _homeCenter + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);

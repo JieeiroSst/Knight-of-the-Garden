@@ -19,7 +19,6 @@ namespace HiepSiVeVuon.Entities
         [Export] public bool FlipModelFacing = true;
         [Export] public float Gravity = 980f;
         [Export] public float ModelScale = 7.84f; // tang 100% (3.92 -> 7.84)
-        [Export] public float WanderRadius = 85f;
         [Export] public double EatDurationSec = 60.0;
         [Export] public float ClusterRange = 90f;
         [Export] public float ClusterCooldownSec = 9f;
@@ -173,7 +172,12 @@ namespace HiepSiVeVuon.Entities
             {
                 var rng = new RandomNumberGenerator();
                 rng.Randomize();
-                float half = Mathf.Min(WanderRadius, PastureHalfExtent);
+                // Dung DUNG PastureHalfExtent - truoc day gioi han bang 1 WanderRadius nho co
+                // dinh (85) trong khi chuong ga da duoc mo rong nhieu lan qua cac lan tang kich
+                // thuoc (PastureHalfExtent thuc te co the toi 160), khien GAN NUA vanh ngoai
+                // chuong (gan hang rao/cong, dung noi nguoi choi buoc vao) LUON LUON khong co con
+                // ga nao - day rat co the la nguyen nhan chinh khien chuong ga "nhin nhu trong".
+                float half = PastureHalfExtent;
                 float angle = rng.RandfRange(0f, Mathf.Tau);
                 float radius = rng.RandfRange(0f, half);
                 _wanderTarget = _homeCenter + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);

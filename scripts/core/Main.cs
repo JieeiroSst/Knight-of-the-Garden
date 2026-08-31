@@ -1172,7 +1172,7 @@ namespace HiepSiVeVuon.Core
                 Position = pos + Vector3.Up * 58f,
                 LightColor = new Color(1f, 0.75f, 0.4f),
                 LightEnergy = 6f,
-                OmniRange = 180f
+                OmniRange = 270f // tang 50% (180 -> 270) theo yeu cau
             };
             _world.AddChild(light);
             _streetLamps.Add(light);
@@ -1184,6 +1184,25 @@ namespace HiepSiVeVuon.Core
                 Position = Vector3.Up * 30f
             });
             _world.AddChild(body);
+        }
+
+        // Them 1 DEN GIUA CHUONG (canh mang an, noi vat nuoi hay tu tap) - CHI 2 den o cong
+        // (OmniRange=180, xem AddStreetLamp) la KHONG DU de chieu sang het chuong doi voi cac
+        // chuong lon (half toi 192, tuc canh XA cong nhat cach toi 2*192=384 don vi): ve dem,
+        // phan xa cong toi muc gan nhu toi den, kho thay vat nuoi dang dung o do - day rat co the
+        // la ly do cac chuong bao "van con trong" du code van sinh du con vat. Dung CHUNG he
+        // thong bat/tat den duong (_streetLamps) nen tu dong sang dung 18h-6h nhu cac den khac.
+        private void AddPenCenterLight(Vector3 center, float half)
+        {
+            var light = new OmniLight3D
+            {
+                Position = center + Vector3.Up * 55f,
+                LightColor = new Color(1f, 0.82f, 0.52f),
+                LightEnergy = 5f,
+                OmniRange = half * 2.4f // tang 50% (1.6 -> 2.4) theo yeu cau
+            };
+            _world.AddChild(light);
+            _streetLamps.Add(light);
         }
 
         private static Node FindNodeByName(Node root, string name)
@@ -1670,6 +1689,7 @@ namespace HiepSiVeVuon.Core
             // 2 cot den hai ben cong chuong bo (giong cong ruong)
             AddStreetLamp(new Vector3(gateX - 35, 0, maxZ), 90f);
             AddStreetLamp(new Vector3(gateX + 35, 0, maxZ), -90f);
+            AddPenCenterLight(CowPastureCenter, CowPastureHalf);
 
             // 12 con (tang tu 4 theo yeu cau) - rai deu theo vong tron trong hang rao, ban kinh
             // nho hon PastureHalfExtent de khong dung sat hang rao.
@@ -1740,6 +1760,7 @@ namespace HiepSiVeVuon.Core
             // 2 cot den hai ben cong chuong ngua (giong cong ruong/chuong bo)
             AddStreetLamp(new Vector3(gateX - 35, 0, maxZ), 90f);
             AddStreetLamp(new Vector3(gateX + 35, 0, maxZ), -90f);
+            AddPenCenterLight(HorseStableCenter, HorseStableHalf);
 
             Vector3[] horseStarts =
             {
@@ -1821,6 +1842,7 @@ namespace HiepSiVeVuon.Core
             // 2 cot den hai ben cong chuong ga (giong cong chuong bo/chuong ngua)
             AddStreetLamp(new Vector3(gateX - 35, 0, maxZ), 90f);
             AddStreetLamp(new Vector3(gateX + 35, 0, maxZ), -90f);
+            AddPenCenterLight(ChickenCoopCenter, ChickenCoopHalf);
 
             // 30 con (tang tu 10 theo yeu cau).
             var rng = new RandomNumberGenerator();
@@ -2651,6 +2673,7 @@ namespace HiepSiVeVuon.Core
             AddFeedTrough(SheepPigPastureCenter);
             AddStreetLamp(new Vector3(gateX - 35, 0, maxZ), 90f);
             AddStreetLamp(new Vector3(gateX + 35, 0, maxZ), -90f);
+            AddPenCenterLight(SheepPigPastureCenter, SheepPigPastureHalf);
 
             // 20 cuu + 10 heo (tang tu 2+2 theo yeu cau) - rai deu vong tron trong hang rao.
             var spRng = new RandomNumberGenerator { Seed = 9701 };
@@ -3809,6 +3832,7 @@ namespace HiepSiVeVuon.Core
             AddFeedTrough(center);
             AddStreetLamp(new Vector3(gateX - 30, 0, maxZ), 90f);
             AddStreetLamp(new Vector3(gateX + 30, 0, maxZ), -90f);
+            AddPenCenterLight(center, half);
 
             spawnAnimals(center, half);
         }

@@ -15,13 +15,16 @@ namespace HiepSiVeVuon.Entities
         [Export] public float Acceleration = 130f;
         [Export] public float Friction = 160f;
         [Export] public float TurnSpeed = 6.5f;
+        // (Da bo WanderRadius rieng - truoc day gioi han vung di lai chi trong 130 don vi quanh
+        // tam CHUONG DU CHUONG RONG HON NHIEU (PastureHalfExtent co the toi 157+), khien vanh
+        // ngoai gan hang rao/cong - dung noi nguoi choi buoc vao - LUON LUON khong co con bo nao,
+        // de bi nham la "chuong trong" khi vua vao. Gio dung het toan bo PastureHalfExtent that.)
         // Model cow.glb duoc dung theo huong NGUOC voi quy uoc "-Z la truoc" cua Godot (giong
         // Farmer da gap truoc do, xem Player.FlipModelFacing) - neu khong bu lai, than se DI
         // dung huong nhung DAU/mat lai quay ve phia nguoc lai, nhin nhu dang di lui.
         [Export] public bool FlipModelFacing = true;
         [Export] public float Gravity = 980f;
         [Export] public float ModelScale = 5.5f;
-        [Export] public float WanderRadius = 130f;
         [Export] public double EatDurationSec = 90.0;
         [Export] public float MooRange = 90f;
         [Export] public float MooCooldownSec = 8f;
@@ -216,7 +219,7 @@ namespace HiepSiVeVuon.Entities
                 // random rieng X va Z trong [-half,half] thi goc cua vung do se xa tam toi
                 // half*sqrt(2), co the vuot qua hang rao that. Toa do cuc dam bao khoang cach
                 // toi tam KHONG BAO GIO vuot qua "half".
-                float half = Mathf.Min(WanderRadius, PastureHalfExtent);
+                float half = PastureHalfExtent;
                 float angle = rng.RandfRange(0f, Mathf.Tau);
                 float radius = rng.RandfRange(0f, half);
                 _wanderTarget = _homeCenter + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
