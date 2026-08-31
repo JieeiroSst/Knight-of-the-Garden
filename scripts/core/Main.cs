@@ -302,10 +302,14 @@ namespace HiepSiVeVuon.Core
                         rugColor: new Color(0.55f, 0.15f, 0.15f),
                         furnish: a =>
                         {
-                            AddDecor(_benchScene, a + new Vector3(-60, 0, -75), 90f);
-                            AddDecor(_bagScene, a + new Vector3(65, 0, -70), 90f);
-                            AddDecor(_barrelScene, a + new Vector3(-75, 0, 60), 90f);
-                            AddDecor(_crateScene, a + new Vector3(70, 0, 65), 90f, 25f);
+                            AddDecor(_benchScene, a + new Vector3(-120, 0, -135), 95f);
+                            AddDecor(_benchScene, a + new Vector3(120, 0, -135), 95f, 180f);
+                            AddDecor(_bagScene, a + new Vector3(130, 0, -80), 95f);
+                            AddDecor(_bagScene, a + new Vector3(-135, 0, -30), 95f, 15f);
+                            AddDecor(_barrelScene, a + new Vector3(-130, 0, 100), 95f);
+                            AddDecor(_barrelScene, a + new Vector3(-90, 0, 130), 95f, 30f);
+                            AddDecor(_crateScene, a + new Vector3(120, 0, 110), 95f, 25f);
+                            AddDecor(_crateScene, a + new Vector3(135, 0, 60), 95f, -20f);
                         });
                     break;
 
@@ -317,13 +321,16 @@ namespace HiepSiVeVuon.Core
                         rugColor: null,
                         furnish: a =>
                         {
-                            AddDecor(_crateScene, a + new Vector3(-90, 0, -90), 95f);
-                            AddDecor(_crateScene, a + new Vector3(-60, 0, -95), 95f, 15f);
-                            AddDecor(_barrelScene, a + new Vector3(90, 0, -80), 95f);
-                            AddDecor(_barrelScene, a + new Vector3(95, 0, -50), 95f, 30f);
-                            AddDecor(_bagScene, a + new Vector3(-90, 0, 80), 95f);
-                            AddDecor(_bagScene, a + new Vector3(-60, 0, 95), 95f, -20f);
-                            AddDecor(_crateScene, a + new Vector3(90, 0, 90), 95f, 40f);
+                            AddDecor(_crateScene, a + new Vector3(-145, 0, -145), 100f);
+                            AddDecor(_crateScene, a + new Vector3(-100, 0, -150), 100f, 15f);
+                            AddDecor(_crateScene, a + new Vector3(-150, 0, -100), 100f, -20f);
+                            AddDecor(_barrelScene, a + new Vector3(145, 0, -140), 100f);
+                            AddDecor(_barrelScene, a + new Vector3(150, 0, -90), 100f, 30f);
+                            AddDecor(_bagScene, a + new Vector3(-145, 0, 145), 100f);
+                            AddDecor(_bagScene, a + new Vector3(-95, 0, 150), 100f, -20f);
+                            AddDecor(_crateScene, a + new Vector3(145, 0, 140), 100f, 40f);
+                            AddDecor(_barrelScene, a + new Vector3(95, 0, 150), 100f, 10f);
+                            AddDecor(_bagScene, a + new Vector3(0, 0, -160), 100f);
                         });
                     break;
 
@@ -335,11 +342,14 @@ namespace HiepSiVeVuon.Core
                         rugColor: new Color(0.5f, 0.1f, 0.12f),
                         furnish: a =>
                         {
-                            AddDecor(_benchScene, a + new Vector3(-90, 0, -40), 100f, 90f);
-                            AddDecor(_benchScene, a + new Vector3(90, 0, -40), 100f, -90f);
-                            AddDecor(_benchScene, a + new Vector3(-90, 0, 40), 100f, 90f);
-                            AddDecor(_benchScene, a + new Vector3(90, 0, 40), 100f, -90f);
-                            AddDecor(_crateScene, a + new Vector3(0, 0, -110), 100f);
+                            AddDecor(_benchScene, a + new Vector3(-130, 0, -60), 105f, 90f);
+                            AddDecor(_benchScene, a + new Vector3(130, 0, -60), 105f, -90f);
+                            AddDecor(_benchScene, a + new Vector3(-130, 0, 60), 105f, 90f);
+                            AddDecor(_benchScene, a + new Vector3(130, 0, 60), 105f, -90f);
+                            AddDecor(_crateScene, a + new Vector3(-40, 0, -160), 100f);
+                            AddDecor(_crateScene, a + new Vector3(40, 0, -160), 100f);
+                            AddDecor(_barrelScene, a + new Vector3(-160, 0, -160), 100f);
+                            AddDecor(_barrelScene, a + new Vector3(160, 0, -160), 100f);
                         });
                     break;
 
@@ -362,19 +372,24 @@ namespace HiepSiVeVuon.Core
                         {
                             if (variant == 0)
                             {
-                                AddDecor(_benchScene, a + new Vector3(-55, 0, -60), 85f);
-                                AddDecor(_bagScene, a + new Vector3(55, 0, 60), 85f);
+                                AddDecor(_benchScene, a + new Vector3(-120, 0, -130), 90f);
+                                AddDecor(_bagScene, a + new Vector3(125, 0, 120), 90f);
+                                AddDecor(_bagScene, a + new Vector3(90, 0, 135), 90f, 20f);
+                                AddDecor(_crateScene, a + new Vector3(-130, 0, 100), 90f, -15f);
                             }
                             else if (variant == 1)
                             {
-                                AddDecor(_crateScene, a + new Vector3(-55, 0, -60), 85f, 20f);
-                                AddDecor(_barrelScene, a + new Vector3(55, 0, 55), 85f);
+                                AddDecor(_crateScene, a + new Vector3(-120, 0, -130), 90f, 20f);
+                                AddDecor(_crateScene, a + new Vector3(-90, 0, -110), 90f, -10f);
+                                AddDecor(_barrelScene, a + new Vector3(120, 0, 110), 90f);
+                                AddDecor(_bagScene, a + new Vector3(-130, 0, 110), 90f);
                             }
                             else
                             {
-                                AddDecor(_barrelScene, a + new Vector3(-55, 0, 55), 85f, -20f);
-                                AddDecor(_bagScene, a + new Vector3(55, 0, -55), 85f);
-                                AddDecor(_benchScene, a + new Vector3(0, 0, -65), 85f);
+                                AddDecor(_barrelScene, a + new Vector3(-120, 0, 110), 90f, -20f);
+                                AddDecor(_barrelScene, a + new Vector3(-90, 0, 135), 90f, 10f);
+                                AddDecor(_bagScene, a + new Vector3(120, 0, -110), 90f);
+                                AddDecor(_benchScene, a + new Vector3(0, 0, -135), 90f);
                             }
                         });
                     break;
@@ -440,15 +455,15 @@ namespace HiepSiVeVuon.Core
             AddInteriorWall(anchor + new Vector3(-roomSize / 2f, wallHeight / 2f, 0), new Vector3(8f, wallHeight, roomSize), wallColor);
             AddInteriorWall(anchor + new Vector3(roomSize / 2f, wallHeight / 2f, 0), new Vector3(8f, wallHeight, roomSize), wallColor);
 
-            // Anh sang am trong nha (den ngoai + Sun ngoai troi khong chieu toi day vi bi tran chan)
-            var light = new OmniLight3D
-            {
-                Position = anchor + Vector3.Up * (wallHeight * 0.75f),
-                LightColor = new Color(1f, 0.9f, 0.72f),
-                LightEnergy = 3.2f,
-                OmniRange = roomSize * 1.2f
-            };
-            _world.AddChild(light);
+            // Anh sang am trong nha (den ngoai + Sun ngoai troi khong chieu toi day vi bi tran chan).
+            // Phong lon (toi 440 don vi) nen 1 den giua khong du toi goc tuong - them 4 den goc.
+            var lightHeight = wallHeight * 0.75f;
+            AddInteriorLight(anchor + Vector3.Up * lightHeight, roomSize * 0.8f, 3.2f);
+            float cornerOffset = roomSize * 0.32f;
+            AddInteriorLight(anchor + new Vector3(-cornerOffset, lightHeight, -cornerOffset), roomSize * 0.6f, 1.8f);
+            AddInteriorLight(anchor + new Vector3(cornerOffset, lightHeight, -cornerOffset), roomSize * 0.6f, 1.8f);
+            AddInteriorLight(anchor + new Vector3(-cornerOffset, lightHeight, cornerOffset), roomSize * 0.6f, 1.8f);
+            AddInteriorLight(anchor + new Vector3(cornerOffset, lightHeight, cornerOffset), roomSize * 0.6f, 1.8f);
 
             if (rugColor.HasValue)
             {
@@ -481,6 +496,17 @@ namespace HiepSiVeVuon.Core
 
             // Cua thoat: nhan [E] khi dung gan de tro ve dung vi tri ngoai troi da vao
             AddBuildingDoor(anchor + new Vector3(0, 0, roomSize / 2f - 25f), 55f, isExit: true);
+        }
+
+        private void AddInteriorLight(Vector3 pos, float range, float energy)
+        {
+            _world.AddChild(new OmniLight3D
+            {
+                Position = pos,
+                LightColor = new Color(1f, 0.9f, 0.72f),
+                LightEnergy = energy,
+                OmniRange = range
+            });
         }
 
         private void AddInteriorWall(Vector3 center, Vector3 size, Color color)

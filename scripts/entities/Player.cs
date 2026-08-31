@@ -32,11 +32,21 @@ namespace HiepSiVeVuon.Entities
         private bool _indoors = false;
         private Vector3 _returnPos;
         private ColorRect _fadeRect;
+        private Camera3D _camera;
+
+        // Camera ngoai troi dat lui ve sau nhan vat 115 don vi theo truc Z THE GIOI (khong xoay
+        // theo huong nhan vat) - phu hop khong gian mo. Nhung trong phong kin, di lai gan bat ky
+        // buc tuong nao ve phia +Z se day camera vuot QUA tuong do (vi offset cong don vao vi tri
+        // nguoi choi), lam man hinh thay "khong gian bi vo" (nhin xuyen ra ngoai tu phia sau
+        // tuong). Vi vay khi vao nha phai thu nho offset nay lai that nhieu.
+        private static readonly Vector3 OutdoorCameraOffset = new(0, 140, 115);
+        private static readonly Vector3 IndoorCameraOffset = new(0, 60, 15);
 
         public override void _Ready()
         {
             _model = GetNodeOrNull<Node3D>("Model");
             _interactArea = GetNodeOrNull<Area3D>("InteractArea");
+            _camera = GetNodeOrNull<Camera3D>("Camera3D");
             if (_model != null)
             {
                 _animPlayer = CharacterRig.Attach(_model, ModelPath, ModelScale);
@@ -218,7 +228,7 @@ namespace HiepSiVeVuon.Entities
             if (_indoors) return;
             _returnPos = GlobalPosition;
             _indoors = true;
-            GD.Print($"[Cua] Vao nha: tu {_returnPos} -> {interiorAnchor}");
+            if (_camera != null) _camera.Position = IndoorCameraOffset;
             // Dat cao hon san mot chut (khong dat dung khit len san) de trong luc tu nhien keo
             // xuong va IsOnFloor() nhan dung san ngay, thay vi mot diem cham khit co the bi
             // xu ly sai thanh "chua cham san" roi roi xuyen qua san mong xuong vuc.
@@ -229,6 +239,7 @@ namespace HiepSiVeVuon.Entities
         {
             if (!_indoors) return;
             _indoors = false;
+            if (_camera != null) _camera.Position = OutdoorCameraOffset;
             TeleportWithFade(_returnPos);
         }
 
