@@ -38,6 +38,20 @@ namespace HiepSiVeVuon.Entities
             { "ranger", "res://assets3d/quaternius/characters/Swat.gltf" },
         };
 
+        // Cac NpcId KHONG co trong dict tren (vd nguoi cham bo/ngua/ga, va nay la dan thi tran
+        // sinh hoat) truoc day deu roi ve CUNG 1 model mac dinh (Worker.gltf), nhin y het nhau
+        // hang loat - thay bang chon theo BAM (hash) CO DINH tu NpcId trong 5 model co san, cho
+        // moi NPC 1 dien mao rieng nhung ON DINH (cung 1 NpcId luon ra cung 1 model moi lan tai
+        // lai, khong doi ngau nhien giua cac lan chay).
+        private static readonly string[] FallbackModels =
+        {
+            "res://assets3d/quaternius/characters/Worker.gltf",
+            "res://assets3d/quaternius/characters/Suit.gltf",
+            "res://assets3d/quaternius/characters/Adventurer.gltf",
+            "res://assets3d/quaternius/characters/Casual_2.gltf",
+            "res://assets3d/quaternius/characters/Swat.gltf",
+        };
+
         // Luu lai (thay vi bien cuc bo) de cac lop con (vd FarmhandNpc) co the dieu khien
         // hoat canh Di/Dung khi them AI di chuyen rieng.
         protected Node3D _model;
@@ -50,7 +64,7 @@ namespace HiepSiVeVuon.Entities
             if (_model != null)
             {
                 string path = ModelPathByNpcId.TryGetValue(NpcId, out var p)
-                    ? p : "res://assets3d/quaternius/characters/Worker.gltf";
+                    ? p : FallbackModels[(uint)NpcId.GetHashCode() % FallbackModels.Length];
                 _animPlayer = CharacterRig.Attach(_model, path, ModelScale);
                 _animPlayer?.Play("Idle");
             }

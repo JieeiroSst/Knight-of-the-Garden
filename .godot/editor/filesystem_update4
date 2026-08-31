@@ -32,3 +32,4 @@ res://scripts/entities/PoultryKeeperNpc.cs
 res://scripts/ui/FarmStorageBoard.cs
 res://scripts/systems/FarmStorage.cs
 res://scripts/systems/WarehouseDatabase.cs
+res://scripts/entities/TownCitizenNpc.cs

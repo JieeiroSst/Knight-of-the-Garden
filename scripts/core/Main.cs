@@ -46,6 +46,12 @@ namespace HiepSiVeVuon.Core
         private PackedScene _farmCatScene = GD.Load<PackedScene>("res://scenes/FarmCat.tscn");
         private PackedScene _chickenScene = GD.Load<PackedScene>("res://scenes/Chicken.tscn");
         private PackedScene _poultryKeeperScene = GD.Load<PackedScene>("res://scenes/PoultryKeeperNpc.tscn");
+        private PackedScene _citizenScene = GD.Load<PackedScene>("res://scenes/TownCitizenNpc.tscn");
+
+        // Danh sach vi tri cac can nha trong khu do thi (xem BuildCityDistrict) - dung de gan
+        // "nha rieng" cho tung nguoi dan (SpawnTownCitizens) sau khi khu do thi da dung xong.
+        private readonly List<Vector3> _cityHousePositions = new();
+        private readonly List<Vector3> _cityHouseInteriors = new();
         // Chuong ga (Quaternius, CC0, poly.pizza/m/DM0F8siLam) - dat lam cong trinh chinh trong
         // khu chuong ga, giong cach coi cua bo/ngua la hang rao + mang an.
         private PackedScene _chickenCoopScene = GD.Load<PackedScene>("res://assets3d/quaternius/misc/chicken_coop.glb");
@@ -168,6 +174,8 @@ namespace HiepSiVeVuon.Core
                 BuildPoultryKeeper();
                 BuildPlateaus();
                 BuildSunflowerField();
+                BuildCityDistrict();
+                SpawnTownCitizens();
             }
             catch (System.Exception e)
             {
@@ -1318,6 +1326,137 @@ namespace HiepSiVeVuon.Core
             shepherd.DialogueHigh = new[] { "Bao gio ranh, ghe tham dan cuu cua ta nhe." };
             shepherd.Position = VillageAnchor + new Vector3(420, 0, 210);
             _world.AddChild(shepherd);
+        }
+
+        // Khu do thi: 50 can nha 3D + 1 tru canh sat rieng biet, bao quanh loi khu trung tam thi
+        // tran hien co (Toa Thi Chinh + 10 nha dan + NPC ban hang/nhiem vu) ma KHONG dung cham -
+        // sap xep theo luoi (spacing 230 don vi) nhung LOAI BO cac o roi vao vung trung tam va
+        // sap xep theo khoang cach tu tam (gan nhat truoc) de tao bo cuc do thi lan toa tu nhien
+        // thay vi 1 khoi vuong cung nhac. Nam TRONG TownGroundSize (3500, xem DrawTownGround) nen
+        // khong can vung loai tru WorldStreamer.
+        private void BuildCityDistrict()
+        {
+            const float spacing = 230f;
+            const int halfGrid = 8;
+            const float coreX = 560f, coreZMin = -260f, coreZMax = 460f;
+            const float bound = TownGroundSize / 2f - 260f;
+
+            var candidates = new List<Vector2>();
+            for (int gz = -halfGrid; gz <= halfGrid; gz++)
+            {
+                for (int gx = -halfGrid; gx <= halfGrid; gx++)
+                {
+                    float x = gx * spacing, z = gz * spacing;
+                    if (Mathf.Abs(x) < coreX && z > coreZMin && z < coreZMax) continue; // khu trung tam
+                    if (Mathf.Abs(x) > bound || Mathf.Abs(z) > bound) continue;
+                    candidates.Add(new Vector2(x, z));
+                }
+            }
+            candidates.Sort((a, b) => a.Length().CompareTo(b.Length()));
+
+            // Tru canh sat: chon o gan nhat o phia TAY (huong duong tu nong trai toi) cua khu
+            // trung tam - cong trinh RIENG BIET, dung model nha nong dan (house_v2.glb, to/chi
+            // tiet hon SmallBarn) de noi bat, khac han cac can nha dan lap lai.
+            Vector2 policePlot = candidates[0];
+            foreach (var c in candidates)
+            {
+                if (c.X < -coreX && Mathf.Abs(c.Y) < 300f) { policePlot = c; break; }
+            }
+            var policePos = VillageAnchor + new Vector3(policePlot.X, 0, policePlot.Y);
+            AddDecor(_farmhouseScene, policePos, 66f, 90f, FarmhouseFootprint);
+            var policeInterior = AddBuildingEntrance(policePos, 90f, 130f, 100f, RoomKind.TownHall);
+            _cityHousePositions.Add(policePos + new Vector3(0, 0, 55));
+            _cityHouseInteriors.Add(policeInterior);
+
+            var rng = new RandomNumberGenerator { Seed = 7002 };
+            int placed = 0;
+            foreach (var c in candidates)
+            {
+                if (c == policePlot) continue;
+                if (placed >= 50) break;
+                var pos = VillageAnchor + new Vector3(c.X, 0, c.Y);
+                float rotY = rng.RandiRange(0, 3) * 90f;
+                AddDecor(_smallBarnScene, pos, 12f, rotY, SmallBarnFootprint);
+                var interiorPos = AddBuildingEntrance(pos, rotY, 80f, 50f, RoomKind.Village);
+                _cityHousePositions.Add(pos);
+                _cityHouseInteriors.Add(interiorPos);
+                placed++;
+            }
+        }
+
+        // Nguoi dan thi tran "song that": tu do di dao khap khu do thi ban ngay, ve nha ngu ban
+        // dem (xem TownCitizenNpc.cs). Moi nguoi duoc gan 1 can nha rieng (tu danh sach
+        // _cityHousePositions da dung o BuildCityDistrict) va 1 trong vai bo hoi thoai flavor -
+        // KHONG phai NPC nhiem vu/cua hang (da co 10 NPC do rieng o SpawnNpcs), chi de thi tran
+        // trong "song dong" nhu yeu cau.
+        private void SpawnTownCitizens()
+        {
+            if (_cityHousePositions.Count == 0) return;
+
+            (string name, string[] low, string[] mid, string[] high)[] flavors =
+            {
+                ("Nguoi Ban Hang Rong",
+                    new[] { "Mua di, mua di! Hang tuoi moi ve sang nay!" },
+                    new[] { "Chao khach quen! Hom nay troi dep nhi." },
+                    new[] { "Cau ma ghe la ta vui ca ngay." }),
+                ("Chu Tiem Banh",
+                    new[] { "Banh moi ra lo, thom lam!" },
+                    new[] { "Lai ghe tiem banh ta a? Vao di!" },
+                    new[] { "De ta bieu cau o banh ngon nhat." }),
+                ("Em Hoc Sinh",
+                    new[] { "Chao anh/chi! Em dang tren duong den truong." },
+                    new[] { "Em thay anh/chi hoai, quen mat roi!" },
+                    new[] { "Anh/chi ke chuyen phieu luu cho em nghe di!" }),
+                ("Cu Gia Trong Xom",
+                    new[] { "Thi tran nay ta song ca doi roi day." },
+                    new[] { "Gap cau ta thay vui, nho hoi con chau." },
+                    new[] { "Ta se ke cau nghe chuyen xua cua thi tran..." }),
+                ("Nguoi Lao Dong",
+                    new[] { "Ngay nao cung phai lam viec cham chi thoi." },
+                    new[] { "Cau cung sieng nang nhi, phuc cho cau." },
+                    new[] { "Nghi ngoi chut di, ban voi cau vui that." }),
+                ("Ba Noi Tro",
+                    new[] { "Ta dang di cho mua do nau com day." },
+                    new[] { "Hom nao ghe nha ta an com nhe!" },
+                    new[] { "Cau nhu nguoi trong nha ta roi day." }),
+            };
+
+            var homeRng = new RandomNumberGenerator { Seed = 7003 };
+            int citizenCount = Mathf.Min(18, _cityHousePositions.Count);
+            var usedHomes = new System.Collections.Generic.HashSet<int>();
+
+            for (int i = 0; i < citizenCount; i++)
+            {
+                int homeIdx;
+                do { homeIdx = homeRng.RandiRange(1, _cityHousePositions.Count - 1); }
+                while (!usedHomes.Add(homeIdx) && usedHomes.Count < _cityHousePositions.Count);
+
+                var flavor = flavors[i % flavors.Length];
+                var citizen = _citizenScene.Instantiate<TownCitizenNpc>();
+                citizen.NpcId = $"citizen_{i}";
+                citizen.NpcName = flavor.name;
+                citizen.DialogueLow = flavor.low;
+                citizen.DialogueMid = flavor.mid;
+                citizen.DialogueHigh = flavor.high;
+                citizen.WanderCenter = VillageAnchor;
+                citizen.HomePos = _cityHousePositions[homeIdx] + new Vector3(0, 0, 55);
+                citizen.InteriorHomePos = _cityHouseInteriors[homeIdx];
+                _world.AddChild(citizen);
+            }
+
+            // 1 nguoi "cong an" rieng, gan lien voi Tru Canh Sat (nha o chinh la tru canh sat -
+            // index 0 trong danh sach), di lai (tuan tra) quanh khu vuc tru thay vi ca thi tran.
+            var guard = _citizenScene.Instantiate<TownCitizenNpc>();
+            guard.NpcId = "town_guard";
+            guard.NpcName = "Chu Cong An";
+            guard.DialogueLow = new[] { "Giu gin trat tu thi tran la trach nhiem cua ta." };
+            guard.DialogueMid = new[] { "Cau la nguoi tot, ta yen tam roi." };
+            guard.DialogueHigh = new[] { "Co chuyen gi can giup, cu tim ta o Tru Canh Sat nhe." };
+            guard.WanderRadius = 220f;
+            guard.WanderCenter = _cityHousePositions[0];
+            guard.HomePos = _cityHousePositions[0];
+            guard.InteriorHomePos = _cityHouseInteriors[0];
+            _world.AddChild(guard);
         }
 
         private void SpawnEnemies()

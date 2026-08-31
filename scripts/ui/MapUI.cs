@@ -37,6 +37,10 @@ namespace HiepSiVeVuon.UI
         // Canh dong hoa huong duong phia tay nong trai (xem Main.BuildSunflowerField).
         private static readonly Vector2 SunflowerFieldPos2D = new(-2552, 390);
 
+        // Tru canh sat trong khu do thi 50 nha (xem Main.BuildCityDistrict) - VillageAnchor +
+        // policePlot (-690, 0) tinh dong trong code.
+        private static readonly Vector2 PoliceStationPos2D = new(9250 - 690, 3750 + 0);
+
         // Vung toa do the gioi hien thi tren ban do (bao ca nong trai lan thi tran + le).
         // WorldMinX mo rong tu -2200 -> -3000 de bao ca canh dong huong duong o -2552 (xem
         // Main.SunflowerFieldCenter) sau khi doi ra 100m.
@@ -143,6 +147,7 @@ namespace HiepSiVeVuon.UI
                 DrawLandmark(PlateauPos2D[i], new Color(0.55f, 0.42f, 0.32f), i == 0 ? "Cao nguyen" : "");
 
             DrawLandmark(SunflowerFieldPos2D, new Color(0.95f, 0.78f, 0.1f), "Canh dong huong duong");
+            DrawLandmark(PoliceStationPos2D, new Color(0.2f, 0.35f, 0.85f), "Tru Canh Sat");
 
             if (HasWaypoint)
             {
