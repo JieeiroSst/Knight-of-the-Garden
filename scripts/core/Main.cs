@@ -59,6 +59,9 @@ namespace HiepSiVeVuon.Core
         private PackedScene _villageHouseScene = GD.Load<PackedScene>("res://assets3d/quaternius/french_countryside/village_house.glb");
         private PackedScene _stoneBridgeScene = GD.Load<PackedScene>("res://assets3d/quaternius/french_countryside/stone_bridge.glb");
         private readonly List<Vector3> _frenchHousePositions = new();
+        // Khoi da tuong rao 10 hecta quanh nong trai (Quaternius "Stone Wall", CC0, poly.pizza/
+        // m/tdeAOh3LQV) - xem BuildFarmStoneWall.
+        private PackedScene _stoneWallScene = GD.Load<PackedScene>("res://assets3d/quaternius/farm/stone_wall.glb");
         // Chuong ga (Quaternius, CC0, poly.pizza/m/DM0F8siLam) - dat lam cong trinh chinh trong
         // khu chuong ga, giong cach coi cua bo/ngua la hang rao + mang an.
         private PackedScene _chickenCoopScene = GD.Load<PackedScene>("res://assets3d/quaternius/misc/chicken_coop.glb");
@@ -185,6 +188,7 @@ namespace HiepSiVeVuon.Core
                 SpawnTownCitizens();
                 BuildFrenchCountryside();
                 SpawnFrenchVillagers();
+                BuildFarmStoneWall();
             }
             catch (System.Exception e)
             {
@@ -1470,11 +1474,14 @@ namespace HiepSiVeVuon.Core
 
         private void SpawnEnemies()
         {
-            // Quai tap trung o vung hoang da phia bac nha nong dan, tach khoi khu ruong & lang
-            SpawnEnemy("mud_monster", new Vector3(-80, 0, -320));
-            SpawnEnemy("mud_monster", new Vector3(60, 0, -380));
-            SpawnEnemy("mud_monster", new Vector3(180, 0, -300));
-            SpawnEnemy("spiky_monster", new Vector3(120, 0, -450));
+            // Quai tap trung o vung hoang da PHIA BAC, NGOAI tuong da 10 hecta quanh nong trai
+            // (xem FarmWallCenter/FarmWallHalfSize - canh Bac cua tuong o Z = 390-3162.5 =
+            // -2772.5) - dam bao quai khong con xuat hien BEN TRONG pham vi nong trai da duoc
+            // rao lai.
+            SpawnEnemy("mud_monster", new Vector3(-80, 0, -2900));
+            SpawnEnemy("mud_monster", new Vector3(60, 0, -2950));
+            SpawnEnemy("mud_monster", new Vector3(180, 0, -2880));
+            SpawnEnemy("spiky_monster", new Vector3(120, 0, -3020));
         }
 
         private void SpawnEnemy(string id, Vector3 pos)
@@ -2069,6 +2076,92 @@ namespace HiepSiVeVuon.Core
             _world.AddChild(inst);
         }
 
+        // Tuong da 10 hecta bao quanh nong trai: 10 hecta = 100.000 m^2 = hinh vuong canh
+        // ~316.2m (6325 don vi, quy doi 20 don vi/met, canh/2 = 3162.5). Boc quanh TOAN BO khu
+        // vuc nong trai da xay tu truoc den gio (nha nong dan, ruong, nha kho, chuong bo/ngua/ga
+        // + nha nguoi cham, canh dong huong duong) nhu 1 khu dat trang trai lon that su - tam dat
+        // tai tam hang rao ruong hien co (KHONG doi vi tri/kich thuoc ruong that - ruong van giu
+        // nguyen co che trong trot hien co, tuong chi la RANH GIOI dat bao quanh).
+        private static readonly Vector3 FarmWallCenter = new(202, 0, 390);
+        private const float FarmWallHalfSize = 3162.5f;
+
+        private void BuildFarmStoneWall()
+        {
+            // Chan quai vat sinh trong pham vi tuong (WorldStreamer van sinh cay/da binh thuong
+            // o day, chi rieng quai bi chan - xem WorldStreamer.NoEnemyZoneCenter) - tuong nay
+            // RONG HON han ReservedZones cu nen can dang ky rieng, neu khong quai van "lot" duoc
+            // vao phan dat moi them.
+            WorldStreamer.NoEnemyZoneCenter = FarmWallCenter;
+            WorldStreamer.NoEnemyZoneHalfSize = FarmWallHalfSize;
+
+            float minX = FarmWallCenter.X - FarmWallHalfSize;
+            float maxX = FarmWallCenter.X + FarmWallHalfSize;
+            float minZ = FarmWallCenter.Z - FarmWallHalfSize;
+            float maxZ = FarmWallCenter.Z + FarmWallHalfSize;
+            const float gateHalfWidth = 220f;
+
+            // Cong Dong: dung DUNG noi con duong that (FarmGatePos -> VillageAnchor) cat qua
+            // canh Dong cua tuong - tinh giao diem chinh xac (khong hard-code) de duong khong
+            // bao gio bi tuong chan, du toa do nguon co doi sau nay.
+            Vector3 roadDir = VillageAnchor - FarmGatePos;
+            float tGate = (maxX - FarmGatePos.X) / roadDir.X;
+            float eastGateZ = FarmGatePos.Z + tGate * roadDir.Z;
+
+            // THEM 1 CONG O GIUA moi canh Bac/Tay/Nam (khong chi rieng canh Dong noi duong lang
+            // di qua) - neu chi co 1 cong duy nhat, nguoi choi di ra huong khac se bi "nhot" hoan
+            // toan trong 10 hecta, khong the ra ngoai duoc.
+            float midX = (minX + maxX) / 2f;
+            float midZ = (minZ + maxZ) / 2f;
+
+            // Bac - cong o giua
+            AddStoneWallLine(new Vector3(minX, 0, minZ), new Vector3(midX - gateHalfWidth, 0, minZ));
+            AddStoneWallLine(new Vector3(midX + gateHalfWidth, 0, minZ), new Vector3(maxX, 0, minZ));
+            // Tay - cong o giua
+            AddStoneWallLine(new Vector3(minX, 0, minZ), new Vector3(minX, 0, midZ - gateHalfWidth));
+            AddStoneWallLine(new Vector3(minX, 0, midZ + gateHalfWidth), new Vector3(minX, 0, maxZ));
+            // Nam - cong o giua
+            AddStoneWallLine(new Vector3(minX, 0, maxZ), new Vector3(midX - gateHalfWidth, 0, maxZ));
+            AddStoneWallLine(new Vector3(midX + gateHalfWidth, 0, maxZ), new Vector3(maxX, 0, maxZ));
+            // Dong - cong dung tai giao diem duong that
+            AddStoneWallLine(new Vector3(maxX, 0, minZ), new Vector3(maxX, 0, eastGateZ - gateHalfWidth));
+            AddStoneWallLine(new Vector3(maxX, 0, eastGateZ + gateHalfWidth), new Vector3(maxX, 0, maxZ));
+        }
+
+        // Xep khoi da doc 1 duong thang (giong AddFenceLine/AddRoad) - tu dong chia deu so
+        // manh khop khit tu "from" den "to", kem va cham dac chan nguoi choi/dong vat.
+        private void AddStoneWallLine(Vector3 from, Vector3 to)
+        {
+            if (_stoneWallScene == null) return;
+            const float nativeLength = 1.56f; // do dai that cua model (xem ghi chu khi tai ve)
+            const float targetSegment = 130f;
+
+            float dist = from.DistanceTo(to);
+            if (dist < 1f) return;
+            int count = Mathf.Max(1, Mathf.RoundToInt(dist / targetSegment));
+            float actualSegment = dist / count;
+            float wallScale = actualSegment / nativeLength;
+
+            Vector3 dir = (to - from).Normalized();
+            float angleDeg = Mathf.RadToDeg(Mathf.Atan2(-dir.Z, dir.X));
+            for (int i = 0; i < count; i++)
+            {
+                var segPos = from + dir * (actualSegment * (i + 0.5f));
+                var inst = _stoneWallScene.Instantiate<Node3D>();
+                inst.Position = segPos;
+                inst.RotationDegrees = new Vector3(0, angleDeg, 0);
+                inst.Scale = Vector3.One * wallScale;
+                _world.AddChild(inst);
+
+                var body = new StaticBody3D { Position = segPos, RotationDegrees = new Vector3(0, angleDeg, 0) };
+                body.AddChild(new CollisionShape3D
+                {
+                    Shape = new BoxShape3D { Size = new Vector3(actualSegment, 40f, 20f) },
+                    Position = Vector3.Up * 20f
+                });
+                _world.AddChild(body);
+            }
+        }
+
         private void SpawnCow(Vector3 pos, bool isAdult)
         {
             var cow = _cowScene.Instantiate<Cow>();
@@ -2241,8 +2334,9 @@ namespace HiepSiVeVuon.Core
 
             var rng = new RandomNumberGenerator();
             rng.Randomize();
+            // Cung nam NGOAI tuong da 10 hecta (xem SpawnEnemies) - giong ly do o tren.
             for (int i = 0; i < 2; i++)
-                SpawnEnemy("mud_monster", new Vector3(rng.RandfRange(-150, 250), 0, rng.RandfRange(-480, -280)));
+                SpawnEnemy("mud_monster", new Vector3(rng.RandfRange(-150, 250), 0, rng.RandfRange(-3050, -2850)));
         }
 
         private void GiveStartingItems()

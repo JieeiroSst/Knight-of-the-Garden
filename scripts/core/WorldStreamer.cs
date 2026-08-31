@@ -66,6 +66,20 @@ namespace HiepSiVeVuon.Core
             return true;
         }
 
+        // Vung KHONG cho quai vat spawn (van co cay/da binh thuong - chi chan RIENG quai) - dung
+        // cho pham vi ben trong tuong da 10 hecta quanh nong trai (xem Main.BuildFarmStoneWall),
+        // vi tuong nay RONG HON han ReservedZones cu (chi ~3000x3000 quanh goc toa do) nen quai
+        // van co the "lot" vao trong tuong o phan dat moi neu khong chan rieng.
+        public static Vector3? NoEnemyZoneCenter = null;
+        public static float NoEnemyZoneHalfSize = 0f;
+
+        private static bool IsInNoEnemyZone(Vector3 worldPos)
+        {
+            if (NoEnemyZoneCenter == null) return false;
+            var c = NoEnemyZoneCenter.Value;
+            return Mathf.Abs(worldPos.X - c.X) <= NoEnemyZoneHalfSize && Mathf.Abs(worldPos.Z - c.Z) <= NoEnemyZoneHalfSize;
+        }
+
         private struct DecorOption
         {
             public string Path;
@@ -275,6 +289,7 @@ namespace HiepSiVeVuon.Core
                 {
                     var localPos = new Vector3(rng.RandfRange(-enemyHalf, enemyHalf), 0f, rng.RandfRange(-enemyHalf, enemyHalf));
                     if (IsExcluded(center + localPos)) continue; // vd nam trong chan 1 cao nguyen
+                    if (IsInNoEnemyZone(center + localPos)) continue; // ben trong tuong da 10 hecta quanh nong trai
                     var e = _enemyScene.Instantiate<Enemy>();
                     e.EnemyId = rng.Randf() < 0.85f ? "mud_monster" : "spiky_monster";
                     e.Position = center + localPos;
