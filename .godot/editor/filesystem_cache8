@@ -32,14 +32,15 @@ tree.png::CompressedTexture2D::4866338432972072167::1788083050::1788109884::1:::
 ::res://assets/tools/::1788109884
 watering_can.png::CompressedTexture2D::5413817283367451984::1788083050::1788109884::1::::<><>::
 ::res://assets3d/::1788158925
-::res://assets3d/kenney/::1788158388
+::res://assets3d/kenney/::1788160093
 ::res://assets3d/kenney/nature/::1788119123
 flower_yellowA.glb::PackedScene::1733184289245697740::1788111646::1788111671::1::::<><>::
 grass_large.glb::PackedScene::5583920266185290187::1788111647::1788111671::1::::<><>::
 plant_bush.glb::PackedScene::2734394506724234472::1788111647::1788111671::1::::<><>::
 ::res://assets3d/kenney/town/::1788111662
 ::res://assets3d/kenney/town/Models/::1788111662
-::res://assets3d/kenney/town/Models/GLB format/::1788114416
+::res://assets3d/kenney/town/Models/GLB format/::1788160159
+balcony-wall-fence.glb::PackedScene::1119481549679479373::1788160093::1788160159::1::::<><>::uid://bpek2csm3d0fq::::res://assets3d/kenney/town/Models/GLB format/Textures/colormap.png
 banner-red.glb::PackedScene::4837649833808316545::1754222162::1788111671::1::::<><>::
 chimney.glb::PackedScene::7376641506525365756::1754222162::1788111671::1::::<><>::
 fence-gate.glb::PackedScene::9064978851438356345::1754222162::1788111671::1::::<><>::
@@ -60,10 +61,13 @@ wall-wood.glb::PackedScene::7141706728348900807::1754222167::1788111671::1::::<>
 wall.glb::PackedScene::8360353354770359584::1788114242::1788114416::1::::<><>::uid://bpek2csm3d0fq::::res://assets3d/kenney/town/Models/GLB format/Textures/colormap.png
 ::res://assets3d/kenney/town/Models/GLB format/Textures/::1788114416
 colormap.png::CompressedTexture2D::3448166369078892022::1754222168::1788114416::1::::<><>::
-::res://assets3d/polybygoogle/::1788158925
+::res://assets3d/polybygoogle/::1788158989
 scarecrow_Scarecrow_BaseColor.png::CompressedTexture2D::5014329509742630632::1788158987::1788158989::1::::<><>::
 scarecrow.glb::PackedScene::3869110908974486496::1788158926::1788158989::1::::<><>::uid://cdo8jlh6ab7fw::::res://assets3d/polybygoogle/scarecrow_Scarecrow_BaseColor.png
-::res://assets3d/quaternius/::1788158310
+::res://assets3d/quaternius/::1788160231
+::res://assets3d/quaternius/buildings/::1788160623
+door.glb::PackedScene::6333459009508232482::1788160623::1788160695::1::::<><>::
+house_v2.glb::PackedScene::9191428081772839539::1788160515::1788160559::1::::<><>::
 ::res://assets3d/quaternius/characters/::1788114054
 Adventurer.gltf::PackedScene::4332899288848776949::1788113739::1788114053::1::::<><>::
 Casual_2.gltf::PackedScene::7980540958049149794::1788113740::1788114054::1::::<><>::
@@ -128,28 +132,28 @@ ground_roughness.jpg::CompressedTexture2D::4417060211962265026::1788120880::1788
 enemies.json::JSON::-1::1788083454::0::1::::<><>::
 items.json::JSON::-1::1788119332::0::1::::<><>::
 quests.json::JSON::-1::1788083464::0::1::::<><>::
-::res://scenes/::1788158782
+::res://scenes/::1788160560
 Enemy.tscn::PackedScene::79243486434315368::1788112163::0::1::::<><>::res://scripts/entities/Enemy.cs
 FarmPlot.tscn::PackedScene::1996131974404755240::1788117315::0::1::::<><>::res://scripts/entities/FarmPlot.cs
-Main.tscn::PackedScene::2793422279468456::1788158782::0::1::::<><>::res://scripts/core/Main.cs<>res://scripts/ui/HUD.cs<>res://scripts/ui/DialogueBox.cs<>res://scripts/ui/InventoryUI.cs<>res://scripts/ui/ShopUI.cs
+Main.tscn::PackedScene::2793422279468456::1788160560::0::1::::<><>::res://scripts/core/Main.cs<>res://scripts/ui/HUD.cs<>res://scripts/ui/DialogueBox.cs<>res://scripts/ui/InventoryUI.cs<>res://scripts/ui/ShopUI.cs
 NPC.tscn::PackedScene::84723596343656::1788112169::0::1::::<><>::res://scripts/entities/NPC.cs
 Player.tscn::PackedScene::3462004589309990056::1788120674::0::1::::<><>::res://scripts/entities/Player.cs
 Tree.tscn::PackedScene::-1::1788119345::0::1::::<><>::
-::res://scenes/decor/::1788158971
+::res://scenes/decor/::1788160279
 ::res://scripts/::1788110003
-::res://scripts/core/::1788158959
+::res://scripts/core/::1788160669
 CharacterRig.cs::CSharpScript::-1::1788112915::0::1::::<><>::
 DayNightCycle.cs::CSharpScript::-1::1788121331::0::1::::<>Node3D<>::
 GameManager.cs::CSharpScript::-1::1788121705::0::1::::<>Node<>::
 GroundMaterial.cs::CSharpScript::-1::1788120912::0::1::::<><>::
-Main.cs::CSharpScript::-1::1788158959::0::1::::<>Node3D<>::
+Main.cs::CSharpScript::-1::1788160669::0::1::::<>Node3D<>::
 WorldStreamer.cs::CSharpScript::-1::1788157899::0::1::::<>Node3D<>::
 ::res://scripts/data/::1788083118
 GameData.cs::CSharpScript::-1::1788083118::0::1::::<><>::
-::res://scripts/entities/::1788122413
+::res://scripts/entities/::1788159725
 DroppedItem.cs::CSharpScript::-1::1788111945::0::1::::<>Area3D<>::
 Enemy.cs::CSharpScript::-1::1788119923::0::1::::<>CharacterBody3D<>::
-FarmPlot.cs::CSharpScript::-1::1788117337::0::1::::<>StaticBody3D<>::
+FarmPlot.cs::CSharpScript::-1::1788159725::0::1::::<>StaticBody3D<>::
 NPC.cs::CSharpScript::-1::1788113745::0::1::::<>CharacterBody3D<>::
 Player.cs::CSharpScript::-1::1788122413::0::1::::<>CharacterBody3D<>::
 Tree.cs::CSharpScript::-1::1788119340::0::1::::<>StaticBody3D<>::
@@ -158,9 +162,9 @@ Inventory.cs::CSharpScript::-1::1788083172::0::1::::<>Node<>::
 ItemDatabase.cs::CSharpScript::-1::1788083146::0::1::::<>Node<>::
 QuestSystem.cs::CSharpScript::-1::1788083188::0::1::::<>Node<>::
 SaveSystem.cs::CSharpScript::-1::1788083210::0::1::::<>Node<>::
-::res://scripts/ui/::1788121633
+::res://scripts/ui/::1788159574
 DialogueBox.cs::CSharpScript::-1::1788083370::0::1::::<>CanvasLayer<>::
-HUD.cs::CSharpScript::-1::1788121633::0::1::::<>CanvasLayer<>::
+HUD.cs::CSharpScript::-1::1788159574::0::1::::<>CanvasLayer<>::
 InventoryUI.cs::CSharpScript::-1::1788083398::0::1::::<>CanvasLayer<>::
 ShopUI.cs::CSharpScript::-1::1788110205::0::1::::<>CanvasLayer<>::
 ::res://ui/::1788083028

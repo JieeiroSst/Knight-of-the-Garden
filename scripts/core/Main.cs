@@ -19,6 +19,9 @@ namespace HiepSiVeVuon.Core
         // CC-BY (poly.pizza/m/7qFs_DjjuVp).
         private PackedScene _scarecrowScene = GD.Load<PackedScene>("res://assets3d/polybygoogle/scarecrow.glb");
         private PackedScene _barnScene = GD.Load<PackedScene>("res://assets3d/quaternius/farm/Barn.fbx");
+        // Nha o that (model hoan chinh, khong ghep manh) - "House_2" trong Quaternius Medieval
+        // Village Pack, CC0, nhieu chi tiet hon (9 manh vat lieu) va cao/to hon ban truoc.
+        private PackedScene _farmhouseScene = GD.Load<PackedScene>("res://assets3d/quaternius/buildings/house_v2.glb");
         private PackedScene _bigBarnScene = GD.Load<PackedScene>("res://assets3d/quaternius/farm/BigBarn.fbx");
         private PackedScene _smallBarnScene = GD.Load<PackedScene>("res://assets3d/quaternius/farm/SmallBarn.fbx");
         private PackedScene _treeScene = GD.Load<PackedScene>("res://assets3d/quaternius/nature/tree_maple_1.glb");
@@ -32,7 +35,7 @@ namespace HiepSiVeVuon.Core
         // Nha nong dan la tam neo cho toan bo bo cuc (ruong quanh nha, kieu Stardew Valley)
         private static readonly Vector3 FarmhousePos = new(-300, 0, -60);
         private static readonly Vector3 FarmOrigin = new(-260, 0, 180); // goc luoi ruong (gx=0, gz=0) - lui xa nha kho them 2m
-        private const float FarmSpacing = 60f;
+        private const float FarmSpacing = 84f; // to hon 40% so voi truoc (60 -> 84), khop voi o dat da phong to
         private const int FarmGridW = 12; // rong them ~9m nua (tong ~18m so voi ban dau)
         private const int FarmGridH = 6;
 
@@ -40,7 +43,7 @@ namespace HiepSiVeVuon.Core
         private static readonly Vector3 FarmGatePos = new(
             FarmOrigin.X + (FarmGridW - 1) * FarmSpacing * 0.5f,
             0,
-            FarmOrigin.Z + (FarmGridH - 1) * FarmSpacing + 30f);
+            FarmOrigin.Z + (FarmGridH - 1) * FarmSpacing + 42f);
         // Tam quang truong thi tran - cach nha nong dan ~500m (quy doi 20 don vi/met, nhan vat
         // cao ~40 don vi ~ 2m). Nam trong 1 "dao" dat rieng (xem DrawTownGround), khong dinh lien
         // voi khu nong trai - giua 2 khu la vung hoang da vo han that su cua WorldStreamer, noi
@@ -122,8 +125,8 @@ namespace HiepSiVeVuon.Core
             floorBody.AddChild(floorShape);
             _world.AddChild(floorBody);
 
-            // Nha nong dan (nha nguoi choi) - dung model Barn that, to hon han nguoi choi (cao ~40)
-            AddDecor(_barnScene, FarmhousePos, 14f);
+            // Nha nong dan (nha nguoi choi) - model nha that chi tiet hon, to them 20%
+            AddDecor(_farmhouseScene, FarmhousePos, 66f);
 
             // Nha kho (barn) - dat canh ruong, cach hang rao ruong dung 5m (100 don vi) ve phia tay
             AddDecor(_barnScene, new Vector3(-482, 0, 250), 24f);
@@ -281,9 +284,9 @@ namespace HiepSiVeVuon.Core
 
         private void BuildFarmFence()
         {
-            float minX = FarmOrigin.X - 30f;
-            float maxX = FarmOrigin.X + (FarmGridW - 1) * FarmSpacing + 30f;
-            float minZ = FarmOrigin.Z - 30f;
+            float minX = FarmOrigin.X - 42f;
+            float maxX = FarmOrigin.X + (FarmGridW - 1) * FarmSpacing + 42f;
+            float minZ = FarmOrigin.Z - 42f;
             float maxZ = FarmGatePos.Z;
             float gateX = FarmGatePos.X;
 

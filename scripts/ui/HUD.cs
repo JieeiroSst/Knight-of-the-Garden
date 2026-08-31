@@ -40,6 +40,7 @@ namespace HiepSiVeVuon.UI
             var panel = new PanelContainer();
             panel.Position = new Vector2(10, 10);
             panel.CustomMinimumSize = new Vector2(230, 0);
+            panel.Scale = new Vector2(0.5f, 0.5f); // thu nho toan bo bang trang thai xuong con 50%
             AddChild(panel);
 
             var vb = new VBoxContainer();
@@ -66,6 +67,7 @@ namespace HiepSiVeVuon.UI
             _hint.AutowrapMode = TextServer.AutowrapMode.Word;
             _hint.Position = new Vector2(10, 500);
             _hint.CustomMinimumSize = new Vector2(940, 0);
+            _hint.Scale = new Vector2(0.6f, 0.6f); // thu nho dong huong dan xuong con 60%
             AddChild(_hint);
         }
 

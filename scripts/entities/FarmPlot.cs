@@ -34,7 +34,7 @@ namespace HiepSiVeVuon.Entities
             {
                 var soil = dirtScene.Instantiate<Node3D>();
                 soil.Name = "Soil";
-                soil.Scale = Vector3.One * 22f;
+                soil.Scale = Vector3.One * 30.8f; // to hon 40% so voi truoc (22 -> 30.8)
                 AddChild(soil);
                 _soilMesh = FindMeshInstance(soil);
             }

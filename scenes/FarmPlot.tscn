@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scripts/entities/FarmPlot.cs" id="1"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_1"]
-size = Vector3(44, 4, 44)
+size = Vector3(61.6, 4, 61.6)
 
 [node name="FarmPlot" type="StaticBody3D" groups=["farm_plots"]]
 script = ExtResource("1")
