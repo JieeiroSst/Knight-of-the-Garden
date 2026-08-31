@@ -36,6 +36,14 @@ namespace HiepSiVeVuon.Core
         private static readonly Vector2 FarmhouseFootprint = new(2.22f, 3.42f);
         private PackedScene _roadTileScene = GD.Load<PackedScene>("res://assets3d/quaternius/road/path_straight.glb");
 
+        // Cua vao 3D that + do noi that (Quaternius Medieval Village Pack, CC0) cho tinh nang
+        // vao/ra cong trinh - xem BuildInterior/AddBuildingEntrance.
+        private PackedScene _doorScene = GD.Load<PackedScene>("res://assets3d/quaternius/buildings/door_round.glb");
+        private PackedScene _benchScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/bench.glb");
+        private PackedScene _crateScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/crate.glb");
+        private PackedScene _barrelScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/barrel.glb");
+        private PackedScene _bagScene = GD.Load<PackedScene>("res://assets3d/quaternius/furniture/bag.glb");
+
         private Node3D _world;
 
         // Nha nong dan la tam neo cho toan bo bo cuc (ruong quanh nha, kieu Stardew Valley)
@@ -133,9 +141,12 @@ namespace HiepSiVeVuon.Core
 
             // Nha nong dan (nha nguoi choi) - model nha that chi tiet hon, to them 20%, xoay 180 do
             AddDecor(_farmhouseScene, FarmhousePos, 66f, 180f, FarmhouseFootprint);
+            AddBuildingEntrance(FarmhousePos, 180f, 150f, 120f, RoomKind.Farmhouse);
 
             // Nha kho (barn) - dat canh ruong, cach hang rao ruong dung 5m (100 don vi) ve phia tay
-            AddDecor(_barnScene, new Vector3(-482, 0, 250), 24f, 0f, BarnFootprint);
+            var barnPos = new Vector3(-482, 0, 250);
+            AddDecor(_barnScene, barnPos, 24f, 0f, BarnFootprint);
+            AddBuildingEntrance(barnPos, 0f, 150f, 110f, RoomKind.Barn);
 
             // Bu nhin dung giua ruong (khe ho giua cac o dat) & cay that quanh nha
             AddDecor(_scarecrowScene, new Vector3(70, 0, 330), 13f);
@@ -170,23 +181,25 @@ namespace HiepSiVeVuon.Core
             });
             _world.AddChild(floorBody);
 
-            AddDecor(_bigBarnScene, VillageAnchor + new Vector3(0, 0, -180), 18f, 0f, BarnFootprint); // Toa Thi Chinh
+            var townHallPos = VillageAnchor + new Vector3(0, 0, -180);
+            AddDecor(_bigBarnScene, townHallPos, 18f, 0f, BarnFootprint); // Toa Thi Chinh
+            AddBuildingEntrance(townHallPos, 0f, 120f, 90f, RoomKind.TownHall);
 
             // Vong trong
-            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(-170, 0, -60), 12f, 0f, SmallBarnFootprint); // gia lang
-            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(170, 0, -60), 12f, 0f, SmallBarnFootprint);  // thuong nhan
-            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(-170, 0, 140), 12f, 0f, SmallBarnFootprint); // tho ren
-            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(170, 0, 140), 12f, 0f, SmallBarnFootprint);  // ba lang
-            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(0, 0, 220), 12f, 0f, SmallBarnFootprint);    // nguoi gac rung
+            AddSmallHouse(VillageAnchor + new Vector3(-170, 0, -60)); // gia lang
+            AddSmallHouse(VillageAnchor + new Vector3(170, 0, -60));  // thuong nhan
+            AddSmallHouse(VillageAnchor + new Vector3(-170, 0, 140)); // tho ren
+            AddSmallHouse(VillageAnchor + new Vector3(170, 0, 140));  // ba lang
+            AddSmallHouse(VillageAnchor + new Vector3(0, 0, 220));    // nguoi gac rung
 
             // Vong giua
-            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(-350, 0, 20), 12f, 0f, SmallBarnFootprint);  // chu quan tro
-            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(350, 0, 20), 12f, 0f, SmallBarnFootprint);   // tho moc
-            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(0, 0, 400), 12f, 0f, SmallBarnFootprint);    // hoc gia
+            AddSmallHouse(VillageAnchor + new Vector3(-350, 0, 20));  // chu quan tro
+            AddSmallHouse(VillageAnchor + new Vector3(350, 0, 20));   // tho moc
+            AddSmallHouse(VillageAnchor + new Vector3(0, 0, 400));    // hoc gia
 
             // Vong ngoai (nha + NPC moi them)
-            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(-500, 0, 250), 12f, 0f, SmallBarnFootprint); // tho may
-            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(500, 0, 250), 12f, 0f, SmallBarnFootprint);  // nguoi chan cuu
+            AddSmallHouse(VillageAnchor + new Vector3(-500, 0, 250)); // tho may
+            AddSmallHouse(VillageAnchor + new Vector3(500, 0, 250));  // nguoi chan cuu
 
             AddDecor(_treeScene2, VillageAnchor + new Vector3(-300, 0, -140), 38f);
             AddDecor(_treeScene, VillageAnchor + new Vector3(300, 0, -140), 34f);
@@ -223,6 +236,271 @@ namespace HiepSiVeVuon.Core
                 });
                 _world.AddChild(body);
             }
+        }
+
+        private enum RoomKind { Farmhouse, Barn, TownHall, Village }
+
+        // Danh so thu tu cong trinh -> vi tri phong duoi long dat rieng cho tung cong trinh
+        // (cach nhau 500 don vi tren truc X de khong bao gio chong len nhau).
+        private int _nextInteriorIndex = 0;
+
+        private void AddSmallHouse(Vector3 pos)
+        {
+            AddDecor(_smallBarnScene, pos, 12f, 0f, SmallBarnFootprint);
+            AddBuildingEntrance(pos, 0f, 80f, 50f, RoomKind.Village);
+        }
+
+        // Cong trinh + noi that RIENG cho tung cong trinh (khong dung chung nua - moi nha co 1
+        // phong khac nhau, xem BuildRoomForKind): them 1 vung tuong tac (E) bao quanh ca cong
+        // trinh (du de kich hoat tu bat ky huong tiep can nao, vi khong the xac dinh chinh xac
+        // mat tien that su cua tung model neu khong xem truc quan - bai hoc tu lan gan cua rieng
+        // bi lech voi tuong nha truoc day) + 1 cua 3D that (Quaternius Door Round, CC0).
+        private void AddBuildingEntrance(Vector3 buildingPos, float rotationYDegrees, float triggerRadius, float doorDistance, RoomKind kind)
+        {
+            var interiorAnchor = new Vector3(_nextInteriorIndex * 500f, -600f, 0f);
+            _nextInteriorIndex++;
+
+            AddBuildingDoor(buildingPos, triggerRadius, isExit: false, interiorAnchor);
+            BuildRoomForKind(interiorAnchor, kind);
+
+            if (_doorScene != null)
+            {
+                var basis = Basis.Identity.Rotated(Vector3.Up, Mathf.DegToRad(rotationYDegrees));
+                var door = _doorScene.Instantiate<Node3D>();
+                door.Position = buildingPos + basis * new Vector3(0, 0, doorDistance);
+                door.RotationDegrees = new Vector3(0, rotationYDegrees, 0);
+                door.Scale = Vector3.One * 55f;
+                _world.AddChild(door);
+            }
+        }
+
+        private void AddBuildingDoor(Vector3 pos, float triggerRadius, bool isExit, Vector3 interiorAnchor = default)
+        {
+            var door = new BuildingDoor { IsExit = isExit, InteriorAnchor = interiorAnchor };
+            door.Position = pos;
+            door.AddChild(new CollisionShape3D { Shape = new SphereShape3D { Radius = triggerRadius } });
+            _world.AddChild(door);
+        }
+
+        // Chon kich thuoc/mau sac/do dac theo LOAI cong trinh, de moi loai nha co khong gian
+        // rieng thay vi 1 phong dung chung y het nhau cho tat ca (nha nong dan am cung, nha kho
+        // chat day thung/bao nhu kho that, Toa Thi Chinh rong va trang trong, nha dan don gian
+        // hon va co vai bien the mau/do dac khac nhau giua cac nha).
+        private void BuildRoomForKind(Vector3 anchor, RoomKind kind)
+        {
+            switch (kind)
+            {
+                case RoomKind.Farmhouse:
+                    // roomSize PHAI du lon: camera cua Player nam co dinh cach nhan vat 115 don
+                    // vi VE PHIA SAU (dung offset ngoai troi, xem Player.tscn Camera3D) - neu
+                    // roomSize/2 < 115 thi camera se nam NGOAI phong (xuyen qua tuong sau lung),
+                    // nhin thay mat trong cua tuong o cu ly cuc gan -> day chinh la nguyen nhan
+                    // "khong gian nha bi vo" da xay ra o moi phong truoc day.
+                    BuildRoom(anchor, 380f, 150f,
+                        wallColor: new Color(0.83f, 0.74f, 0.58f),
+                        floorColor: new Color(0.5f, 0.34f, 0.19f),
+                        rugColor: new Color(0.55f, 0.15f, 0.15f),
+                        furnish: a =>
+                        {
+                            AddDecor(_benchScene, a + new Vector3(-60, 0, -75), 90f);
+                            AddDecor(_bagScene, a + new Vector3(65, 0, -70), 90f);
+                            AddDecor(_barrelScene, a + new Vector3(-75, 0, 60), 90f);
+                            AddDecor(_crateScene, a + new Vector3(70, 0, 65), 90f, 25f);
+                        });
+                    break;
+
+                case RoomKind.Barn:
+                    // Mau go do dam, khop mau vo ngoai cua Barn - cam giac day la kho chua do that.
+                    BuildRoom(anchor, 420f, 170f,
+                        wallColor: new Color(0.5f, 0.28f, 0.2f),
+                        floorColor: new Color(0.42f, 0.3f, 0.18f),
+                        rugColor: null,
+                        furnish: a =>
+                        {
+                            AddDecor(_crateScene, a + new Vector3(-90, 0, -90), 95f);
+                            AddDecor(_crateScene, a + new Vector3(-60, 0, -95), 95f, 15f);
+                            AddDecor(_barrelScene, a + new Vector3(90, 0, -80), 95f);
+                            AddDecor(_barrelScene, a + new Vector3(95, 0, -50), 95f, 30f);
+                            AddDecor(_bagScene, a + new Vector3(-90, 0, 80), 95f);
+                            AddDecor(_bagScene, a + new Vector3(-60, 0, 95), 95f, -20f);
+                            AddDecor(_crateScene, a + new Vector3(90, 0, 90), 95f, 40f);
+                        });
+                    break;
+
+                case RoomKind.TownHall:
+                    // Phong rong, tuong da xam, ghe xep doi xung 2 ben nhu 1 sanh lon trang trong.
+                    BuildRoom(anchor, 440f, 200f,
+                        wallColor: new Color(0.62f, 0.6f, 0.58f),
+                        floorColor: new Color(0.4f, 0.36f, 0.32f),
+                        rugColor: new Color(0.5f, 0.1f, 0.12f),
+                        furnish: a =>
+                        {
+                            AddDecor(_benchScene, a + new Vector3(-90, 0, -40), 100f, 90f);
+                            AddDecor(_benchScene, a + new Vector3(90, 0, -40), 100f, -90f);
+                            AddDecor(_benchScene, a + new Vector3(-90, 0, 40), 100f, 90f);
+                            AddDecor(_benchScene, a + new Vector3(90, 0, 40), 100f, -90f);
+                            AddDecor(_crateScene, a + new Vector3(0, 0, -110), 100f);
+                        });
+                    break;
+
+                case RoomKind.Village:
+                default:
+                    // 3 bien the mau/do dac khac nhau xoay vong theo thu tu nha, de day khong
+                    // phai 9-10 can nha giong het nhau tung centimet.
+                    int variant = _nextInteriorIndex % 3;
+                    var palette = variant == 0
+                        ? new Color(0.8f, 0.7f, 0.55f)
+                        : variant == 1 ? new Color(0.7f, 0.75f, 0.68f) : new Color(0.78f, 0.62f, 0.55f);
+                    var rug = variant == 0
+                        ? new Color(0.4f, 0.35f, 0.55f)
+                        : variant == 1 ? new Color(0.35f, 0.45f, 0.4f) : new Color(0.5f, 0.35f, 0.3f);
+                    BuildRoom(anchor, 380f, 140f,
+                        wallColor: palette,
+                        floorColor: new Color(0.47f, 0.32f, 0.18f),
+                        rugColor: rug,
+                        furnish: a =>
+                        {
+                            if (variant == 0)
+                            {
+                                AddDecor(_benchScene, a + new Vector3(-55, 0, -60), 85f);
+                                AddDecor(_bagScene, a + new Vector3(55, 0, 60), 85f);
+                            }
+                            else if (variant == 1)
+                            {
+                                AddDecor(_crateScene, a + new Vector3(-55, 0, -60), 85f, 20f);
+                                AddDecor(_barrelScene, a + new Vector3(55, 0, 55), 85f);
+                            }
+                            else
+                            {
+                                AddDecor(_barrelScene, a + new Vector3(-55, 0, 55), 85f, -20f);
+                                AddDecor(_bagScene, a + new Vector3(55, 0, -55), 85f);
+                                AddDecor(_benchScene, a + new Vector3(0, 0, -65), 85f);
+                            }
+                        });
+                    break;
+            }
+        }
+
+        // Khung phong dung chung (san/tran/tuong/den/tham/cua) - tham so mau sac/kich thuoc/do
+        // dac khac nhau theo tung loai cong trinh (xem BuildRoomForKind).
+        private void BuildRoom(Vector3 anchor, float roomSize, float wallHeight, Color wallColor, Color floorColor, Color? rugColor, System.Action<Vector3> furnish)
+        {
+            var floorMat = new StandardMaterial3D
+            {
+                AlbedoColor = floorColor,
+                Roughness = 0.85f,
+                CullMode = BaseMaterial3D.CullModeEnum.Disabled
+            };
+            var floor = new MeshInstance3D
+            {
+                Name = "InteriorFloor",
+                Mesh = new PlaneMesh { Size = new Vector2(roomSize, roomSize) },
+                Position = anchor,
+                MaterialOverride = floorMat
+            };
+            _world.AddChild(floor);
+
+            var floorBody = new StaticBody3D { Name = "InteriorFloorCollision" };
+            floorBody.AddChild(new CollisionShape3D
+            {
+                Shape = new BoxShape3D { Size = new Vector3(roomSize, 8f, roomSize) },
+                Position = anchor + Vector3.Down * 4f
+            });
+            _world.AddChild(floorBody);
+
+            // Luoi an toan: 1 tam chan rong hon va thap hon san chinh mot chut - neu vi ly do
+            // gi nguoi choi lot qua san chinh (vd cham vao dung luc rat khit khi vua vao phong)
+            // se rung ngay tai day thay vi roi mai vao khoang khong duoi long dat.
+            var safetyBody = new StaticBody3D { Name = "InteriorSafetyFloor" };
+            safetyBody.AddChild(new CollisionShape3D
+            {
+                Shape = new BoxShape3D { Size = new Vector3(roomSize * 2f, 20f, roomSize * 2f) },
+                Position = anchor + Vector3.Down * 70f
+            });
+            _world.AddChild(safetyBody);
+
+            var ceilingMat = new StandardMaterial3D
+            {
+                AlbedoColor = floorColor.Darkened(0.4f),
+                Roughness = 1f,
+                CullMode = BaseMaterial3D.CullModeEnum.Disabled
+            };
+            var ceiling = new MeshInstance3D
+            {
+                Name = "InteriorCeiling",
+                Mesh = new PlaneMesh { Size = new Vector2(roomSize, roomSize) },
+                Position = anchor + Vector3.Up * wallHeight,
+                RotationDegrees = new Vector3(180, 0, 0),
+                MaterialOverride = ceilingMat
+            };
+            _world.AddChild(ceiling);
+
+            AddInteriorWall(anchor + new Vector3(0, wallHeight / 2f, -roomSize / 2f), new Vector3(roomSize, wallHeight, 8f), wallColor);
+            AddInteriorWall(anchor + new Vector3(0, wallHeight / 2f, roomSize / 2f), new Vector3(roomSize, wallHeight, 8f), wallColor);
+            AddInteriorWall(anchor + new Vector3(-roomSize / 2f, wallHeight / 2f, 0), new Vector3(8f, wallHeight, roomSize), wallColor);
+            AddInteriorWall(anchor + new Vector3(roomSize / 2f, wallHeight / 2f, 0), new Vector3(8f, wallHeight, roomSize), wallColor);
+
+            // Anh sang am trong nha (den ngoai + Sun ngoai troi khong chieu toi day vi bi tran chan)
+            var light = new OmniLight3D
+            {
+                Position = anchor + Vector3.Up * (wallHeight * 0.75f),
+                LightColor = new Color(1f, 0.9f, 0.72f),
+                LightEnergy = 3.2f,
+                OmniRange = roomSize * 1.2f
+            };
+            _world.AddChild(light);
+
+            if (rugColor.HasValue)
+            {
+                var rug = new MeshInstance3D
+                {
+                    Mesh = new PlaneMesh { Size = new Vector2(roomSize * 0.4f, roomSize * 0.27f) },
+                    Position = anchor + Vector3.Up * 0.5f,
+                    MaterialOverride = new StandardMaterial3D
+                    {
+                        AlbedoColor = rugColor.Value,
+                        Roughness = 1f,
+                        CullMode = BaseMaterial3D.CullModeEnum.Disabled
+                    }
+                };
+                _world.AddChild(rug);
+            }
+
+            // Cua vao (mat trong) - dat sat tuong doi dien cua thoat, cho cam giac day la
+            // "cua ban vua di qua" thay vi mot can phong khong ro loi vao/ra.
+            if (_doorScene != null)
+            {
+                var innerDoor = _doorScene.Instantiate<Node3D>();
+                innerDoor.Position = anchor + new Vector3(0, 0, roomSize / 2f - 6f);
+                innerDoor.RotationDegrees = new Vector3(0, 180, 0);
+                innerDoor.Scale = Vector3.One * 55f;
+                _world.AddChild(innerDoor);
+            }
+
+            furnish(anchor);
+
+            // Cua thoat: nhan [E] khi dung gan de tro ve dung vi tri ngoai troi da vao
+            AddBuildingDoor(anchor + new Vector3(0, 0, roomSize / 2f - 25f), 55f, isExit: true);
+        }
+
+        private void AddInteriorWall(Vector3 center, Vector3 size, Color color)
+        {
+            var mesh = new MeshInstance3D
+            {
+                Mesh = new BoxMesh { Size = size },
+                Position = center,
+                MaterialOverride = new StandardMaterial3D
+                {
+                    AlbedoColor = color,
+                    Roughness = 0.85f,
+                    CullMode = BaseMaterial3D.CullModeEnum.Disabled
+                }
+            };
+            _world.AddChild(mesh);
+
+            var body = new StaticBody3D { Position = center };
+            body.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = size } });
+            _world.AddChild(body);
         }
 
         // Ve mot doan duong dat phang noi 2 diem (dung mau, khong can texture lap).

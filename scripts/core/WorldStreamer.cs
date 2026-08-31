@@ -23,6 +23,10 @@ namespace HiepSiVeVuon.Core
         {
             (-3, 2, -3, 2),     // khu nong trai (quanh goc toa do)
             (15, 21, 4, 10),    // khu thi tran (quanh VillageAnchor, xem Main.cs)
+            (0, 30, -1, 1),     // day cac phong noi that duoi long dat (xem Main.BuildRoomForKind -
+                                // moi phong dat tai X = index*500, Y=-600, Z=0 => cx = index) -
+                                // du 30 cong trinh du phong, tranh WorldStreamer sinh dia hinh
+                                // "hoang da" chong len phia tren cac phong nay.
         };
 
         private struct DecorOption

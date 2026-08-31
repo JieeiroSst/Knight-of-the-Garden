@@ -27,6 +27,12 @@ namespace HiepSiVeVuon.Entities
         private string _currentAnim = "";
         private bool _actionPlaying = false;
 
+        // Vao/ra cong trinh: moi cong trinh co 1 phong noi that rieng (xem BuildingDoor.InteriorAnchor),
+        // nho vi tri ngoai troi de quay lai dung cho khi ra.
+        private bool _indoors = false;
+        private Vector3 _returnPos;
+        private ColorRect _fadeRect;
+
         public override void _Ready()
         {
             _model = GetNodeOrNull<Node3D>("Model");
@@ -38,6 +44,36 @@ namespace HiepSiVeVuon.Entities
                     _animPlayer.AnimationFinished += _ => _actionPlaying = false;
             }
             GameManager.Instance.PlayerDied += OnDied;
+            SetupFade();
+        }
+
+        // Man hinh toi den nhanh khi qua cua (vao/ra nha) - che di buoc "day tuc thoi" phia sau,
+        // cho cam giac giong dang thuc su buoc qua cua chu khong phai bi teleport dot ngot.
+        private void SetupFade()
+        {
+            var layer = new CanvasLayer { Layer = 100 };
+            AddChild(layer);
+            _fadeRect = new ColorRect
+            {
+                Color = new Color(0, 0, 0, 0),
+                MouseFilter = Control.MouseFilterEnum.Ignore
+            };
+            _fadeRect.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+            layer.AddChild(_fadeRect);
+        }
+
+        private void TeleportWithFade(Vector3 dest)
+        {
+            var tw = CreateTween();
+            tw.TweenProperty(_fadeRect, "color:a", 1f, 0.18f);
+            tw.TweenCallback(Callable.From(() =>
+            {
+                // Reset van toc de khong mang theo da roi/chay tu truoc khi qua cua (vd dang
+                // roi tu do cao ngoai troi se lam nguoi choi "xuyen san" ngay khi vao phong).
+                Velocity = Vector3.Zero;
+                GlobalPosition = dest;
+            }));
+            tw.TweenProperty(_fadeRect, "color:a", 0f, 0.18f);
         }
 
         public override void _PhysicsProcess(double delta)
@@ -168,7 +204,32 @@ namespace HiepSiVeVuon.Entities
             foreach (var area in _interactArea.GetOverlappingAreas())
             {
                 if (area is DroppedItem d2) { d2.PickUp(); return; }
+                if (area is BuildingDoor door)
+                {
+                    if (door.IsExit) ExitBuilding();
+                    else EnterBuilding(door.InteriorAnchor);
+                    return;
+                }
             }
+        }
+
+        private void EnterBuilding(Vector3 interiorAnchor)
+        {
+            if (_indoors) return;
+            _returnPos = GlobalPosition;
+            _indoors = true;
+            GD.Print($"[Cua] Vao nha: tu {_returnPos} -> {interiorAnchor}");
+            // Dat cao hon san mot chut (khong dat dung khit len san) de trong luc tu nhien keo
+            // xuong va IsOnFloor() nhan dung san ngay, thay vi mot diem cham khit co the bi
+            // xu ly sai thanh "chua cham san" roi roi xuyen qua san mong xuong vuc.
+            TeleportWithFade(interiorAnchor + Vector3.Up * 8f);
+        }
+
+        private void ExitBuilding()
+        {
+            if (!_indoors) return;
+            _indoors = false;
+            TeleportWithFade(_returnPos);
         }
 
         private void TryUseTool()

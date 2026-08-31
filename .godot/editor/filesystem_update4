@@ -17,3 +17,4 @@ res://scripts/systems/QuestSystem.cs
 res://scripts/entities/Player.cs
 res://scripts/core/GameManager.cs
 res://scripts/core/WorldStreamer.cs
+res://scripts/entities/BuildingDoor.cs
