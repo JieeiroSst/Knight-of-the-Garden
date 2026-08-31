@@ -28,6 +28,12 @@ namespace HiepSiVeVuon.Core
         private PackedScene _treeScene2 = GD.Load<PackedScene>("res://assets3d/quaternius/nature/tree_birch_1.glb");
         private PackedScene _fenceScene = GD.Load<PackedScene>("res://assets3d/quaternius/farm/fence.glb");
         private PackedScene _bridgeScene = GD.Load<PackedScene>("res://assets3d/quaternius/farm/bridge.glb");
+
+        // Chan de (X,Z) o don vi goc cua tung loai model cong trinh - dung de tao va cham dac
+        // (xem AddDecor). Barn/BigBarn dung chung 1 khung, SmallBarn nho hon, Farmhouse rieng.
+        private static readonly Vector2 BarnFootprint = new(7.727f, 8.222f);
+        private static readonly Vector2 SmallBarnFootprint = new(6.079f, 6.274f);
+        private static readonly Vector2 FarmhouseFootprint = new(2.22f, 3.42f);
         private PackedScene _roadTileScene = GD.Load<PackedScene>("res://assets3d/quaternius/road/path_straight.glb");
 
         private Node3D _world;
@@ -125,11 +131,11 @@ namespace HiepSiVeVuon.Core
             floorBody.AddChild(floorShape);
             _world.AddChild(floorBody);
 
-            // Nha nong dan (nha nguoi choi) - model nha that chi tiet hon, to them 20%
-            AddDecor(_farmhouseScene, FarmhousePos, 66f);
+            // Nha nong dan (nha nguoi choi) - model nha that chi tiet hon, to them 20%, xoay 180 do
+            AddDecor(_farmhouseScene, FarmhousePos, 66f, 180f, FarmhouseFootprint);
 
             // Nha kho (barn) - dat canh ruong, cach hang rao ruong dung 5m (100 don vi) ve phia tay
-            AddDecor(_barnScene, new Vector3(-482, 0, 250), 24f);
+            AddDecor(_barnScene, new Vector3(-482, 0, 250), 24f, 0f, BarnFootprint);
 
             // Bu nhin dung giua ruong (khe ho giua cac o dat) & cay that quanh nha
             AddDecor(_scarecrowScene, new Vector3(70, 0, 330), 13f);
@@ -164,23 +170,23 @@ namespace HiepSiVeVuon.Core
             });
             _world.AddChild(floorBody);
 
-            AddDecor(_bigBarnScene, VillageAnchor + new Vector3(0, 0, -180), 18f); // Toa Thi Chinh
+            AddDecor(_bigBarnScene, VillageAnchor + new Vector3(0, 0, -180), 18f, 0f, BarnFootprint); // Toa Thi Chinh
 
             // Vong trong
-            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(-170, 0, -60), 12f); // gia lang
-            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(170, 0, -60), 12f);  // thuong nhan
-            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(-170, 0, 140), 12f); // tho ren
-            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(170, 0, 140), 12f);  // ba lang
-            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(0, 0, 220), 12f);    // nguoi gac rung
+            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(-170, 0, -60), 12f, 0f, SmallBarnFootprint); // gia lang
+            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(170, 0, -60), 12f, 0f, SmallBarnFootprint);  // thuong nhan
+            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(-170, 0, 140), 12f, 0f, SmallBarnFootprint); // tho ren
+            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(170, 0, 140), 12f, 0f, SmallBarnFootprint);  // ba lang
+            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(0, 0, 220), 12f, 0f, SmallBarnFootprint);    // nguoi gac rung
 
             // Vong giua
-            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(-350, 0, 20), 12f);  // chu quan tro
-            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(350, 0, 20), 12f);   // tho moc
-            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(0, 0, 400), 12f);    // hoc gia
+            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(-350, 0, 20), 12f, 0f, SmallBarnFootprint);  // chu quan tro
+            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(350, 0, 20), 12f, 0f, SmallBarnFootprint);   // tho moc
+            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(0, 0, 400), 12f, 0f, SmallBarnFootprint);    // hoc gia
 
             // Vong ngoai (nha + NPC moi them)
-            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(-500, 0, 250), 12f); // tho may
-            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(500, 0, 250), 12f);  // nguoi chan cuu
+            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(-500, 0, 250), 12f, 0f, SmallBarnFootprint); // tho may
+            AddDecor(_smallBarnScene, VillageAnchor + new Vector3(500, 0, 250), 12f, 0f, SmallBarnFootprint);  // nguoi chan cuu
 
             AddDecor(_treeScene2, VillageAnchor + new Vector3(-300, 0, -140), 38f);
             AddDecor(_treeScene, VillageAnchor + new Vector3(300, 0, -140), 34f);
@@ -192,7 +198,10 @@ namespace HiepSiVeVuon.Core
             AddDecor(_treeScene, VillageAnchor + new Vector3(650, 0, 350), 34f);
         }
 
-        private void AddDecor(PackedScene scene, Vector3 pos, float scale, float rotationYDegrees = 0f)
+        // collisionFootprint: kich thuoc chan de (X,Z) o don vi GOC cua model (truoc khi nhan
+        // "scale") - neu khac Vector2.Zero se them va cham dac, khien nguoi choi khong the di
+        // xuyen qua cong trinh (chi di vong quanh, dung nhu nha/lau dai that ngoai doi).
+        private void AddDecor(PackedScene scene, Vector3 pos, float scale, float rotationYDegrees = 0f, Vector2 collisionFootprint = default)
         {
             if (scene == null) return;
             var instance = scene.Instantiate<Node3D>();
@@ -200,6 +209,20 @@ namespace HiepSiVeVuon.Core
             instance.RotationDegrees = new Vector3(0, rotationYDegrees, 0);
             instance.Scale = Vector3.One * scale;
             _world.AddChild(instance);
+
+            if (collisionFootprint != default)
+            {
+                var body = new StaticBody3D();
+                body.Position = pos;
+                body.RotationDegrees = new Vector3(0, rotationYDegrees, 0);
+                const float collisionHeight = 300f; // du cao de chan nguoi choi bat ke chieu cao that cua cong trinh
+                body.AddChild(new CollisionShape3D
+                {
+                    Shape = new BoxShape3D { Size = new Vector3(collisionFootprint.X * scale, collisionHeight, collisionFootprint.Y * scale) },
+                    Position = Vector3.Up * (collisionHeight / 2f)
+                });
+                _world.AddChild(body);
+            }
         }
 
         // Ve mot doan duong dat phang noi 2 diem (dung mau, khong can texture lap).
@@ -326,7 +349,8 @@ namespace HiepSiVeVuon.Core
         private void SpawnPlayer()
         {
             var player = _playerScene.Instantiate<Player>();
-            player.GlobalPosition = FarmhousePos + new Vector3(0, 0, 20);
+            // Phai dung ngoai vung va cham dac cua nha (~113 don vi moi huong) - xem AddDecor/FarmhouseFootprint
+            player.GlobalPosition = FarmhousePos + new Vector3(0, 0, 140);
             _world.AddChild(player);
         }
 
