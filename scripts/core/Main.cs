@@ -60,6 +60,8 @@ namespace HiepSiVeVuon.Core
         private PackedScene _fenceMarkerScene = GD.Load<PackedScene>("res://scenes/FenceMarker.tscn");
         // Vung thong bao ten cong trinh khi nguoi choi lai gan - xem AddBuildingLabelZone.
         private PackedScene _buildingLabelZoneScene = GD.Load<PackedScene>("res://scenes/BuildingLabelZone.tscn");
+        // Doi Cam Ve bao ve nong trai (100 NPC) - xem BuildPalaceGuardBarracks.
+        private PackedScene _palaceGuardScene = GD.Load<PackedScene>("res://scenes/PalaceGuardNpc.tscn");
         private PackedScene _horseScene = GD.Load<PackedScene>("res://scenes/Horse.tscn");
         private PackedScene _stablehandScene = GD.Load<PackedScene>("res://scenes/StablehandNpc.tscn");
         private PackedScene _dogScene = GD.Load<PackedScene>("res://scenes/Dog.tscn");
@@ -252,6 +254,7 @@ namespace HiepSiVeVuon.Core
             SafeBuildStep(BuildHerbGarden, nameof(BuildHerbGarden));
             SafeBuildStep(BuildWorkerDormsAndStaff, nameof(BuildWorkerDormsAndStaff));
             SafeBuildStep(BuildFarmStaff, nameof(BuildFarmStaff));
+            SafeBuildStep(BuildPalaceGuardBarracks, nameof(BuildPalaceGuardBarracks));
             SafeBuildStep(BuildBigVineyard, nameof(BuildBigVineyard));
             SafeBuildStep(BuildEstateLandscaping, nameof(BuildEstateLandscaping));
             SafeBuildStep(BuildFarmOutbuildings, nameof(BuildFarmOutbuildings));
@@ -3282,6 +3285,57 @@ namespace HiepSiVeVuon.Core
             marker.FenceName = name;
             marker.Position = pos;
             _world.AddChild(marker);
+        }
+
+        // Doi Cam Ve bao ve nong trai (100 NPC, theo yeu cau) - 1 doanh trai rieng de nghi ngoi,
+        // chia 2 CA DOI LAP HOAN TOAN (6h sang-6h toi / 6h toi-6h sang) nen LUON co dung 50 nguoi
+        // dang tuan tra bat ke gio nao, 50 nguoi con lai dang ngu trong doanh trai. Vi 2 ca khong
+        // bao gio o trong doanh trai CUNG LUC, chi can 1 bo 50 CHO NGU chung (10x5 luoi) - ca ngay
+        // va ca dem dung LAI CUNG 50 vi tri do vao thoi diem khac nhau, khong can 100 cho rieng.
+        private void BuildPalaceGuardBarracks()
+        {
+            if (_palaceGuardScene == null) return;
+
+            var avoid = KnownOccupiedZones();
+            var rng = new RandomNumberGenerator { Seed = 10700 };
+            var barracksPos = FindOpenSpot(avoid, 130f, rng);
+            _extraPenZones.Add((barracksPos, 130f));
+
+            AddDecor(_farmhouseScene, barracksPos, 60f, 90f, FarmhouseFootprint);
+            var interior = AddBuildingEntrance(barracksPos, 90f, 110f, 80f, RoomKind.Village);
+            AddBuildingLabelZone(barracksPos, 130f, "Doanh Trai Cam Ve");
+
+            string[] dialogueLow = { "Cam Ve Quan xin chao. Chung toi tuan tra khap trang trai ngay dem." };
+            string[] dialogueMid = { "Trang trai duoc canh gac can than, anh cu yen tam lam viec." };
+            string[] dialogueHigh = { "Co chuyen gi bat thuong, anh cu bao chung toi ngay." };
+
+            const int totalGuards = 100;
+            const int dayShift = 50;
+            var homeFront = barracksPos + new Vector3(0, 0, 90);
+
+            for (int i = 0; i < totalGuards; i++)
+            {
+                int idx = i;
+                SafeBuildStep(() =>
+                {
+                    var guard = _palaceGuardScene.Instantiate<PalaceGuardNpc>();
+                    guard.NpcId = $"palace_guard_{idx}";
+                    guard.NpcName = $"Cam Ve Quan #{idx + 1}";
+                    guard.DialogueLow = dialogueLow;
+                    guard.DialogueMid = dialogueMid;
+                    guard.DialogueHigh = dialogueHigh;
+                    bool isDayShift = idx < dayShift;
+                    guard.WorkStartHour = isDayShift ? 6 : 18;
+                    guard.WorkEndHour = isDayShift ? 18 : 6;
+                    guard.PatrolCenter = FarmWallCenter;
+                    guard.PatrolRadius = FarmWallHalfSize * 0.85f;
+                    guard.HomePos = homeFront;
+
+                    int slot = idx % dayShift; // 2 ca dung CHUNG 50 vi tri ngu (xem ghi chu tren)
+                    guard.InteriorHomePos = interior + new Vector3((slot % 10 - 4.5f) * 22f, 0, (slot / 10 - 2f) * 22f);
+                    _world.AddChild(guard);
+                }, $"BuildPalaceGuardBarracks[{idx}]");
+            }
         }
 
         // Vuon nho lon (~1.1 hecta, 1980 goc nho + 720 cot go) - dat o khu dat trong phia NAM
