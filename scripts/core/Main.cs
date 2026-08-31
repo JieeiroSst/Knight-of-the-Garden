@@ -3523,140 +3523,169 @@ namespace HiepSiVeVuon.Core
             // (vd "cac chuong o phia tay") sau khi da dat xong het - xem doan bo sung bo o cuoi ham.
             var allNewPens = new List<(Vector3 pos, float half)>();
 
+            // MOI chuong (moi lan lap i) chay trong SafeBuildStep RIENG: neu 1 chuong loi vi ly
+            // do gi (vd instantiate that bai), CHI chuong do bi anh huong - cac chuong SAU no
+            // trong CUNG method nay (truoc day se bi bo qua theo phan ung day chuyen vi throw se
+            // thoat het ca vong lap) van tiep tuc duoc dat binh thuong. Day la nguyen nhan RAT CO
+            // THE gay ra tinh trang "mot vai chuong ve tinh van con trong" da duoc bao cao nhieu
+            // lan du moi buoc Build... rieng le da duoc SafeBuildStep bao boc (xem _Ready) - boc
+            // o muc TUNG CHUONG moi thuc su chan duoc loi 1 CHUONG lam mat CA CAC CHUONG SAU no.
             for (int i = 0; i < 3; i++)
             {
-                // Ban kinh vung chiem dung PHAI >= nua duong cheo hinh vuong chuong (half*sqrt2 =
-                // half*1.414) de tranh chong goc len chuong khac dat sau nay - truoc day dung
-                // 200/228 (nho hon 168*1.414=237.6), la loi khien cac chuong dat SAU (cuu rieng,
-                // bo vong 2, bo sua) van co the chong goc len chuong nay du da co _extraPenZones.
-                float zoneR = 168f * 1.5f;
-                var pos = FindOpenSpot(avoid, zoneR, rng);
-                avoid.Add((pos, zoneR));
-                _extraPenZones.Add((pos, zoneR));
-                allNewPens.Add((pos, 168f));
-                BuildSimplePasture(pos, 168f, "bo", (c, half) =>
+                int idx = i;
+                SafeBuildStep(() =>
                 {
-                    // +5 con nua (11 -> 16) - dam bao dung dung SpawnCow(...homeCenterOverride)
-                    // nen lan nay se KHONG con bi loi "quay ve chuong goc" nhu truoc.
-                    for (int k = 0; k < 16; k++)
+                    // Ban kinh vung chiem dung PHAI >= nua duong cheo hinh vuong chuong
+                    // (half*sqrt2 = half*1.414) de tranh chong goc len chuong khac dat sau nay -
+                    // truoc day dung 200/228 (nho hon 168*1.414=237.6), la loi khien cac chuong
+                    // dat SAU (cuu rieng, bo vong 2, bo sua) van co the chong goc len chuong nay
+                    // du da co _extraPenZones.
+                    float zoneR = 168f * 1.5f;
+                    var pos = FindOpenSpot(avoid, zoneR, rng);
+                    avoid.Add((pos, zoneR));
+                    _extraPenZones.Add((pos, zoneR));
+                    allNewPens.Add((pos, 168f));
+                    BuildSimplePasture(pos, 168f, "bo", (c, half) =>
                     {
-                        float angle = Mathf.Tau * k / 16f;
-                        float radius = rng.RandfRange(30f, half - 35f);
-                        SpawnCow(c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius), isAdult: true, homeCenterOverride: c, pastureHalfOverride: half);
-                    }
-                });
-                // Bo sua that su ("de lay sua" theo yeu cau): moi chuong bo moi co RIENG 1 nguoi
-                // van sua (tai su dung FarmhandNpc.cs y het nguoi cham bo chinh - tu dong tha vat
-                // pham "milk" dinh ky khi lam viec), khong chi la bo trang tri di lai. KHONG dung
-                // 1 ngoi nha rieng day du (tranh cong them 3 cap phong noi that nua) - "ngu" bang
-                // cach dung khuat ngay sau 1 diem gan chuong, giong cach lam cho dan lang vung
-                // que Phap (xem SpawnFrenchVillagers).
-                var milkmaid = _farmhandScene.Instantiate<FarmhandNpc>();
-                milkmaid.NpcId = $"extra_cowherd_{i}";
-                milkmaid.NpcName = "Nguoi Van Sua Phu";
-                milkmaid.DialogueLow = new[] { "Toi phu trach van sua o chuong bo nay." };
-                milkmaid.DialogueMid = new[] { "Dan bo o day cho sua deu lam." };
-                milkmaid.DialogueHigh = new[] { "Sua tuoi moi van, anh cu lay dung dung." };
-                milkmaid.WorkPos = pos + new Vector3(0, 0, -40);
-                milkmaid.TroughPos = pos;
-                milkmaid.HomePos = pos + new Vector3(0, 0, 160);
-                milkmaid.InteriorHomePos = pos + new Vector3(0, 8, 190);
-                _world.AddChild(milkmaid);
+                        // +5 con nua (11 -> 16) - dam bao dung dung SpawnCow(...homeCenterOverride)
+                        // nen lan nay se KHONG con bi loi "quay ve chuong goc" nhu truoc.
+                        for (int k = 0; k < 16; k++)
+                        {
+                            float angle = Mathf.Tau * k / 16f;
+                            float radius = rng.RandfRange(30f, half - 35f);
+                            SpawnCow(c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius), isAdult: true, homeCenterOverride: c, pastureHalfOverride: half);
+                        }
+                    });
+                    // Bo sua that su ("de lay sua" theo yeu cau): moi chuong bo moi co RIENG 1
+                    // nguoi van sua (tai su dung FarmhandNpc.cs y het nguoi cham bo chinh - tu
+                    // dong tha vat pham "milk" dinh ky khi lam viec), khong chi la bo trang tri
+                    // di lai. KHONG dung 1 ngoi nha rieng day du (tranh cong them 3 cap phong noi
+                    // that nua) - "ngu" bang cach dung khuat ngay sau 1 diem gan chuong, giong
+                    // cach lam cho dan lang vung que Phap (xem SpawnFrenchVillagers).
+                    var milkmaid = _farmhandScene.Instantiate<FarmhandNpc>();
+                    milkmaid.NpcId = $"extra_cowherd_{idx}";
+                    milkmaid.NpcName = "Nguoi Van Sua Phu";
+                    milkmaid.DialogueLow = new[] { "Toi phu trach van sua o chuong bo nay." };
+                    milkmaid.DialogueMid = new[] { "Dan bo o day cho sua deu lam." };
+                    milkmaid.DialogueHigh = new[] { "Sua tuoi moi van, anh cu lay dung dung." };
+                    milkmaid.WorkPos = pos + new Vector3(0, 0, -40);
+                    milkmaid.TroughPos = pos;
+                    milkmaid.HomePos = pos + new Vector3(0, 0, 160);
+                    milkmaid.InteriorHomePos = pos + new Vector3(0, 8, 190);
+                    _world.AddChild(milkmaid);
+                }, $"BuildExtraPastures[bo {idx}]");
             }
 
             for (int i = 0; i < 3; i++)
             {
-                float zoneR = 168f * 1.5f;
-                var pos = FindOpenSpot(avoid, zoneR, rng);
-                avoid.Add((pos, zoneR));
-                _extraPenZones.Add((pos, zoneR));
-                allNewPens.Add((pos, 168f));
-                BuildSimplePasture(pos, 168f, "ngua", (c, half) =>
+                int idx = i;
+                SafeBuildStep(() =>
                 {
-                    // +5 con nua (9 -> 14)
-                    for (int k = 0; k < 14; k++)
+                    float zoneR = 168f * 1.5f;
+                    var pos = FindOpenSpot(avoid, zoneR, rng);
+                    avoid.Add((pos, zoneR));
+                    _extraPenZones.Add((pos, zoneR));
+                    allNewPens.Add((pos, 168f));
+                    BuildSimplePasture(pos, 168f, "ngua", (c, half) =>
                     {
-                        float angle = Mathf.Tau * k / 14f;
-                        float radius = rng.RandfRange(30f, half - 35f);
-                        var horse = _horseScene.Instantiate<Horse>();
-                        horse.Position = c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
-                        horse.TroughPosition = c;
-                        horse.HomeCenter = c;
-                        horse.PastureHalfExtent = half - 35f;
-                        _world.AddChild(horse);
-                    }
-                });
+                        // +5 con nua (9 -> 14)
+                        for (int k = 0; k < 14; k++)
+                        {
+                            float angle = Mathf.Tau * k / 14f;
+                            float radius = rng.RandfRange(30f, half - 35f);
+                            var horse = _horseScene.Instantiate<Horse>();
+                            horse.Position = c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
+                            horse.TroughPosition = c;
+                            horse.HomeCenter = c;
+                            horse.PastureHalfExtent = half - 35f;
+                            _world.AddChild(horse);
+                        }
+                    });
+                }, $"BuildExtraPastures[ngua {idx}]");
             }
 
             for (int i = 0; i < 3; i++)
             {
-                float zoneR = 144f * 1.5f;
-                var pos = FindOpenSpot(avoid, zoneR, rng);
-                avoid.Add((pos, zoneR));
-                _extraPenZones.Add((pos, zoneR));
-                allNewPens.Add((pos, 144f));
-                BuildSimplePasture(pos, 144f, "ga", (c, half) =>
+                int idx = i;
+                SafeBuildStep(() =>
                 {
-                    // +5 con nua (15 -> 20)
-                    for (int k = 0; k < 20; k++)
+                    float zoneR = 144f * 1.5f;
+                    var pos = FindOpenSpot(avoid, zoneR, rng);
+                    avoid.Add((pos, zoneR));
+                    _extraPenZones.Add((pos, zoneR));
+                    allNewPens.Add((pos, 144f));
+                    BuildSimplePasture(pos, 144f, "ga", (c, half) =>
                     {
-                        float angle = Mathf.Tau * k / 20f;
-                        float radius = rng.RandfRange(20f, half - 25f);
-                        SpawnChicken(c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius), c, homeCenterOverride: c, pastureHalfOverride: half);
-                    }
-                });
+                        // +5 con nua (15 -> 20)
+                        for (int k = 0; k < 20; k++)
+                        {
+                            float angle = Mathf.Tau * k / 20f;
+                            float radius = rng.RandfRange(20f, half - 25f);
+                            SpawnChicken(c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius), c, homeCenterOverride: c, pastureHalfOverride: half);
+                        }
+                    });
+                }, $"BuildExtraPastures[ga {idx}]");
             }
 
             for (int i = 0; i < 3; i++)
             {
-                float zoneR = 156f * 1.5f;
-                var pos = FindOpenSpot(avoid, zoneR, rng);
-                avoid.Add((pos, zoneR));
-                _extraPenZones.Add((pos, zoneR));
-                allNewPens.Add((pos, 156f));
-                BuildSimplePasture(pos, 156f, "cuu_heo", (c, half) =>
+                int idx = i;
+                SafeBuildStep(() =>
                 {
-                    // +5 con nua tong cong cho chuong ghep (3 cuu + 2 heo): cuu 9->12
-                    for (int k = 0; k < 12; k++)
+                    float zoneR = 156f * 1.5f;
+                    var pos = FindOpenSpot(avoid, zoneR, rng);
+                    avoid.Add((pos, zoneR));
+                    _extraPenZones.Add((pos, zoneR));
+                    allNewPens.Add((pos, 156f));
+                    BuildSimplePasture(pos, 156f, "cuu_heo", (c, half) =>
                     {
-                        float angle = Mathf.Tau * k / 12f;
-                        float radius = rng.RandfRange(30f, half - 35f);
-                        var sheep = _sheepScene.Instantiate<Sheep>();
-                        sheep.Position = c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
-                        sheep.TroughPosition = c;
-                        sheep.HomeCenter = c;
-                        sheep.PastureHalfExtent = half - 35f;
-                        _world.AddChild(sheep);
-                    }
-                    // ...va heo 6->8
-                    for (int k = 0; k < 8; k++)
-                    {
-                        float angle = Mathf.Tau * k / 8f + 0.4f;
-                        float radius = rng.RandfRange(20f, half - 45f);
-                        var pig = _pigScene.Instantiate<Pig>();
-                        pig.Position = c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
-                        pig.TroughPosition = c;
-                        pig.HomeCenter = c;
-                        pig.PastureHalfExtent = half - 35f;
-                        _world.AddChild(pig);
-                    }
-                });
+                        // +5 con nua tong cong cho chuong ghep (3 cuu + 2 heo): cuu 9->12
+                        for (int k = 0; k < 12; k++)
+                        {
+                            float angle = Mathf.Tau * k / 12f;
+                            float radius = rng.RandfRange(30f, half - 35f);
+                            var sheep = _sheepScene.Instantiate<Sheep>();
+                            sheep.Position = c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
+                            sheep.TroughPosition = c;
+                            sheep.HomeCenter = c;
+                            sheep.PastureHalfExtent = half - 35f;
+                            _world.AddChild(sheep);
+                        }
+                        // ...va heo 6->8
+                        for (int k = 0; k < 8; k++)
+                        {
+                            float angle = Mathf.Tau * k / 8f + 0.4f;
+                            float radius = rng.RandfRange(20f, half - 45f);
+                            var pig = _pigScene.Instantiate<Pig>();
+                            pig.Position = c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
+                            pig.TroughPosition = c;
+                            pig.HomeCenter = c;
+                            pig.PastureHalfExtent = half - 35f;
+                            _world.AddChild(pig);
+                        }
+                    });
+                }, $"BuildExtraPastures[cuu_heo {idx}]");
             }
 
             // "Cac chuong moi ben phia TAY (trai) nong trai" - loc trong so 12 chuong vua dat,
             // chi lay chuong nao co X < tam tuong nong trai (phia tay), them 6 bo/chuong vao MOI
             // chuong do (bat ke chuong goc la loai gi - vd chuong ngua/ga/cuu-heo o phia tay
-            // cung se co them bo, dung theo dung nghia den cua yeu cau).
+            // cung se co them bo, dung theo dung nghia den cua yeu cau). Moi chuong xu ly rieng
+            // qua SafeBuildStep - 1 chuong loi khong lam mat bo sung cua CAC CHUONG KHAC.
             foreach (var (wPos, wHalf) in allNewPens)
             {
                 if (wPos.X >= FarmWallCenter.X) continue; // chi chuong o phia TAY (X nho hon tam tuong)
-                for (int k = 0; k < 6; k++)
+                var pos2 = wPos; var half2 = wHalf;
+                SafeBuildStep(() =>
                 {
-                    float angle = Mathf.Tau * k / 6f + 0.2f;
-                    float radius = rng.RandfRange(20f, wHalf - 40f);
-                    SpawnCow(wPos + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius),
-                        isAdult: true, homeCenterOverride: wPos, pastureHalfOverride: wHalf);
-                }
+                    for (int k = 0; k < 6; k++)
+                    {
+                        float angle = Mathf.Tau * k / 6f + 0.2f;
+                        float radius = rng.RandfRange(20f, half2 - 40f);
+                        SpawnCow(pos2 + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius),
+                            isAdult: true, homeCenterOverride: pos2, pastureHalfOverride: half2);
+                    }
+                }, "BuildExtraPastures[tay-side cow supplement]");
             }
         }
 
@@ -3669,26 +3698,30 @@ namespace HiepSiVeVuon.Core
 
             for (int i = 0; i < 2; i++)
             {
-                float zoneR = 140f * 1.5f;
-                var pos = FindOpenSpot(avoid, zoneR, rng);
-                avoid.Add((pos, zoneR));
-                _extraPenZones.Add((pos, zoneR));
-                // +10 con nua (10 -> 20) - chuong cuu rieng thuoc nhom "it con nhat" (de bi
-                // nham la "trong" khi nhin tu xa), bo sung theo yeu cau review lai toan bo chuong.
-                BuildSimplePasture(pos, 140f, "cuu_rieng", (c, half) =>
+                SafeBuildStep(() =>
                 {
-                    for (int k = 0; k < 20; k++)
+                    float zoneR = 140f * 1.5f;
+                    var pos = FindOpenSpot(avoid, zoneR, rng);
+                    avoid.Add((pos, zoneR));
+                    _extraPenZones.Add((pos, zoneR));
+                    // +10 con nua (10 -> 20) - chuong cuu rieng thuoc nhom "it con nhat" (de bi
+                    // nham la "trong" khi nhin tu xa), bo sung theo yeu cau review lai toan bo
+                    // chuong.
+                    BuildSimplePasture(pos, 140f, "cuu_rieng", (c, half) =>
                     {
-                        float angle = Mathf.Tau * k / 20f;
-                        float radius = rng.RandfRange(30f, half - 35f);
-                        var sheep = _sheepScene.Instantiate<Sheep>();
-                        sheep.Position = c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
-                        sheep.TroughPosition = c;
-                        sheep.HomeCenter = c;
-                        sheep.PastureHalfExtent = half - 35f;
-                        _world.AddChild(sheep);
-                    }
-                });
+                        for (int k = 0; k < 20; k++)
+                        {
+                            float angle = Mathf.Tau * k / 20f;
+                            float radius = rng.RandfRange(30f, half - 35f);
+                            var sheep = _sheepScene.Instantiate<Sheep>();
+                            sheep.Position = c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
+                            sheep.TroughPosition = c;
+                            sheep.HomeCenter = c;
+                            sheep.PastureHalfExtent = half - 35f;
+                            _world.AddChild(sheep);
+                        }
+                    });
+                }, $"BuildExtraSheepPens[{i}]");
             }
         }
 
@@ -3702,22 +3735,25 @@ namespace HiepSiVeVuon.Core
 
             for (int i = 0; i < 3; i++)
             {
-                float zoneR = 150f * 1.5f;
-                var pos = FindOpenSpot(avoid, zoneR, rng);
-                avoid.Add((pos, zoneR));
-                _extraPenZones.Add((pos, zoneR));
-                // +10 con nua (6 -> 16) - chuong nay chi co 6 con, de trong nhat trong toan bo
-                // cac chuong, bo sung theo yeu cau review lai toan bo chuong.
-                BuildSimplePasture(pos, 150f, "bo2", (c, half) =>
+                SafeBuildStep(() =>
                 {
-                    for (int k = 0; k < 16; k++)
+                    float zoneR = 150f * 1.5f;
+                    var pos = FindOpenSpot(avoid, zoneR, rng);
+                    avoid.Add((pos, zoneR));
+                    _extraPenZones.Add((pos, zoneR));
+                    // +10 con nua (6 -> 16) - chuong nay chi co 6 con, de trong nhat trong toan
+                    // bo cac chuong, bo sung theo yeu cau review lai toan bo chuong.
+                    BuildSimplePasture(pos, 150f, "bo2", (c, half) =>
                     {
-                        float angle = Mathf.Tau * k / 16f;
-                        float radius = rng.RandfRange(30f, half - 35f);
-                        SpawnCow(c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius),
-                            isAdult: true, homeCenterOverride: c, pastureHalfOverride: half);
-                    }
-                });
+                        for (int k = 0; k < 16; k++)
+                        {
+                            float angle = Mathf.Tau * k / 16f;
+                            float radius = rng.RandfRange(30f, half - 35f);
+                            SpawnCow(c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius),
+                                isAdult: true, homeCenterOverride: c, pastureHalfOverride: half);
+                        }
+                    });
+                }, $"BuildExtraCowPensRound2[{i}]");
             }
         }
 
@@ -3731,34 +3767,38 @@ namespace HiepSiVeVuon.Core
 
             for (int i = 0; i < 4; i++)
             {
-                float zoneR = 150f * 1.5f;
-                var pos = FindOpenSpot(avoid, zoneR, rng);
-                avoid.Add((pos, zoneR));
-                _extraPenZones.Add((pos, zoneR));
-                // +10 con nua (6 -> 16) - cung nam trong nhom "it con nhat", bo sung theo yeu cau
-                // review lai toan bo chuong.
-                BuildSimplePasture(pos, 150f, "bo_sua", (c, half) =>
+                int idx = i;
+                SafeBuildStep(() =>
                 {
-                    for (int k = 0; k < 16; k++)
+                    float zoneR = 150f * 1.5f;
+                    var pos = FindOpenSpot(avoid, zoneR, rng);
+                    avoid.Add((pos, zoneR));
+                    _extraPenZones.Add((pos, zoneR));
+                    // +10 con nua (6 -> 16) - cung nam trong nhom "it con nhat", bo sung theo
+                    // yeu cau review lai toan bo chuong.
+                    BuildSimplePasture(pos, 150f, "bo_sua", (c, half) =>
                     {
-                        float angle = Mathf.Tau * k / 16f;
-                        float radius = rng.RandfRange(30f, half - 35f);
-                        SpawnCow(c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius),
-                            isAdult: true, homeCenterOverride: c, pastureHalfOverride: half);
-                    }
-                });
+                        for (int k = 0; k < 16; k++)
+                        {
+                            float angle = Mathf.Tau * k / 16f;
+                            float radius = rng.RandfRange(30f, half - 35f);
+                            SpawnCow(c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius),
+                                isAdult: true, homeCenterOverride: c, pastureHalfOverride: half);
+                        }
+                    });
 
-                var milkmaid = _farmhandScene.Instantiate<FarmhandNpc>();
-                milkmaid.NpcId = $"dairy_cowherd_{i}";
-                milkmaid.NpcName = "Nguoi Van Sua Bo";
-                milkmaid.DialogueLow = new[] { "Toi phu trach van sua o chuong bo sua nay." };
-                milkmaid.DialogueMid = new[] { "Bo o day cho sua tuoi ngon lam." };
-                milkmaid.DialogueHigh = new[] { "Sua moi van, anh cu ghe lay." };
-                milkmaid.WorkPos = pos + new Vector3(0, 0, -40);
-                milkmaid.TroughPos = pos;
-                milkmaid.HomePos = pos + new Vector3(0, 0, 170);
-                milkmaid.InteriorHomePos = pos + new Vector3(0, 8, 200);
-                _world.AddChild(milkmaid);
+                    var milkmaid = _farmhandScene.Instantiate<FarmhandNpc>();
+                    milkmaid.NpcId = $"dairy_cowherd_{idx}";
+                    milkmaid.NpcName = "Nguoi Van Sua Bo";
+                    milkmaid.DialogueLow = new[] { "Toi phu trach van sua o chuong bo sua nay." };
+                    milkmaid.DialogueMid = new[] { "Bo o day cho sua tuoi ngon lam." };
+                    milkmaid.DialogueHigh = new[] { "Sua moi van, anh cu ghe lay." };
+                    milkmaid.WorkPos = pos + new Vector3(0, 0, -40);
+                    milkmaid.TroughPos = pos;
+                    milkmaid.HomePos = pos + new Vector3(0, 0, 170);
+                    milkmaid.InteriorHomePos = pos + new Vector3(0, 8, 200);
+                    _world.AddChild(milkmaid);
+                }, $"BuildExtraDairyCowPens[{idx}]");
             }
         }
 
@@ -3777,37 +3817,41 @@ namespace HiepSiVeVuon.Core
 
             for (int i = 0; i < 3; i++)
             {
-                float zoneR = 140f * 1.5f;
-                var pos = FindOpenSpot(avoid, zoneR, rng);
-                avoid.Add((pos, zoneR));
-                _extraPenZones.Add((pos, zoneR));
-                BuildSimplePasture(pos, 140f, "cuu_moi", (c, half) =>
+                int idx = i;
+                SafeBuildStep(() =>
                 {
-                    for (int k = 0; k < 8; k++)
+                    float zoneR = 140f * 1.5f;
+                    var pos = FindOpenSpot(avoid, zoneR, rng);
+                    avoid.Add((pos, zoneR));
+                    _extraPenZones.Add((pos, zoneR));
+                    BuildSimplePasture(pos, 140f, "cuu_moi", (c, half) =>
                     {
-                        float angle = Mathf.Tau * k / 8f;
-                        float radius = rng.RandfRange(30f, half - 35f);
-                        var sheep = _sheepScene.Instantiate<Sheep>();
-                        sheep.Position = c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
-                        sheep.TroughPosition = c;
-                        sheep.HomeCenter = c;
-                        sheep.PastureHalfExtent = half - 35f;
-                        _world.AddChild(sheep);
-                    }
-                });
+                        for (int k = 0; k < 8; k++)
+                        {
+                            float angle = Mathf.Tau * k / 8f;
+                            float radius = rng.RandfRange(30f, half - 35f);
+                            var sheep = _sheepScene.Instantiate<Sheep>();
+                            sheep.Position = c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
+                            sheep.TroughPosition = c;
+                            sheep.HomeCenter = c;
+                            sheep.PastureHalfExtent = half - 35f;
+                            _world.AddChild(sheep);
+                        }
+                    });
 
-                var shepherd = _farmhandScene.Instantiate<FarmhandNpc>();
-                shepherd.NpcId = $"extra_shepherd_{i}";
-                shepherd.NpcName = "Nguoi Chan Cuu";
-                shepherd.DialogueLow = new[] { "Toi phu trach cham soc dan cuu o chuong nay." };
-                shepherd.DialogueMid = new[] { "Dan cuu o day duoc an co tuoi moi ngay." };
-                shepherd.DialogueHigh = new[] { "Len that day, cat theo mua la co ngay." };
-                shepherd.ProduceItemId = "wool"; // cham cuu thi thu len, khong phai sua bo
-                shepherd.WorkPos = pos + new Vector3(0, 0, -40);
-                shepherd.TroughPos = pos;
-                shepherd.HomePos = pos + new Vector3(0, 0, 160);
-                shepherd.InteriorHomePos = pos + new Vector3(0, 8, 190);
-                _world.AddChild(shepherd);
+                    var shepherd = _farmhandScene.Instantiate<FarmhandNpc>();
+                    shepherd.NpcId = $"extra_shepherd_{idx}";
+                    shepherd.NpcName = "Nguoi Chan Cuu";
+                    shepherd.DialogueLow = new[] { "Toi phu trach cham soc dan cuu o chuong nay." };
+                    shepherd.DialogueMid = new[] { "Dan cuu o day duoc an co tuoi moi ngay." };
+                    shepherd.DialogueHigh = new[] { "Len that day, cat theo mua la co ngay." };
+                    shepherd.ProduceItemId = "wool"; // cham cuu thi thu len, khong phai sua bo
+                    shepherd.WorkPos = pos + new Vector3(0, 0, -40);
+                    shepherd.TroughPos = pos;
+                    shepherd.HomePos = pos + new Vector3(0, 0, 160);
+                    shepherd.InteriorHomePos = pos + new Vector3(0, 8, 190);
+                    _world.AddChild(shepherd);
+                }, $"BuildExtraSheepPensRound2[{idx}]");
             }
         }
 
