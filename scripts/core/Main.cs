@@ -52,6 +52,13 @@ namespace HiepSiVeVuon.Core
         // "nha rieng" cho tung nguoi dan (SpawnTownCitizens) sau khi khu do thi da dung xong.
         private readonly List<Vector3> _cityHousePositions = new();
         private readonly List<Vector3> _cityHouseInteriors = new();
+
+        // "Vung que nuoc Phap" - model nha 3 kich thuoc khac nhau + cau da (tat ca CC0 tu
+        // poly.pizza, xac minh giay phep truoc khi tai) - xem BuildFrenchCountryside.
+        private PackedScene _cottageScene = GD.Load<PackedScene>("res://assets3d/quaternius/french_countryside/cottage.glb");
+        private PackedScene _villageHouseScene = GD.Load<PackedScene>("res://assets3d/quaternius/french_countryside/village_house.glb");
+        private PackedScene _stoneBridgeScene = GD.Load<PackedScene>("res://assets3d/quaternius/french_countryside/stone_bridge.glb");
+        private readonly List<Vector3> _frenchHousePositions = new();
         // Chuong ga (Quaternius, CC0, poly.pizza/m/DM0F8siLam) - dat lam cong trinh chinh trong
         // khu chuong ga, giong cach coi cua bo/ngua la hang rao + mang an.
         private PackedScene _chickenCoopScene = GD.Load<PackedScene>("res://assets3d/quaternius/misc/chicken_coop.glb");
@@ -176,6 +183,8 @@ namespace HiepSiVeVuon.Core
                 BuildSunflowerField();
                 BuildCityDistrict();
                 SpawnTownCitizens();
+                BuildFrenchCountryside();
+                SpawnFrenchVillagers();
             }
             catch (System.Exception e)
             {
@@ -1869,6 +1878,195 @@ namespace HiepSiVeVuon.Core
                 Position = Vector3.Up * 0.8f,
                 MaterialOverride = GetCachedMaterial(new Color(0.32f, 0.22f, 0.08f), 1f)
             });
+        }
+
+        // "Vung que nuoc Phap": cach nong trai DUNG 10000m (200,000 don vi, quy doi 20 don
+        // vi/met, tinh tu canh GAN NHAT cua vung toi FarmhousePos) ve phia tay, rong 4km (80,000
+        // don vi) x 4km - 1 vung SINH THAI RIENG cho WorldStreamer (xem
+        // WorldStreamer.FrenchRegionCenter/GenerateFrenchDecor: doi thap rai rac, nha kich thuoc
+        // khac nhau thua thot, cang xa trung tam cang thanh "dat hoang", KHONG co quai vat) bao
+        // quanh 1 "trung tam thi tran" nho DUNG SAN THAT (duong lat da + hang cay + cau da + nha
+        // do quanh - phan nay MOI la noi choi thuc su, phan con lai cua 4km chi la khung canh nen
+        // cho cam giac "vung rong lon"). Polyhaven (nguoi dung yeu cau) khong co model
+        // nha/cau/vat lieu san sang dung cho Godot (toan model ta thuc PBR hang trieu tam giac,
+        // vd 1 cay thong don le ~17 trieu tam giac - khong the dung truc tiep), nen dung nguon CC0
+        // low-poly da kiem chung (poly.pizza) cho toan bo cong trinh, chi khac han cac model da
+        // dung o nong trai/thi tran de vung nay co dien mao rieng.
+        private static readonly Vector3 FrenchRegionCenter = FarmhousePos + new Vector3(-240000, 0, 0);
+        private const float FrenchRegionHalfSize = 40000f;
+
+        private void BuildFrenchCountryside()
+        {
+            WorldStreamer.FrenchRegionCenter = FrenchRegionCenter;
+            WorldStreamer.FrenchRegionHalfSize = FrenchRegionHalfSize;
+
+            // Trung tam thi tran nho (duong+cau+nha+cay dung san that) - loai tru khoi vung lazy
+            // cua WorldStreamer (ban kinh du de bao het pham vi ben duoi) de khong bi chong lan
+            // voi doi/nha/cay sinh ngau nhien.
+            WorldStreamer.ExclusionZones.Add((FrenchRegionCenter, 1900f));
+
+            // Duong chinh Dong-Tay + duong nhanh Bac-Nam, lat da (dung lai _roadTileScene) -
+            // giao nhau dung tai tam vung.
+            var mainStreetFrom = FrenchRegionCenter + new Vector3(-1300, 0, 0);
+            var mainStreetTo = FrenchRegionCenter + new Vector3(1300, 0, 0);
+            var crossStreetFrom = FrenchRegionCenter + new Vector3(0, 0, -900);
+            var crossStreetTo = FrenchRegionCenter + new Vector3(0, 0, 900);
+            AddRoad(mainStreetFrom, mainStreetTo);
+            AddRoad(crossStreetFrom, crossStreetTo);
+
+            // Hang cay chay doc 2 duong ("Hang cay chay doc duong" theo dung yeu cau) - trong
+            // cach deu, lech sang 2 ben duong.
+            var treeRng = new RandomNumberGenerator { Seed = 8001 };
+            for (float x = mainStreetFrom.X + 60f; x <= mainStreetTo.X - 60f; x += 130f)
+            {
+                if (Mathf.Abs(x - FrenchRegionCenter.X) < 70f) continue; // tranh giao lo
+                AddFrenchRoadsideTree(new Vector3(x, 0, FrenchRegionCenter.Z - 75f), treeRng);
+                AddFrenchRoadsideTree(new Vector3(x, 0, FrenchRegionCenter.Z + 75f), treeRng);
+            }
+            for (float z = crossStreetFrom.Z + 60f; z <= crossStreetTo.Z - 60f; z += 130f)
+            {
+                if (Mathf.Abs(z - FrenchRegionCenter.Z) < 70f) continue;
+                AddFrenchRoadsideTree(new Vector3(FrenchRegionCenter.X - 75f, 0, z), treeRng);
+                AddFrenchRoadsideTree(new Vector3(FrenchRegionCenter.X + 75f, 0, z), treeRng);
+            }
+
+            // Cau da ("Cau da" theo dung yeu cau) - dat doc theo duong chinh, tai 2 diem canh
+            // trung tam, nhu cau bac qua khe/suoi nho trong vung doi.
+            if (_stoneBridgeScene != null)
+            {
+                foreach (float dx in new[] { -750f, 750f })
+                {
+                    var bridge = _stoneBridgeScene.Instantiate<Node3D>();
+                    bridge.Position = FrenchRegionCenter + new Vector3(dx, 2f, 0);
+                    bridge.RotationDegrees = new Vector3(0, 90, 0);
+                    bridge.Scale = Vector3.One * 34f;
+                    _world.AddChild(bridge);
+                }
+            }
+
+            // Nha KICH THUOC KHAC NHAU ("kich thuoc khac nhau" theo dung yeu cau) - 3 model rieng
+            // (cottage/village house/farmhouse) x nhieu muc scale (nho/vua/lon). 100 vi tri (50
+            // can dau tien co nguoi dan o - xem SpawnFrenchVillagers, 50 can sau la nha trong/bo
+            // hoang, cung binh thuong o 1 vung que that) sap xep theo khoang cach tu tam (gan
+            // nhat truoc, giong thuat toan BuildCityDistrict) de lan toa tu nhien, tranh khu giao
+            // lo trung tam va 2 diem dat cau da.
+            var houseRng = new RandomNumberGenerator { Seed = 8002 };
+            (PackedScene scene, float min, float max)[] houseKinds =
+            {
+                (_cottageScene, 30f, 42f),
+                (_villageHouseScene, 40f, 56f),
+                (_farmhouseScene, 58f, 78f),
+            };
+
+            const float plotSpacing = 300f;
+            const int plotHalfGrid = 8;
+            const float crossroadHalf = 160f;
+            Vector2[] bridgePts = { new(-750, 0), new(750, 0) };
+            const float bridgeAvoidRadius = 140f;
+
+            var plotCandidates = new List<Vector2>();
+            for (int gz = -plotHalfGrid; gz <= plotHalfGrid; gz++)
+            {
+                for (int gx = -plotHalfGrid; gx <= plotHalfGrid; gx++)
+                {
+                    float x = gx * plotSpacing, z = gz * plotSpacing;
+                    if (Mathf.Abs(x) < crossroadHalf && Mathf.Abs(z) < crossroadHalf) continue;
+                    bool nearBridge = false;
+                    foreach (var b in bridgePts)
+                        if (new Vector2(x, z).DistanceTo(b) < bridgeAvoidRadius) nearBridge = true;
+                    if (nearBridge) continue;
+                    plotCandidates.Add(new Vector2(x, z));
+                }
+            }
+            plotCandidates.Sort((a, b) => a.Length().CompareTo(b.Length()));
+
+            for (int i = 0; i < 100 && i < plotCandidates.Count; i++)
+            {
+                var off = new Vector3(plotCandidates[i].X, 0, plotCandidates[i].Y);
+                var (scene, min, max) = houseKinds[houseRng.RandiRange(0, houseKinds.Length - 1)];
+                if (scene == null) continue;
+                var pos = FrenchRegionCenter + off;
+                _frenchHousePositions.Add(pos);
+                var inst = scene.Instantiate<Node3D>();
+                inst.Position = pos;
+                inst.RotationDegrees = new Vector3(0, houseRng.RandiRange(0, 3) * 90f, 0);
+                inst.Scale = Vector3.One * houseRng.RandfRange(min, max);
+                _world.AddChild(inst);
+            }
+        }
+
+        // 50 nguoi dan vung que Phap ("sinh hoat song nhu con nguoi" theo dung yeu cau) - tai su
+        // dung TownCitizenNpc.cs (da co san AI ngay/dem: ban ngay tu do di dao, toi ve nha) va he
+        // thong hoi thoai NPC, gan cho tung nguoi 1 trong 50 can nha vua dung. KHAC voi cong dan
+        // khu do thi (co phong noi that that su qua AddBuildingEntrance), nha vung que Phap CHI
+        // la model trang tri (khong di qua he thong phong noi that) nen "ve nha ngu" duoc mo
+        // phong don gian hon: dung o mot diem NGAY SAT SAU nha (khuat tam nhin tu duong) thay vi
+        // vao han 1 phong rieng - giu chi phi dung san O MUC THAP (khong them 50 cap phong noi
+        // that nua, tranh dong loat qua nhieu Resource/Node cung luc nhu da gap truoc day).
+        private void SpawnFrenchVillagers()
+        {
+            if (_frenchHousePositions.Count == 0) return;
+
+            (string name, string[] low, string[] mid, string[] high)[] flavors =
+            {
+                ("Nguoi Nong Dan",
+                    new[] { "Vu mua nam nay chac se duoc lam." },
+                    new[] { "Chao anh ban! Ghe tham vung que chung toi a?" },
+                    new[] { "Toi se moi anh mot bua an dong que that su." }),
+                ("Nguoi Xay Xay Bot",
+                    new[] { "Coi xay cua toi quay tu doi nay sang doi khac roi." },
+                    new[] { "Bot mi moi xay thom lam, anh co muon thu khong?" },
+                    new[] { "Gia dinh toi se luon chao don anh." }),
+                ("Nguoi Lam Vuon Nho",
+                    new[] { "Vuon nho tren doi kia la cua gia dinh toi." },
+                    new[] { "Ruou vang nam nay ngon lam, anh nen thu." },
+                    new[] { "Toi se de danh cho anh chai ruou ngon nhat ham." }),
+                ("Nguoi Chan Cuu Vung Que",
+                    new[] { "Dan cuu cua toi gam co tren nhung ngon doi thap quanh day." },
+                    new[] { "Anh di dao vung que nay cung quen mat roi." },
+                    new[] { "Ghe tham dan cuu cua toi bat cu luc nao." }),
+                ("Ba Cu Lang Que",
+                    new[] { "Toi song o vung que nay tu thuo be." },
+                    new[] { "Gap anh toi vui lam, nho con chau qua." },
+                    new[] { "De toi ke anh nghe chuyen xua cua vung dat nay..." }),
+                ("Tho Ren Vung Que",
+                    new[] { "Vung que thanh binh nhung van can tho ren gioi." },
+                    new[] { "Anh ghe tham xuong ren cua toi thuong xuyen nhi." },
+                    new[] { "Vi qui anh, toi se ren mon do dac biet nhat." }),
+            };
+
+            int count = Mathf.Min(50, _frenchHousePositions.Count);
+
+            for (int i = 0; i < count; i++)
+            {
+                var housePos = _frenchHousePositions[i];
+                var flavor = flavors[i % flavors.Length];
+                var villager = _citizenScene.Instantiate<TownCitizenNpc>();
+                villager.NpcId = $"french_villager_{i}";
+                villager.NpcName = flavor.name;
+                villager.DialogueLow = flavor.low;
+                villager.DialogueMid = flavor.mid;
+                villager.DialogueHigh = flavor.high;
+                villager.WanderRadius = 1500f;
+                villager.WanderCenter = FrenchRegionCenter;
+                villager.HomePos = housePos + new Vector3(0, 0, 45);
+                // Khong co phong noi that rieng (xem giai thich o tren) - "vao nha ngu" duoc mo
+                // phong bang cach dung khuat ngay phia sau nha.
+                villager.InteriorHomePos = housePos + new Vector3(0, 8, -35);
+                _world.AddChild(villager);
+            }
+        }
+
+        private void AddFrenchRoadsideTree(Vector3 pos, RandomNumberGenerator rng)
+        {
+            if (_treeScene == null && _treeScene2 == null) return;
+            var scene = rng.Randf() < 0.5f ? _treeScene : _treeScene2;
+            scene ??= _treeScene ?? _treeScene2;
+            var inst = scene.Instantiate<Node3D>();
+            inst.Position = pos;
+            inst.RotateY(rng.RandfRange(0f, Mathf.Tau));
+            inst.Scale = Vector3.One * rng.RandfRange(30f, 38f);
+            _world.AddChild(inst);
         }
 
         private void SpawnCow(Vector3 pos, bool isAdult)

@@ -149,6 +149,16 @@ namespace HiepSiVeVuon.UI
             DrawLandmark(SunflowerFieldPos2D, new Color(0.95f, 0.78f, 0.1f), "Canh dong huong duong");
             DrawLandmark(PoliceStationPos2D, new Color(0.2f, 0.35f, 0.85f), "Tru Canh Sat");
 
+            // Vung que nuoc Phap (xem Main.FrenchRegionCenter) cach xa toi 10km - qua xa de ve
+            // dung ty le tren ban do nay (se lam ca ban do nong trai/lang bi thu nho khong doc
+            // duoc). Thay bang 1 MUI TEN CHI HUONG o mep trai ban do, khong ve dung vi tri that.
+            var arrowTip = new Vector2(6, MapSize.Y * 0.5f);
+            _mapArea.DrawLine(arrowTip + new Vector2(26, 0), arrowTip, new Color(0.55f, 0.42f, 0.32f), 3f);
+            _mapArea.DrawLine(arrowTip, arrowTip + new Vector2(9, -7), new Color(0.55f, 0.42f, 0.32f), 3f);
+            _mapArea.DrawLine(arrowTip, arrowTip + new Vector2(9, 7), new Color(0.55f, 0.42f, 0.32f), 3f);
+            _mapArea.DrawString(ThemeDB.FallbackFont, arrowTip + new Vector2(2, -12),
+                "Vung que Phap (~10km)", HorizontalAlignment.Left, -1, 12, new Color(0.55f, 0.42f, 0.32f));
+
             if (HasWaypoint)
             {
                 var wp = WorldToMap(new Vector2(Waypoint.X, Waypoint.Z));
