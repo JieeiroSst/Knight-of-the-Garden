@@ -167,6 +167,7 @@ namespace HiepSiVeVuon.Core
                 BuildChickenCoop();
                 BuildPoultryKeeper();
                 BuildPlateaus();
+                BuildSunflowerField();
             }
             catch (System.Exception e)
             {
@@ -1648,6 +1649,87 @@ namespace HiepSiVeVuon.Core
                 moundBody.AddChild(new CollisionShape3D { Shape = new SphereShape3D { Radius = moundRadius * 0.9f } });
                 _world.AddChild(moundBody);
             }
+        }
+
+        // Canh dong hoa huong duong, cach hang rao nong trai 100m (2000 don vi, quy doi 20 don
+        // vi/met) ve phia tay. Dat o dai Z DUONG (138-642, giong hang rao ruong) de KHONG chong
+        // lan voi cum chuong trai bo/ngua/ga (cung o phia tay nhung dai Z AM, -250 den -990).
+        // O khoang cach nay da nam NGOAI pham vi San chinh (DrawGround, 3000x3000 quanh goc toa
+        // do, toi da +-1500) nen roi vao vung hoang da cua WorldStreamer - phai dang ky vung
+        // loai tru (giong Main.BuildPlateaus) de cay/da/quai ngau nhien khong moc xuyen qua canh
+        // dong (nen dat/co van sinh binh thuong qua tung chunk, chi decor bi chan).
+        private static readonly Vector3 SunflowerFieldCenter = new(-2552, 0, 390);
+        private const float SunflowerFieldHalfX = 250f;
+        private const float SunflowerFieldHalfZ = 250f;
+
+        private void BuildSunflowerField()
+        {
+            float minX = SunflowerFieldCenter.X - SunflowerFieldHalfX;
+            float maxX = SunflowerFieldCenter.X + SunflowerFieldHalfX;
+            float minZ = SunflowerFieldCenter.Z - SunflowerFieldHalfZ;
+            float maxZ = SunflowerFieldCenter.Z + SunflowerFieldHalfZ;
+
+            WorldStreamer.ExclusionZones.Add((SunflowerFieldCenter, 395f));
+
+            // Nen dat mau nau sam trai dai duoi ca canh dong - phan biet ro voi co xanh xung
+            // quanh, giong 1 canh dong that su duoc canh tac chu khong phai hoa moc hoang.
+            _world.AddChild(new MeshInstance3D
+            {
+                Mesh = new PlaneMesh { Size = new Vector2(SunflowerFieldHalfX * 2f, SunflowerFieldHalfZ * 2f) },
+                Position = SunflowerFieldCenter + Vector3.Up * 0.4f,
+                MaterialOverride = GetCachedMaterial(new Color(0.32f, 0.22f, 0.13f), 1f)
+            });
+
+            // Trong theo HANG deu (giong canh tac that su) + lech ngau nhien nho de khong qua
+            // may moc - seed co dinh nen bo cuc giu nguyen moi lan tai lai.
+            var rng = new RandomNumberGenerator { Seed = 6001 };
+            const float rowSpacing = 46f;
+            const float plantSpacing = 42f;
+            for (float z = minZ + 25f; z <= maxZ - 25f; z += rowSpacing)
+            {
+                for (float x = minX + 25f; x <= maxX - 25f; x += plantSpacing)
+                {
+                    var pos = new Vector3(x + rng.RandfRange(-6f, 6f), 0, z + rng.RandfRange(-6f, 6f));
+                    AddSunflower(pos, rng);
+                }
+            }
+        }
+
+        // 1 cay hoa huong duong: khong tim duoc model CC0 phu hop rieng (tim ky tren poly.pizza,
+        // chi co goi "Flower"/"Flowers" chung chung CC0, khong co "Sunflower" CC0 rieng) nen dung
+        // primitive - than cay (CylinderMesh mau xanh) + dau hoa la 2 lop dia (dia vang lon lam
+        // canh hoa, dia nau nho hon lam nhuy o giua) nam GAN NHU NAM NGANG (huong duong thuong
+        // "quay mat ve phia mat troi"/huong len troi) chi nghieng nhe ngau nhien cho tu nhien.
+        private void AddSunflower(Vector3 pos, RandomNumberGenerator rng)
+        {
+            float stemHeight = rng.RandfRange(75f, 105f);
+            float headRadius = rng.RandfRange(16f, 22f);
+
+            _world.AddChild(new MeshInstance3D
+            {
+                Mesh = new CylinderMesh { TopRadius = 2.2f, BottomRadius = 3f, Height = stemHeight },
+                Position = pos + Vector3.Up * (stemHeight / 2f),
+                MaterialOverride = GetCachedMaterial(new Color(0.25f, 0.42f, 0.15f), 0.9f)
+            });
+
+            var headAnchor = new Node3D
+            {
+                Position = pos + Vector3.Up * stemHeight,
+                RotationDegrees = new Vector3(rng.RandfRange(-12f, 12f), rng.RandfRange(0f, 360f), rng.RandfRange(-6f, 6f))
+            };
+            _world.AddChild(headAnchor);
+
+            headAnchor.AddChild(new MeshInstance3D
+            {
+                Mesh = new CylinderMesh { TopRadius = headRadius, BottomRadius = headRadius, Height = 4f },
+                MaterialOverride = GetCachedMaterial(new Color(0.95f, 0.78f, 0.1f), 0.8f)
+            });
+            headAnchor.AddChild(new MeshInstance3D
+            {
+                Mesh = new CylinderMesh { TopRadius = headRadius * 0.5f, BottomRadius = headRadius * 0.5f, Height = 4.6f },
+                Position = Vector3.Up * 0.8f,
+                MaterialOverride = GetCachedMaterial(new Color(0.32f, 0.22f, 0.08f), 1f)
+            });
         }
 
         private void SpawnCow(Vector3 pos, bool isAdult)

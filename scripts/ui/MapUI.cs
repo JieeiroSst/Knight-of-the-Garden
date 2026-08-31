@@ -34,8 +34,13 @@ namespace HiepSiVeVuon.UI
             new(1600, -350), new(2650, 750), new(1750, 1950)
         };
 
+        // Canh dong hoa huong duong phia tay nong trai (xem Main.BuildSunflowerField).
+        private static readonly Vector2 SunflowerFieldPos2D = new(-2552, 390);
+
         // Vung toa do the gioi hien thi tren ban do (bao ca nong trai lan thi tran + le).
-        private const float WorldMinX = -2200f, WorldMaxX = 11000f;
+        // WorldMinX mo rong tu -2200 -> -3000 de bao ca canh dong huong duong o -2552 (xem
+        // Main.SunflowerFieldCenter) sau khi doi ra 100m.
+        private const float WorldMinX = -3000f, WorldMaxX = 11000f;
         private const float WorldMinZ = -2200f, WorldMaxZ = 6200f;
         private static readonly Vector2 MapSize = new(660, 400);
         private static readonly Vector2 MapOrigin = new(40, 70);
@@ -136,6 +141,8 @@ namespace HiepSiVeVuon.UI
 
             for (int i = 0; i < PlateauPos2D.Length; i++)
                 DrawLandmark(PlateauPos2D[i], new Color(0.55f, 0.42f, 0.32f), i == 0 ? "Cao nguyen" : "");
+
+            DrawLandmark(SunflowerFieldPos2D, new Color(0.95f, 0.78f, 0.1f), "Canh dong huong duong");
 
             if (HasWaypoint)
             {
