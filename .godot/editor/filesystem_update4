@@ -38,3 +38,4 @@ res://scripts/entities/Pig.cs
 res://scripts/entities/EstateWorkerNpc.cs
 res://scripts/entities/Sheep.cs
 res://scripts/entities/ScheduledFarmNpc.cs
+res://scripts/entities/WindmillBlades.cs

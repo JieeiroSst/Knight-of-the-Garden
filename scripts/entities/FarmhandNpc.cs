@@ -23,6 +23,10 @@ namespace HiepSiVeVuon.Entities
         [Export] public int WorkEndHour = 18;
         [Export] public float WorkWanderRadius = 90f;
         [Export] public double MilkIntervalSec = 150.0;
+        // San pham dinh ky tha ra (mac dinh "milk" - giu nguyen hanh vi cu cho nguoi cham bo/van
+        // sua). Nguoi chan cuu (xem Main.BuildExtraSheepPensRound2) dat lai thanh "wool" de dung
+        // dung nghia "cham soc cuu, thu len" thay vi tiep tuc tha nham sua bo.
+        [Export] public string ProduceItemId = "milk";
 
         // Main.cs gan cac vi tri nay ngay sau khi tao NPC (truoc AddChild).
         public Vector3 HomePos;       // ngay truoc cua nha (ngoai troi)
@@ -127,7 +131,7 @@ namespace HiepSiVeVuon.Entities
             if (_milkCooldown <= 0)
             {
                 var jitter = new Vector3((float)GD.RandRange(-14, 14), 0f, (float)GD.RandRange(-14, 14));
-                DroppedItem.Spawn(GetTree().CurrentScene, TroughPos + jitter, "milk", 1);
+                DroppedItem.Spawn(GetTree().CurrentScene, TroughPos + jitter, ProduceItemId, 1);
                 _milkCooldown = MilkIntervalSec;
             }
 
