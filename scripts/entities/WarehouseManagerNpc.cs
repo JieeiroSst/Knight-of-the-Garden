@@ -73,15 +73,17 @@ namespace HiepSiVeVuon.Entities
         }
 
         // Ghi de PickDialogue (protected virtual tren NPC.cs) de tra ve bao cao TON KHO THUC SU
-        // moi lan noi chuyen, thay vi chon ngau nhien tu 1 mang cau co dinh.
+        // moi lan noi chuyen, thay vi chon ngau nhien tu 1 mang cau co dinh. Antoine dong vai tro
+        // "Cho" (bao gia thi truong) - dung nhan vat da co san thay vi mo them 1 man hinh rieng.
         protected override string PickDialogue()
         {
             var report = TrackedItems
-                .Select(t => (t.label, count: FarmStorage.Instance.GetCount(t.id), full: FarmStorage.Instance.GetFullness(t.id)))
+                .Select(t => (t.label, count: FarmStorage.Instance.GetCount(t.id), full: FarmStorage.Instance.GetFullness(t.id),
+                    price: Mathf.RoundToInt((ItemDatabase.Instance.GetItem(t.id)?.SellPrice ?? 0) * Market.GetSupplyMultiplier(t.id))))
                 .ToArray();
 
-            string header = "Toi quan ly kho nong san chung cua trang trai. Ton hien tai:\n"
-                + string.Join(", ", report.Select(r => $"{r.label} {r.count}"));
+            string header = "Toi quan ly kho nong san chung cua trang trai. Gia cho hien tai:\n"
+                + string.Join(", ", report.Select(r => $"{r.label} {r.count} ({r.price}v)"));
 
             var fullest = report.OrderByDescending(r => r.full).First();
             string warning = fullest.full >= 0.9f
@@ -93,7 +95,12 @@ namespace HiepSiVeVuon.Entities
                 ? $"\nNen dua bot {oversupplied.label.ToLower()} ra cho ban, de trong kho lam gi cho chat."
                 : "";
 
-            return header + warning + suggestion;
+            // Gia tri dat trang trai - CHI la chi so hien thi (khong mua ban duoc), uoc tinh don
+            // gian tu tong san luong nong san hien co.
+            int landValue = report.Sum(r => r.count) * 50;
+            string land = $"\nGia tri dat trang trai uoc tinh: {landValue} vang.";
+
+            return header + warning + suggestion + land;
         }
     }
 }

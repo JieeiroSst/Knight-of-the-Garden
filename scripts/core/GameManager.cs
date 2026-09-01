@@ -133,6 +133,12 @@ namespace HiepSiVeVuon.Core
             EmitSignal(SignalName.StatsChanged);
         }
 
+        // Thue + luong nhan cong trang trai gop chung thanh "chi phi van hanh", tru dinh ky moi
+        // tuan (7 ngay THAT). Neu khong du vang, CHI bo qua ky do (SpendGold da tra false, khong
+        // co co che no/gold am nao trong toan bo code hien tai, khong bia them).
+        public const int WeeklyTax = 20;
+        public const int WeeklyLaborCost = 30;
+
         public void NextDay()
         {
             Day++;
@@ -144,6 +150,14 @@ namespace HiepSiVeVuon.Core
             {
                 _lastSeason = season;
                 EmitSignal(SignalName.SeasonChanged, (int)season);
+            }
+            if (Day % 7 == 0)
+            {
+                int cost = WeeklyTax + WeeklyLaborCost;
+                bool paid = SpendGold(cost);
+                GD.Print(paid
+                    ? $"Da tru {cost} vang chi phi van hanh (thue {WeeklyTax} + nhan cong {WeeklyLaborCost})."
+                    : $"Khong du vang de tra chi phi van hanh tuan nay ({cost} vang).");
             }
             EmitSignal(SignalName.StatsChanged);
         }

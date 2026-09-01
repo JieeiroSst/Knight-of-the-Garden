@@ -32,10 +32,17 @@ namespace HiepSiVeVuon.Systems
             public List<SavedStack> Inventory { get; set; } = new();
             public string EquippedWeapon { get; set; }
             public string EquippedArmor { get; set; }
+            public string EquippedTool { get; set; }
 
             public List<string> ActiveQuests { get; set; } = new();
             public List<int> ActiveProgress { get; set; } = new();
             public List<string> CompletedQuests { get; set; } = new();
+
+            // Hop dong dai han (xem ContractSystem.cs) - cung mau voi Active/CompletedQuests o tren.
+            public List<string> ActiveContracts { get; set; } = new();
+            public List<int> ContractDeliveries { get; set; } = new();
+            public List<int> ContractNextDueDay { get; set; } = new();
+            public List<string> CompletedContracts { get; set; } = new();
 
             public List<FarmTileState> Farm { get; set; } = new();
         }
@@ -69,6 +76,7 @@ namespace HiepSiVeVuon.Systems
                 ExpToNext = gm.ExpToNext, Gold = gm.Gold, Day = gm.Day,
                 EquippedWeapon = Inventory.Instance.EquippedWeapon,
                 EquippedArmor = Inventory.Instance.EquippedArmor,
+                EquippedTool = Inventory.Instance.EquippedTool,
                 Farm = FarmState
             };
 
@@ -82,6 +90,15 @@ namespace HiepSiVeVuon.Systems
             }
             foreach (var c in QuestSystem.Instance.Completed)
                 data.CompletedQuests.Add(c);
+
+            foreach (var kv in ContractSystem.Instance.Active)
+            {
+                data.ActiveContracts.Add(kv.Key);
+                data.ContractDeliveries.Add(kv.Value.DeliveriesDone);
+                data.ContractNextDueDay.Add(kv.Value.NextDueDay);
+            }
+            foreach (var c in ContractSystem.Instance.Completed)
+                data.CompletedContracts.Add(c);
 
             string json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
             using var f = FileAccess.Open(SavePath, FileAccess.ModeFlags.Write);
@@ -112,6 +129,7 @@ namespace HiepSiVeVuon.Systems
             foreach (var s in data.Inventory) Inventory.Instance.AddItem(s.Id, s.Count);
             if (!string.IsNullOrEmpty(data.EquippedWeapon)) Inventory.Instance.Equip(data.EquippedWeapon);
             if (!string.IsNullOrEmpty(data.EquippedArmor)) Inventory.Instance.Equip(data.EquippedArmor);
+            if (!string.IsNullOrEmpty(data.EquippedTool)) Inventory.Instance.Equip(data.EquippedTool);
 
             QuestSystem.Instance.Reset();
             for (int i = 0; i < data.ActiveQuests.Count; i++)
@@ -120,6 +138,17 @@ namespace HiepSiVeVuon.Systems
                     i < data.ActiveProgress.Count ? data.ActiveProgress[i] : 0;
             }
             foreach (var c in data.CompletedQuests) QuestSystem.Instance.Completed.Add(c);
+
+            ContractSystem.Instance.Reset();
+            for (int i = 0; i < data.ActiveContracts.Count; i++)
+            {
+                ContractSystem.Instance.Active[data.ActiveContracts[i]] = new ContractProgress
+                {
+                    DeliveriesDone = i < data.ContractDeliveries.Count ? data.ContractDeliveries[i] : 0,
+                    NextDueDay = i < data.ContractNextDueDay.Count ? data.ContractNextDueDay[i] : GameManager.Instance.Day + 7,
+                };
+            }
+            foreach (var c in data.CompletedContracts) ContractSystem.Instance.Completed.Add(c);
 
             FarmState = data.Farm ?? new List<FarmTileState>();
             GD.Print("Da nap game.");

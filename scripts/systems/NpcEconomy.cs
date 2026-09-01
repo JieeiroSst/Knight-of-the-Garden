@@ -21,7 +21,9 @@ namespace HiepSiVeVuon.Systems
         {
             var def = ItemDatabase.Instance?.GetItem(itemId);
             if (def == null) return false;
-            int cost = def.BuyPrice * qty;
+            // Cung gia dong theo cung/cau nhu nguoi choi (xem Market.cs) - NPC tra dat hon khi
+            // mat hang dang khan hiem, nhat quan 1 the gioi kinh te.
+            int cost = Mathf.RoundToInt(def.BuyPrice * Market.GetSupplyMultiplier(itemId) * qty);
             if (!GameManager.Instance.SpendGold(cost)) return false;
             FarmStorage.Instance.Add(itemId, qty);
             return true;

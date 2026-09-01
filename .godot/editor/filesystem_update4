@@ -48,3 +48,5 @@ res://scripts/entities/BuildingLabelZone.cs
 res://scripts/entities/PalaceGuardNpc.cs
 res://scripts/entities/FruitTree.cs
 res://scripts/entities/Goat.cs
+res://scripts/entities/OreNode.cs
+res://scripts/systems/ContractSystem.cs
