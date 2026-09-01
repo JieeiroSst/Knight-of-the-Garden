@@ -61,9 +61,12 @@ namespace HiepSiVeVuon.Entities
         public static void Spawn(Node parent, Vector3 pos, string itemId, int amount)
         {
             var drop = new DroppedItem { ItemId = itemId, Amount = amount };
+            // PHAI AddChild TRUOC roi moi gan GlobalPosition - GlobalPosition can node dang o
+            // TRONG scene tree de tinh (doc transform cha), gan luc con "mo coi" (chua co cha)
+            // nem loi "!is_inside_tree()" va vi tri KHONG duoc ap dung (con o goc toa do (0,0,0)).
+            parent.AddChild(drop);
             drop.GlobalPosition = pos + new Vector3(
                 (float)GD.RandRange(-16, 16), 0f, (float)GD.RandRange(-16, 16));
-            parent.AddChild(drop);
         }
     }
 }
