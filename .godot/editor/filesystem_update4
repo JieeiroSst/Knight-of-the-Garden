@@ -67,3 +67,4 @@ res://scripts/entities/PalaceGuardNpc.cs
 res://scripts/ui/SettingsUI.cs
 res://scripts/entities/WildAnimal.cs
 res://scripts/entities/Dog.cs
+res://scripts/entities/FarmGateDoor.cs

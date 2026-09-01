@@ -3299,26 +3299,35 @@ namespace HiepSiVeVuon.Core
 			AddStoneWallLine(new Vector3(maxX, 0, minZ), new Vector3(maxX, 0, eastGateZ - gateHalfWidth));
 			AddStoneWallLine(new Vector3(maxX, 0, eastGateZ + gateHalfWidth), new Vector3(maxX, 0, maxZ));
 
-			// Cong chao 3D bang da tai CA 4 cong (theo yeu cau) - xem AddStoneGateArch.
-			AddStoneGateArch(new Vector3(midX, 0, minZ), Vector3.Right, gateHalfWidth, "CONG BAC");
-			AddStoneGateArch(new Vector3(minX, 0, midZ), Vector3.Back, gateHalfWidth, "CONG TAY");
-			AddStoneGateArch(new Vector3(midX, 0, maxZ), Vector3.Right, gateHalfWidth, "CONG NAM");
+			// Cong chao 3D bang da tai CA 4 cong (theo yeu cau) - xem AddStoneGateArch. outwardDir
+			// la huong "ra ngoai" tuong (vuong goc voi huong doc tuong) - dung de tinh canh cua go
+			// mo VE PHIA NAO (ap sat mat ngoai tuong khi mo het, giong cua that).
+			AddStoneGateArch(new Vector3(midX, 0, minZ), Vector3.Right, Vector3.Forward, gateHalfWidth, "CONG BAC");
+			AddStoneGateArch(new Vector3(minX, 0, midZ), Vector3.Back, Vector3.Left, gateHalfWidth, "CONG TAY");
+			AddStoneGateArch(new Vector3(midX, 0, maxZ), Vector3.Right, Vector3.Back, gateHalfWidth, "CONG NAM");
 			// Dong: cong chinh (noi con duong that di vao lang) - bang ten rieng, "chao mung".
-			AddStoneGateArch(new Vector3(maxX, 0, eastGateZ), Vector3.Back, gateHalfWidth, "NONG TRAI - CHAO MUNG");
+			AddStoneGateArch(new Vector3(maxX, 0, eastGateZ), Vector3.Back, Vector3.Right, gateHalfWidth, "NONG TRAI - CHAO MUNG");
 		}
 
-		// Cong chao 3D bang da: 2 tru da vuong hai ben + 1 da ngang (lanh tho) noi lien phia
-		// tren, cao han han tuong thuong (130 so voi 40) de nhin ro la 1 CONG CHAO trang trong,
-		// khong phai chi la 1 doan tuong binh thuong - kem bang ten treo giua. Khong tim duoc
-		// model "cong chao" CC0 nao dung phong cach da tu nhien khop voi stone_wall.glb dang
+		// Cong chao 3D bang da, phong cach chau Au trung co (kham khao Gatehouse/vong thanh
+		// trung co - tru da + lanh tho + RANG CUA (crenellation/merlon) tren dinh tru, dac trung
+		// thi giac ro nhat cua kien truc lau dai chau Au, xem
+		// https://historiceuropeancastles.com/castle-gatehouse/) + 2 CANH CUA GO that (xem
+		// FarmGateDoor.cs) treo tren ban le, tu mo khi nguoi choi lai gan - THAY THE hoan toan
+		// khoang trong co dinh truoc day ("nguoi choi co the ra vao cua trang trai"). Khong tim
+		// duoc model "cong chao" CC0 nao dung phong cach da tu nhien khop voi stone_wall.glb dang
 		// dung cho ca buc tuong, nen xay tu khoi hop nguyen ban (giong cach lam silo/lo ren o
 		// BuildFarmOutbuildings) - dung DUNG 1 mau da xam nhat quan.
 		private static readonly Color StoneGateColor = new(0.56f, 0.54f, 0.5f);
+		private static readonly Color GateDoorWoodColor = new(0.32f, 0.2f, 0.11f);
+		private static readonly Color GateDoorIronColor = new(0.16f, 0.15f, 0.14f);
 
-		private void AddStoneGateArch(Vector3 gateCenter, Vector3 alongDir, float openHalfWidth, string signText)
+		private void AddStoneGateArch(Vector3 gateCenter, Vector3 alongDir, Vector3 outwardDir, float openHalfWidth, string signText)
 		{
 			var dir = alongDir.Normalized();
+			var outward = outwardDir.Normalized();
 			float angleDeg = Mathf.RadToDeg(Mathf.Atan2(-dir.Z, dir.X));
+			float outwardAngleDeg = Mathf.RadToDeg(Mathf.Atan2(-outward.Z, outward.X));
 			var stoneMat = GetCachedMaterial(StoneGateColor, 1f);
 
 			const float pillarHeight = 130f;
@@ -3344,6 +3353,21 @@ namespace HiepSiVeVuon.Core
 				var body = new StaticBody3D { Position = pos, RotationDegrees = rot };
 				body.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(pillarWidth, pillarHeight, pillarDepth) } });
 				_world.AddChild(body);
+
+				// Rang cua (crenellation) tren dinh tru - 3 khoi vuong nho nhoi len tren dinh,
+				// dac trung "lau dai trung co" ro rang nhat khi nhin tu xa, du chi la 1 chi tiet
+				// nho (khong xay rang cua doc toan bo tuong da - pham vi qua lon, xem ghi chu o
+				// BuildFarmStoneWall).
+				foreach (float merlonOffset in new[] { -pillarWidth * 0.3f, 0f, pillarWidth * 0.3f })
+				{
+					_world.AddChild(new MeshInstance3D
+					{
+						Mesh = new BoxMesh { Size = new Vector3(12f, 16f, pillarDepth + 4f) },
+						Position = pos + Vector3.Up * (pillarHeight / 2f + 8f) + (dir.Cross(Vector3.Up)).Normalized() * merlonOffset,
+						RotationDegrees = rot,
+						MaterialOverride = stoneMat
+					});
+				}
 			}
 
 			// Da ngang (lanh tho) noi 2 dinh tru - trai dai tu mep ngoai tru nay sang mep ngoai
@@ -3372,6 +3396,66 @@ namespace HiepSiVeVuon.Core
 				OutlineSize = 8,
 				PixelSize = 0.16f,
 				Modulate = new Color(0.98f, 0.92f, 0.65f)
+			});
+
+			// 2 canh cua go that (xem FarmGateDoor.cs) - ban le dat SAT mep trong tru da, moi
+			// canh choan gan het nua khoang trong (tru 6 don vi ho o giua). Dong: canh trai co
+			// local+X huong theo +dir (angleDeg); canh phai huong theo -dir (angleDeg+180). Mo:
+			// xoay toi khi local+X huong theo outward (tinh CHINH XAC qua Atan2, khong doan 90
+			// do co dinh) - canh cua "ap" vao mat ngoai tuong khi mo het, giong cua that.
+			const float doorHeight = 110f;
+			float doorLeafWidth = openHalfWidth - pillarWidth * 0.5f - 12f;
+			float hingeInset = pillarOffset - pillarWidth * 0.5f;
+
+			float leftClosedDeg = angleDeg;
+			float leftOpenSwing = Mathf.Wrap(outwardAngleDeg - leftClosedDeg, -180f, 180f);
+			AddGateDoorLeaf(gateCenter - dir * hingeInset, leftClosedDeg, leftOpenSwing, doorLeafWidth, doorHeight);
+
+			float rightClosedDeg = angleDeg + 180f;
+			float rightOpenSwing = Mathf.Wrap(outwardAngleDeg - rightClosedDeg, -180f, 180f);
+			AddGateDoorLeaf(gateCenter + dir * hingeInset, rightClosedDeg, rightOpenSwing, doorLeafWidth, doorHeight);
+		}
+
+		// 1 canh cua go cho Cong Chao (xem AddStoneGateArch) - hingePos la vi tri BAN LE (canh
+		// cua treo va xoay quanh diem nay), mesh+va cham lech ra tu ban le doc truc X CUC BO cua
+		// FarmGateDoor (sau khi xoay ClosedYRotationDeg, X cuc bo huong VAO khoang trong cong).
+		private void AddGateDoorLeaf(Vector3 hingePos, float closedYRotationDeg, float openSwingDeg, float doorWidth, float doorHeight)
+		{
+			var door = new FarmGateDoor
+			{
+				Position = hingePos,
+				RotationDegrees = new Vector3(0, closedYRotationDeg, 0),
+				ClosedYRotationDeg = closedYRotationDeg,
+				OpenSwingDeg = openSwingDeg,
+			};
+			_world.AddChild(door);
+
+			var woodMat = GetCachedMaterial(GateDoorWoodColor, 0.85f);
+			var doorMeshPos = new Vector3(doorWidth / 2f, doorHeight / 2f, 0f);
+			door.AddChild(new MeshInstance3D
+			{
+				Mesh = new BoxMesh { Size = new Vector3(doorWidth, doorHeight, 6f) },
+				Position = doorMeshPos,
+				MaterialOverride = woodMat,
+			});
+
+			// Thanh sat ngang gia lap tren mat go (chi tiet "cua trung co" - go + dai sat) - 2
+			// thanh o 1/4 va 3/4 chieu cao, trai het chieu rong canh cua.
+			var ironMat = GetCachedMaterial(GateDoorIronColor, 0.4f);
+			foreach (float heightFrac in new[] { 0.25f, 0.75f })
+			{
+				door.AddChild(new MeshInstance3D
+				{
+					Mesh = new BoxMesh { Size = new Vector3(doorWidth * 0.94f, 6f, 7.5f) },
+					Position = new Vector3(doorWidth / 2f, doorHeight * heightFrac, 0f),
+					MaterialOverride = ironMat,
+				});
+			}
+
+			door.AddChild(new CollisionShape3D
+			{
+				Shape = new BoxShape3D { Size = new Vector3(doorWidth, doorHeight, 6f) },
+				Position = doorMeshPos,
 			});
 		}
 

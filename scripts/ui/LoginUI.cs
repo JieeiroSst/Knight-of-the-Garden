@@ -28,6 +28,11 @@ namespace HiepSiVeVuon.UI
         public override void _Ready()
         {
             AddChild(BuildBackground());
+            // Dai canh "trang trai" trang tri o day man hinh - dung LAI cac sprite pixel-art co
+            // san cua game (khong ve/tai gi moi) thay vi de nen trong trai. Them TRUOC
+            // CenterContainer nen ve DUOI khung dang nhap (Control ve theo thu tu con, con sau
+            // de len tren con truoc).
+            AddChild(BuildFarmSceneStrip());
 
             var center = new CenterContainer { AnchorRight = 1, AnchorBottom = 1 };
             AddChild(center);
@@ -47,6 +52,11 @@ namespace HiepSiVeVuon.UI
             var vb = new VBoxContainer();
             vb.AddThemeConstantOverride("separation", 10);
             panel.AddChild(vb);
+
+            // "Chan dung" hiep si/nong dan: nhan vat chinh (player.png) giua, kiem+khien (sword.png/
+            // shield.png) hai ben - dung DUNG cac sprite pixel-art game da co, dai dien ca hai chu
+            // de "nong trai" va "hiep si" trong ten game ngay tren man hinh dang nhap.
+            vb.AddChild(BuildHeroPortrait());
 
             var title = new Label { Text = "HIEP SI VE VUON", HorizontalAlignment = HorizontalAlignment.Center };
             title.AddThemeColorOverride("font_color", GoldAccent);
@@ -133,6 +143,56 @@ namespace HiepSiVeVuon.UI
                 StretchMode = TextureRect.StretchModeEnum.Scale,
                 AnchorRight = 1, AnchorBottom = 1,
             };
+        }
+
+        // Anh pixel-art dung LAI tu asset co san cua game (khong tai/ve gi moi) - Nearest filter
+        // BAT BUOC de giu net rieng (mac dinh Godot dung Linear, se lam mo phong to pixel-art).
+        private static TextureRect MakeSprite(string path, float size, float alpha = 1f)
+        {
+            return new TextureRect
+            {
+                Texture = GD.Load<Texture2D>(path),
+                CustomMinimumSize = new Vector2(size, size),
+                StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+                TextureFilter = TextureFilterEnum.Nearest,
+                Modulate = new Color(1f, 1f, 1f, alpha),
+            };
+        }
+
+        // Dai "duong chan troi trang trai" doc theo mep duoi man hinh (cay/bu nhin/nha/lua mi/
+        // lau dai) - lam nen co khong khi thay vi 1 khoang trong, dung DUNG sprite scenery co san.
+        private static Control BuildFarmSceneStrip()
+        {
+            var row = new HBoxContainer
+            {
+                AnchorLeft = 0, AnchorRight = 1, AnchorTop = 1, AnchorBottom = 1,
+                OffsetTop = -100, OffsetBottom = -16,
+                Alignment = BoxContainer.AlignmentMode.Center,
+            };
+            row.AddThemeConstantOverride("separation", 46);
+
+            (string path, float size)[] scenery =
+            {
+                ("res://assets/scenery/tree.png", 72f),
+                ("res://assets/scenery/scarecrow.png", 62f),
+                ("res://assets/scenery/house.png", 84f),
+                ("res://assets/crops/wheat.png", 54f),
+                ("res://assets/scenery/castle.png", 72f),
+            };
+            foreach (var (path, size) in scenery)
+                row.AddChild(MakeSprite(path, size, 0.8f));
+
+            return row;
+        }
+
+        private static Control BuildHeroPortrait()
+        {
+            var row = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+            row.AddThemeConstantOverride("separation", 10);
+            row.AddChild(MakeSprite("res://assets/items/sword.png", 30f));
+            row.AddChild(MakeSprite("res://assets/player/player.png", 72f));
+            row.AddChild(MakeSprite("res://assets/items/shield.png", 30f));
+            return row;
         }
 
         private static Label MakeFieldLabel(string text)
