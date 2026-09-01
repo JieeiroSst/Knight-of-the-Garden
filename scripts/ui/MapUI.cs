@@ -19,12 +19,17 @@ namespace HiepSiVeVuon.UI
         // neu cac vi tri do doi thi phai cap nhat lai o day.
         private static readonly Vector2 FarmhousePos2D = new(-300, -60);
         private static readonly Vector2 BarnPos2D = new(-482, 250);
-        private static readonly Vector2 CowPasturePos2D = new(-820, -250);
-        private static readonly Vector2 CowherdHousePos2D = new(-1100, -250);
-        private static readonly Vector2 HorseStablePos2D = new(-820, -724);
-        private static readonly Vector2 StablehandHousePos2D = new(-1100, -724);
-        private static readonly Vector2 ChickenCoopPos2D = new(-820, -1186);
-        private static readonly Vector2 PoultryKeeperHousePos2D = new(-1100, -1186);
+
+        // Quy hoach lai trang trai thanh 5 khu vuc (xem Main.cs: LivestockZoneOrigin/
+        // HousingZoneAnchor/CropsExtensionAnchor/StorageZoneAnchor/OutbuildingsAnchor) - thay 9
+        // moc rieng le cu (tung chuong/tung nha rieng) bang 5 nhan KHU VUC, vi cac cong trinh
+        // rieng le do khong con dung o 1 cho co dinh/rieng biet nua (nhieu cai tu giai quyet vi
+        // tri luc runtime qua FindOpenSpot).
+        private static readonly Vector2 LivestockZonePos2D = new(-1550, -1450);
+        private static readonly Vector2 HousingZonePos2D = new(900, -1900);
+        private static readonly Vector2 CropsZonePos2D = new(780, 1220);
+        private static readonly Vector2 StorageZonePos2D = new(-880, 120);
+        private static readonly Vector2 ProductionZonePos2D = new(850, 280);
         private static readonly Vector2 VillageAnchor2D = new(9250, 3750);
         private static readonly Vector2 TownHallPos2D = new(9250, 3570);
 
@@ -40,12 +45,6 @@ namespace HiepSiVeVuon.UI
         // Tru canh sat trong khu do thi 50 nha (xem Main.BuildCityDistrict) - VillageAnchor +
         // policePlot (-690, 0) tinh dong trong code.
         private static readonly Vector2 PoliceStationPos2D = new(9250 - 690, 3750 + 0);
-
-        // Khu chan nuoi phu (cuu/heo) + vuon cay/vuon nho + nha nguoi lam vuon (xem
-        // Main.SheepPigPastureCenter/OrchardCenter/VineyardCenter/EstateWorkerHousePos).
-        private static readonly Vector2 SheepPigPos2D = new(-820, -1636);
-        private static readonly Vector2 OrchardVineyardPos2D = new(-810, -1636);
-        private static readonly Vector2 EstateWorkerHousePos2D = new(-1100, -1636);
 
         // Vung toa do the gioi hien thi tren ban do (bao ca nong trai lan thi tran + le).
         // WorldMinX mo rong tu -2200 -> -3000 de bao ca canh dong huong duong o -2552 (xem
@@ -139,13 +138,12 @@ namespace HiepSiVeVuon.UI
             _mapArea.DrawLine(WorldToMap(FarmhousePos2D), WorldToMap(VillageAnchor2D), new Color(0.65f, 0.55f, 0.35f), 3f);
 
             DrawLandmark(FarmhousePos2D, new Color(0.85f, 0.6f, 0.3f), "Nha nong dan");
-            DrawLandmark(BarnPos2D, new Color(0.6f, 0.35f, 0.15f), "Nha kho");
-            DrawLandmark(CowPasturePos2D, new Color(0.85f, 0.85f, 0.85f), "Trang trai bo");
-            DrawLandmark(CowherdHousePos2D, new Color(0.7f, 0.5f, 0.3f), "Nha nguoi cham bo");
-            DrawLandmark(HorseStablePos2D, new Color(0.6f, 0.42f, 0.25f), "Chuong ngua");
-            DrawLandmark(StablehandHousePos2D, new Color(0.7f, 0.5f, 0.3f), "Nha nguoi cham ngua");
-            DrawLandmark(ChickenCoopPos2D, new Color(0.9f, 0.8f, 0.5f), "Chuong ga");
-            DrawLandmark(PoultryKeeperHousePos2D, new Color(0.7f, 0.5f, 0.3f), "Nha nguoi cham ga");
+            DrawLandmark(BarnPos2D, new Color(0.6f, 0.35f, 0.15f), "Nha kho chinh");
+            DrawLandmark(LivestockZonePos2D, new Color(0.85f, 0.85f, 0.85f), "Khu Chan Nuoi");
+            DrawLandmark(HousingZonePos2D, new Color(0.7f, 0.5f, 0.3f), "Khu Nha O");
+            DrawLandmark(CropsZonePos2D, new Color(0.3f, 0.5f, 0.2f), "Khu Trong Trot");
+            DrawLandmark(StorageZonePos2D, new Color(0.6f, 0.45f, 0.2f), "Khu Nha Kho");
+            DrawLandmark(ProductionZonePos2D, new Color(0.5f, 0.5f, 0.55f), "Khu San Xuat");
             DrawLandmark(TownHallPos2D, new Color(0.75f, 0.25f, 0.2f), "Toa Thi Chinh");
             DrawLandmark(VillageAnchor2D, new Color(0.95f, 0.85f, 0.4f), "Thi Tran");
 
@@ -154,9 +152,6 @@ namespace HiepSiVeVuon.UI
 
             DrawLandmark(SunflowerFieldPos2D, new Color(0.95f, 0.78f, 0.1f), "Canh dong huong duong");
             DrawLandmark(PoliceStationPos2D, new Color(0.2f, 0.35f, 0.85f), "Tru Canh Sat");
-            DrawLandmark(SheepPigPos2D, new Color(0.85f, 0.85f, 0.8f), "Chuong cuu/heo");
-            DrawLandmark(OrchardVineyardPos2D, new Color(0.3f, 0.5f, 0.2f), "Vuon cay/Vuon nho");
-            DrawLandmark(EstateWorkerHousePos2D, new Color(0.7f, 0.5f, 0.3f), "Nha nguoi lam vuon");
 
             // Vung que nuoc Phap (xem Main.FrenchRegionCenter) cach xa toi 10km - qua xa de ve
             // dung ty le tren ban do nay (se lam ca ban do nong trai/lang bi thu nho khong doc

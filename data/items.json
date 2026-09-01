@@ -148,6 +148,30 @@
     "IconPath": "res://assets/items/coins.png"
   },
   {
+    "Id": "fertilizer_basic",
+    "Name": "Phan Bon",
+    "Description": "Rai vao dat da trong de cay lon nhanh hon va cho san pham chat luong tot hon.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 4,
+    "BuyPrice": 12,
+    "IconPath": "res://assets/items/coins.png",
+    "FertilizerGrowDaysBonus": 1,
+    "FertilizerQualityBonus": 0.3
+  },
+  {
+    "Id": "pesticide",
+    "Name": "Thuoc Diet Sau",
+    "Description": "Xit vao cay bi sau benh de dieu tri kip thoi, tranh mat chat luong khi thu hoach.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 4,
+    "BuyPrice": 10,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
     "Id": "grape",
     "Name": "Nho",
     "Description": "Chum nho chin tu vuon nho trang trai.",
@@ -177,6 +201,46 @@
     "SellPrice": 12,
     "IconPath": "res://assets/crops/tomato.png"
   },
+  {
+    "Id": "pear",
+    "Name": "Le",
+    "Description": "Le chin tu vuon cay an qua trong trang trai.",
+    "Type": "Crop",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 13,
+    "IconPath": "res://assets/crops/tomato.png"
+  },
+  {
+    "Id": "cherry",
+    "Name": "Anh Dao",
+    "Description": "Anh dao chin do tu vuon cay an qua trong trang trai.",
+    "Type": "Crop",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 16,
+    "IconPath": "res://assets/crops/tomato.png"
+  },
+  {
+    "Id": "peach",
+    "Name": "Dao",
+    "Description": "Dao chin thom tu vuon cay an qua trong trang trai.",
+    "Type": "Crop",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 14,
+    "IconPath": "res://assets/crops/tomato.png"
+  },
+  {
+    "Id": "chestnut",
+    "Name": "Hat De",
+    "Description": "Hat de rung tu vuon cay an qua trong trang trai.",
+    "Type": "Crop",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 11,
+    "IconPath": "res://assets/crops/pumpkin.png"
+  },
 
   {
     "Id": "pumpkin",
@@ -186,6 +250,28 @@
     "Rarity": "Common",
     "MaxStack": 99,
     "SellPrice": 35,
+    "IconPath": "res://assets/crops/pumpkin.png",
+    "GoodVariantId": "pumpkin_good",
+    "PremiumVariantId": "pumpkin_premium"
+  },
+  {
+    "Id": "pumpkin_good",
+    "Name": "Bi Ngo Tot",
+    "Description": "Bi ngo duoc cham soc ky, chat luong tren muc trung binh.",
+    "Type": "Crop",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 49,
+    "IconPath": "res://assets/crops/pumpkin.png"
+  },
+  {
+    "Id": "pumpkin_premium",
+    "Name": "Bi Ngo Hao Hang",
+    "Description": "Bi ngo cham soc hoan hao, chat luong cao cap.",
+    "Type": "Crop",
+    "Rarity": "Rare",
+    "MaxStack": 99,
+    "SellPrice": 70,
     "IconPath": "res://assets/crops/pumpkin.png"
   },
   {
@@ -196,6 +282,28 @@
     "Rarity": "Common",
     "MaxStack": 99,
     "SellPrice": 20,
+    "IconPath": "res://assets/crops/tomato.png",
+    "GoodVariantId": "tomato_good",
+    "PremiumVariantId": "tomato_premium"
+  },
+  {
+    "Id": "tomato_good",
+    "Name": "Ca Chua Tot",
+    "Description": "Ca chua duoc cham soc ky, chat luong tren muc trung binh.",
+    "Type": "Crop",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 28,
+    "IconPath": "res://assets/crops/tomato.png"
+  },
+  {
+    "Id": "tomato_premium",
+    "Name": "Ca Chua Hao Hang",
+    "Description": "Ca chua cham soc hoan hao, chat luong cao cap.",
+    "Type": "Crop",
+    "Rarity": "Rare",
+    "MaxStack": 99,
+    "SellPrice": 40,
     "IconPath": "res://assets/crops/tomato.png"
   },
   {
@@ -206,6 +314,28 @@
     "Rarity": "Common",
     "MaxStack": 99,
     "SellPrice": 15,
+    "IconPath": "res://assets/crops/wheat.png",
+    "GoodVariantId": "wheat_good",
+    "PremiumVariantId": "wheat_premium"
+  },
+  {
+    "Id": "wheat_good",
+    "Name": "Lua Mi Tot",
+    "Description": "Lua mi duoc cham soc ky, chat luong tren muc trung binh.",
+    "Type": "Crop",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 21,
+    "IconPath": "res://assets/crops/wheat.png"
+  },
+  {
+    "Id": "wheat_premium",
+    "Name": "Lua Mi Hao Hang",
+    "Description": "Lua mi cham soc hoan hao, chat luong cao cap.",
+    "Type": "Crop",
+    "Rarity": "Rare",
+    "MaxStack": 99,
+    "SellPrice": 30,
     "IconPath": "res://assets/crops/wheat.png"
   },
   {
@@ -216,6 +346,28 @@
     "Rarity": "Common",
     "MaxStack": 99,
     "SellPrice": 18,
+    "IconPath": "res://assets/crops/tomato.png",
+    "GoodVariantId": "carrot_good",
+    "PremiumVariantId": "carrot_premium"
+  },
+  {
+    "Id": "carrot_good",
+    "Name": "Ca Rot Tot",
+    "Description": "Ca rot duoc cham soc ky, chat luong tren muc trung binh.",
+    "Type": "Crop",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 25,
+    "IconPath": "res://assets/crops/tomato.png"
+  },
+  {
+    "Id": "carrot_premium",
+    "Name": "Ca Rot Hao Hang",
+    "Description": "Ca rot cham soc hoan hao, chat luong cao cap.",
+    "Type": "Crop",
+    "Rarity": "Rare",
+    "MaxStack": 99,
+    "SellPrice": 36,
     "IconPath": "res://assets/crops/tomato.png"
   },
   {
@@ -226,6 +378,28 @@
     "Rarity": "Common",
     "MaxStack": 99,
     "SellPrice": 16,
+    "IconPath": "res://assets/crops/pumpkin.png",
+    "GoodVariantId": "potato_good",
+    "PremiumVariantId": "potato_premium"
+  },
+  {
+    "Id": "potato_good",
+    "Name": "Khoai Tay Tot",
+    "Description": "Khoai tay duoc cham soc ky, chat luong tren muc trung binh.",
+    "Type": "Crop",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 22,
+    "IconPath": "res://assets/crops/pumpkin.png"
+  },
+  {
+    "Id": "potato_premium",
+    "Name": "Khoai Tay Hao Hang",
+    "Description": "Khoai tay cham soc hoan hao, chat luong cao cap.",
+    "Type": "Crop",
+    "Rarity": "Rare",
+    "MaxStack": 99,
+    "SellPrice": 32,
     "IconPath": "res://assets/crops/pumpkin.png"
   },
   {
@@ -236,6 +410,28 @@
     "Rarity": "Common",
     "MaxStack": 99,
     "SellPrice": 22,
+    "IconPath": "res://assets/crops/wheat.png",
+    "GoodVariantId": "cabbage_good",
+    "PremiumVariantId": "cabbage_premium"
+  },
+  {
+    "Id": "cabbage_good",
+    "Name": "Bap Cai Tot",
+    "Description": "Bap cai duoc cham soc ky, chat luong tren muc trung binh.",
+    "Type": "Crop",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 31,
+    "IconPath": "res://assets/crops/wheat.png"
+  },
+  {
+    "Id": "cabbage_premium",
+    "Name": "Bap Cai Hao Hang",
+    "Description": "Bap cai cham soc hoan hao, chat luong cao cap.",
+    "Type": "Crop",
+    "Rarity": "Rare",
+    "MaxStack": 99,
+    "SellPrice": 44,
     "IconPath": "res://assets/crops/wheat.png"
   },
 
@@ -248,6 +444,19 @@
     "MaxStack": 99,
     "SellPrice": 5,
     "BuyPrice": 15,
+    "IconPath": "res://assets/crops/pumpkin.png",
+    "GrowsIntoCropId": "pumpkin",
+    "GrowDays": 3
+  },
+  {
+    "Id": "pumpkin_seed_premium",
+    "Name": "Hat Bi Ngo Hao Hang",
+    "Description": "Hat giong chon loc - cay tu hat nay de cho ra bi ngo chat luong cao hon.",
+    "Type": "Seed",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 12,
+    "BuyPrice": 38,
     "IconPath": "res://assets/crops/pumpkin.png",
     "GrowsIntoCropId": "pumpkin",
     "GrowDays": 3
@@ -266,6 +475,19 @@
     "GrowDays": 2
   },
   {
+    "Id": "tomato_seed_premium",
+    "Name": "Hat Ca Chua Hao Hang",
+    "Description": "Hat giong chon loc - cay tu hat nay de cho ra ca chua chat luong cao hon.",
+    "Type": "Seed",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 8,
+    "BuyPrice": 25,
+    "IconPath": "res://assets/crops/tomato.png",
+    "GrowsIntoCropId": "tomato",
+    "GrowDays": 2
+  },
+  {
     "Id": "wheat_seed",
     "Name": "Hat Lua Mi",
     "Description": "Trong sau 2 ngay se ra lua mi.",
@@ -274,6 +496,19 @@
     "MaxStack": 99,
     "SellPrice": 2,
     "BuyPrice": 8,
+    "IconPath": "res://assets/crops/wheat.png",
+    "GrowsIntoCropId": "wheat",
+    "GrowDays": 2
+  },
+  {
+    "Id": "wheat_seed_premium",
+    "Name": "Hat Lua Mi Hao Hang",
+    "Description": "Hat giong chon loc - cay tu hat nay de cho ra lua mi chat luong cao hon.",
+    "Type": "Seed",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 6,
+    "BuyPrice": 20,
     "IconPath": "res://assets/crops/wheat.png",
     "GrowsIntoCropId": "wheat",
     "GrowDays": 2
@@ -292,6 +527,19 @@
     "GrowDays": 2
   },
   {
+    "Id": "carrot_seed_premium",
+    "Name": "Hat Ca Rot Hao Hang",
+    "Description": "Hat giong chon loc - cay tu hat nay de cho ra ca rot chat luong cao hon.",
+    "Type": "Seed",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 7,
+    "BuyPrice": 23,
+    "IconPath": "res://assets/crops/tomato.png",
+    "GrowsIntoCropId": "carrot",
+    "GrowDays": 2
+  },
+  {
     "Id": "potato_seed",
     "Name": "Hat Khoai Tay",
     "Description": "Trong sau 3 ngay se ra khoai tay.",
@@ -305,6 +553,19 @@
     "GrowDays": 3
   },
   {
+    "Id": "potato_seed_premium",
+    "Name": "Hat Khoai Tay Hao Hang",
+    "Description": "Hat giong chon loc - cay tu hat nay de cho ra khoai tay chat luong cao hon.",
+    "Type": "Seed",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 8,
+    "BuyPrice": 25,
+    "IconPath": "res://assets/crops/pumpkin.png",
+    "GrowsIntoCropId": "potato",
+    "GrowDays": 3
+  },
+  {
     "Id": "cabbage_seed",
     "Name": "Hat Bap Cai",
     "Description": "Trong sau 3 ngay se ra bap cai.",
@@ -313,6 +574,19 @@
     "MaxStack": 99,
     "SellPrice": 4,
     "BuyPrice": 11,
+    "IconPath": "res://assets/crops/wheat.png",
+    "GrowsIntoCropId": "cabbage",
+    "GrowDays": 3
+  },
+  {
+    "Id": "cabbage_seed_premium",
+    "Name": "Hat Bap Cai Hao Hang",
+    "Description": "Hat giong chon loc - cay tu hat nay de cho ra bap cai chat luong cao hon.",
+    "Type": "Seed",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 9,
+    "BuyPrice": 28,
     "IconPath": "res://assets/crops/wheat.png",
     "GrowsIntoCropId": "cabbage",
     "GrowDays": 3

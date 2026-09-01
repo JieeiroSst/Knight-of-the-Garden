@@ -30,6 +30,15 @@ namespace HiepSiVeVuon.Entities
         public static readonly Vector3 SeatOffset = new(0, 13f, 2f);
         public Vector3 Facing => _facing;
 
+        // Sinh san & lon len (mau Cow.cs): ngua con sinh ra tu 2 ngua lon (xem Main.TryBreedHorses),
+        // bat dau nho va CAN AN MOI NGAY (den mang gio 12h/16h) de lon dan qua tung NGAY THAT.
+        [Export] public bool IsAdult = true;
+        [Export] public float BirthScaleFactor = 0.5f;
+        [Export] public int GrowthDaysNeeded = 4;
+        private int _daysFed = 0;
+        private bool _ateToday = false;
+        private CollisionShape3D _collision;
+
         private const string AnimIdle = "Armature|Idle";
         private const string AnimWalkSlow = "Armature|WalkSlow";
         private const string AnimWalk = "Armature|Walk";
@@ -65,6 +74,7 @@ namespace HiepSiVeVuon.Entities
         {
             AddToGroup("horses");
             _model = GetNodeOrNull<Node3D>("Model");
+            _collision = GetNodeOrNull<CollisionShape3D>("Collision");
             if (_model != null)
             {
                 _animPlayer = CharacterRig.Attach(_model, "res://assets3d/quaternius/animals/horse.glb", ModelScale);
@@ -72,6 +82,7 @@ namespace HiepSiVeVuon.Entities
             }
             _homeCenter = float.IsNaN(HomeCenter.X) ? GlobalPosition : HomeCenter;
             _wanderTarget = GlobalPosition;
+            ApplyGrowthVisual();
 
             var rng = new RandomNumberGenerator();
             rng.Randomize();
@@ -86,6 +97,24 @@ namespace HiepSiVeVuon.Entities
             AddChild(_neighPlayer);
 
             GameManager.Instance.HourChanged += OnHourChanged;
+            GameManager.Instance.DayChanged += OnDayChanged;
+        }
+
+        private void ApplyGrowthVisual()
+        {
+            float t = IsAdult ? 1f : Mathf.Clamp((float)_daysFed / GrowthDaysNeeded, 0f, 1f);
+            float scale = Mathf.Lerp(BirthScaleFactor, 1f, t);
+            if (_model != null) _model.Scale = Vector3.One * scale;
+            if (_collision != null) _collision.Scale = Vector3.One * scale;
+        }
+
+        private void OnDayChanged(int day)
+        {
+            if (IsAdult) return;
+            if (_ateToday) _daysFed++;
+            _ateToday = false;
+            ApplyGrowthVisual();
+            if (_daysFed >= GrowthDaysNeeded) IsAdult = true;
         }
 
         private void OnHourChanged(int hour)
@@ -228,6 +257,7 @@ namespace HiepSiVeVuon.Entities
             if (dir.Length() <= 18f)
             {
                 _state = State.Eating;
+                _ateToday = true;
                 GetTree().CreateTimer(EatDurationSec).Timeout += () =>
                 {
                     if (IsInstanceValid(this)) _state = State.Wander;

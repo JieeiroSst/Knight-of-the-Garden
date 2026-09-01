@@ -353,7 +353,7 @@ namespace HiepSiVeVuon.Entities
 
         private void TryUseTool()
         {
-            // Tim o dat gan nhat de cay/trong/tuoi/thu hoach
+            // Tim o dat gan nhat de cay/trong/tuoi/bon phan/diet sau/thu hoach
             var plots = GetTree().GetNodesInGroup("farm_plots");
             FarmPlot nearest = null;
             float best = 48f;
@@ -365,7 +365,23 @@ namespace HiepSiVeVuon.Entities
                     if (d < best) { best = d; nearest = p; }
                 }
             }
-            nearest?.UseOn();
+            if (nearest != null) { nearest.UseOn(); return; }
+
+            // Khong co o dat nao gan - thu tim CAY LAU NAM gan nhat (vuon cay/vuon nho NHO, xem
+            // FruitTree.cs) de hai neu da chin. Nhanh RIENG, khong anh huong toi logic FarmPlot
+            // o tren.
+            var trees = GetTree().GetNodesInGroup("fruit_trees");
+            FruitTree nearestTree = null;
+            float bestTree = 48f;
+            foreach (var n in trees)
+            {
+                if (n is FruitTree t)
+                {
+                    float d = GlobalPosition.DistanceTo(t.GlobalPosition);
+                    if (d < bestTree) { bestTree = d; nearestTree = t; }
+                }
+            }
+            nearestTree?.UseOn();
         }
 
         private void OnDied()

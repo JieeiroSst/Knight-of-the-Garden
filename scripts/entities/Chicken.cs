@@ -26,6 +26,20 @@ namespace HiepSiVeVuon.Entities
         // - moi con ga lech pha rieng (gan luc _Ready) de khong ca dan cung de 1 luc.
         [Export] public double EggLayIntervalMinSec = 75.0;
         [Export] public double EggLayIntervalMaxSec = 150.0;
+        // Ga de trung LIEN TUC nen "sinh san" khong hop dung nghia bang cach ghep doi nhu Cow/
+        // Sheep/Pig/Horse - thay vao do, moi lan den luc de trung, co 1 XAC SUAT NHO trung do NO
+        // luon (khong tha vat pham) thay vi de ra ngoai (xem UpdateEggLaying/Main.TryBreedChickens
+        // - can >=2 ga TRUONG THANH trong CUNG chuong moi co co hoi nay).
+        [Export] public float HatchChance = 0.1f;
+
+        // Sinh san & lon len (mau Cow.cs) - ga con no ra tu trung, bat dau nho va CAN AN MOI
+        // NGAY (den mang gio 12h/16h) de lon dan qua tung NGAY THAT.
+        [Export] public bool IsAdult = true;
+        [Export] public float BirthScaleFactor = 0.45f;
+        [Export] public int GrowthDaysNeeded = 3;
+        private int _daysFed = 0;
+        private bool _ateToday = false;
+        private CollisionShape3D _collision;
 
         // Ten hoat canh dung "AnimalArmature|AnimalArmature|AnimalArmature|X" (lap 3 lan) dung
         // theo dung ten that trong file chicken.glb - "Idle_Peck" la dang mo dat, dung vua vac
@@ -64,6 +78,7 @@ namespace HiepSiVeVuon.Entities
         {
             AddToGroup("chickens");
             _model = GetNodeOrNull<Node3D>("Model");
+            _collision = GetNodeOrNull<CollisionShape3D>("Collision");
             if (_model != null)
             {
                 _animPlayer = CharacterRig.Attach(_model, "res://assets3d/quaternius/animals/chicken.glb", ModelScale);
@@ -71,6 +86,7 @@ namespace HiepSiVeVuon.Entities
             }
             _homeCenter = float.IsNaN(HomeCenter.X) ? GlobalPosition : HomeCenter;
             _wanderTarget = GlobalPosition;
+            ApplyGrowthVisual();
 
             var rng = new RandomNumberGenerator();
             rng.Randomize();
@@ -86,6 +102,24 @@ namespace HiepSiVeVuon.Entities
             AddChild(_clusterPlayer);
 
             GameManager.Instance.HourChanged += OnHourChanged;
+            GameManager.Instance.DayChanged += OnDayChanged;
+        }
+
+        private void ApplyGrowthVisual()
+        {
+            float t = IsAdult ? 1f : Mathf.Clamp((float)_daysFed / GrowthDaysNeeded, 0f, 1f);
+            float scale = Mathf.Lerp(BirthScaleFactor, 1f, t);
+            if (_model != null) _model.Scale = Vector3.One * scale;
+            if (_collision != null) _collision.Scale = Vector3.One * scale;
+        }
+
+        private void OnDayChanged(int day)
+        {
+            if (IsAdult) return;
+            if (_ateToday) _daysFed++;
+            _ateToday = false;
+            ApplyGrowthVisual();
+            if (_daysFed >= GrowthDaysNeeded) IsAdult = true;
         }
 
         private void OnHourChanged(int hour)
@@ -156,10 +190,46 @@ namespace HiepSiVeVuon.Entities
             _eggCooldownLeft -= dt;
             if (_eggCooldownLeft > 0) return;
 
-            DroppedItem.Spawn(GetTree().CurrentScene, GlobalPosition, "egg", 1);
             var rng = new RandomNumberGenerator();
             rng.Randomize();
+
+            // "Sinh san": ga TRUONG THANH, dang o CUNG chuong (HomeCenter trung) co >=2 con
+            // truong thanh -> co 1 co hoi nho trung do NO thanh ga con thay vi de ra ngoai.
+            if (IsAdult && rng.Randf() < HatchChance && CountAdultsInSameCoop() >= 2)
+            {
+                HatchChick();
+            }
+            else
+            {
+                DroppedItem.Spawn(GetTree().CurrentScene, GlobalPosition, "egg", 1);
+            }
             _eggCooldownLeft = rng.RandfRange((float)EggLayIntervalMinSec, (float)EggLayIntervalMaxSec);
+        }
+
+        private int CountAdultsInSameCoop()
+        {
+            int count = 0;
+            foreach (var node in GetTree().GetNodesInGroup("chickens"))
+            {
+                if (node is Chicken c && IsInstanceValid(c) && c.IsAdult && c._homeCenter.DistanceSquaredTo(_homeCenter) < 4f)
+                    count++;
+            }
+            return count;
+        }
+
+        // No 1 ga con ngay tai cho (khong tha vat pham trung lan nay) - ga con dung CHUNG
+        // chuong/mang an voi ga me, tu lon len qua OnDayChanged nhu cac loai khac.
+        private void HatchChick()
+        {
+            var scene = GD.Load<PackedScene>("res://scenes/Chicken.tscn");
+            if (scene == null) return;
+            var chick = scene.Instantiate<Chicken>();
+            chick.Position = GlobalPosition + new Vector3((float)GD.RandRange(-10, 10), 0, (float)GD.RandRange(-10, 10));
+            chick.FeedPosition = FeedPosition;
+            chick.HomeCenter = HomeCenter;
+            chick.PastureHalfExtent = PastureHalfExtent;
+            chick.IsAdult = false;
+            GetParent()?.AddChild(chick);
         }
 
         private Vector3 FeedDirOrZero()
@@ -201,6 +271,7 @@ namespace HiepSiVeVuon.Entities
             if (dir.Length() <= 14f)
             {
                 _state = State.Eating;
+                _ateToday = true;
                 GetTree().CreateTimer(EatDurationSec).Timeout += () =>
                 {
                     if (IsInstanceValid(this)) _state = State.Wander;

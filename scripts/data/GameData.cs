@@ -28,6 +28,16 @@ namespace HiepSiVeVuon.Data
         // Cho hat giong -> cay trong
         public string GrowsIntoCropId;  // id cay thu hoach
         public int GrowDays = 3;
+
+        // Cho phan bon (xem FarmPlot.UseOn) - 0 nghia la item nay KHONG phai phan bon.
+        public int FertilizerGrowDaysBonus = 0;
+        public float FertilizerQualityBonus = 0f;
+
+        // Cho item la san pham cay trong/vat nuoi GOC (vd "tomato", "milk") - id cua ban cao cap
+        // hon, de FarmPlot.Harvest() tra cuu thay vi tu ghep chuoi "_good"/"_premium" (tranh gia
+        // dinh sai id neu bien the chua duoc dinh nghia). Null/rong = khong co ban cao cap hon.
+        public string GoodVariantId;
+        public string PremiumVariantId;
     }
 
     // Trang thai mot o inventory

@@ -46,3 +46,5 @@ res://scripts/entities/GuardNpc.cs
 res://scripts/entities/FenceMarker.cs
 res://scripts/entities/BuildingLabelZone.cs
 res://scripts/entities/PalaceGuardNpc.cs
+res://scripts/entities/FruitTree.cs
+res://scripts/entities/Goat.cs

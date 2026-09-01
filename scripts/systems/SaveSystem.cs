@@ -41,7 +41,24 @@ namespace HiepSiVeVuon.Systems
         }
 
         public class SavedStack { public string Id { get; set; } public int Count { get; set; } }
-        public class FarmTileState { public int X { get; set; } public int Y { get; set; } public string CropId { get; set; } public int GrowStage { get; set; } public bool Watered { get; set; } }
+        public class FarmTileState
+        {
+            public int X { get; set; }
+            public int Y { get; set; }
+            public string CropId { get; set; }
+            public int GrowStage { get; set; }
+            public bool Watered { get; set; }
+            // Them cho he thong nong nghiep mo rong (xem FarmPlot.cs): tuoi/bon phan/luan canh/
+            // sau benh/chat luong - moi field co gia tri mac dinh an toan (0/false/null) cho ban
+            // luu CU chua co cac field nay (System.Text.Json tu dien gia tri mac dinh khi thieu).
+            public int DaysUnwatered { get; set; }
+            public bool Fertilized { get; set; }
+            public string LastCropId { get; set; }
+            public bool PestAfflicted { get; set; }
+            public int PestDays { get; set; }
+            public bool WasPestDamaged { get; set; }
+            public float QualityScore { get; set; }
+        }
 
         public void SaveGame()
         {
