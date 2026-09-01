@@ -66,6 +66,39 @@ namespace HiepSiVeVuon.Core
             return true;
         }
 
+        // Danh sach VUNG DAT TEN TONG QUAT (xem yeu cau "the gioi mo") - tong quat hoa co che
+        // FrenchRegionCenter/HalfSize o tren (van GIU NGUYEN, khong dong vao) thanh 1 DANH SACH
+        // de nhieu vung CUNG LUC co mat do/loai cay/bang quai RIENG, thay vi chi 1 truong hop dac
+        // biet duy nhat. Main.cs dang ky vao day trong _Ready(), TRUOC khi WorldStreamer kip sinh
+        // chunk dau tien (_Process chay tu frame sau). KHONG ho tro doi mau nen dat rieng (xem
+        // GroundMaterial.CreateGrass - co ghi chu ro tai sao KHONG duoc tint rieng tung vung/
+        // chunk: tao duong ranh mau sang giua cac o dat, da tung xay ra va sua truoc do) - moi
+        // vung CHI khac o mat do/loai vat trang tri/bang quai, giong dung cach vung Phap da lam.
+        public class RegionProfile
+        {
+            public string Name;
+            public Vector3 Center;
+            public float HalfSize;
+            // Rieng cho vung nay - null = dung chung bo _decorOptions mac dinh cua vung hoang da.
+            public (PackedScene scene, float minScale, float maxScale, bool isTree)[] DecorOptions;
+            public int MinDecor = 4, MaxDecor = 9;
+            // Rieng cho vung nay - null/rong = KHONG co quai (an toan, vd khu do thi/dong ruong).
+            public (string enemyId, float weight)[] EnemyTable;
+            public float EnemyChance = 0.5f;
+            public float EnemyStatMultiplier = 1f;
+        }
+        public static readonly List<RegionProfile> Regions = new();
+
+        private static RegionProfile FindRegion(Vector3 worldPos)
+        {
+            foreach (var r in Regions)
+            {
+                if (Mathf.Abs(worldPos.X - r.Center.X) <= r.HalfSize && Mathf.Abs(worldPos.Z - r.Center.Z) <= r.HalfSize)
+                    return r;
+            }
+            return null;
+        }
+
         // Vung KHONG cho quai vat spawn (van co cay/da binh thuong - chi chan RIENG quai) - dung
         // cho pham vi ben trong tuong da 10 hecta quanh nong trai (xem Main.BuildFarmStoneWall),
         // vi tuong nay RONG HON han ReservedZones cu (chi ~3000x3000 quanh goc toa do) nen quai
@@ -237,10 +270,83 @@ namespace HiepSiVeVuon.Core
             // ngoai ra van la vung hoang da mac dinh (cay/da/quai).
             if (TryGetFrenchRegionDist(center, out float distNorm))
                 GenerateFrenchDecor(root, center, rng, distNorm);
+            else if (FindRegion(center) is RegionProfile region)
+                GenerateRegionDecor(root, center, rng, region);
             else
                 GenerateWildernessDecor(root, center, rng);
 
             return root;
+        }
+
+        // Ban tong quat cua GenerateWildernessDecor, doc tham so tu RegionProfile thay vi hang so
+        // co dinh - dung CHUNG cho MOI vung dang ky trong Regions (xem RegionProfile o tren).
+        private void GenerateRegionDecor(Node3D root, Vector3 center, RandomNumberGenerator rng, RegionProfile profile)
+        {
+            var options = profile.DecorOptions;
+            if (options != null && options.Length > 0)
+            {
+                int decorCount = rng.RandiRange(profile.MinDecor, profile.MaxDecor);
+                float half = ChunkSize / 2f - 20f;
+                for (int i = 0; i < decorCount; i++)
+                {
+                    var (scene, minScale, maxScale, isTree) = options[rng.RandiRange(0, options.Length - 1)];
+                    if (scene == null) continue;
+                    var localPos = new Vector3(rng.RandfRange(-half, half), 0f, rng.RandfRange(-half, half));
+                    if (IsExcluded(center + localPos)) continue;
+                    float scale = rng.RandfRange(minScale, maxScale);
+                    float rotY = rng.RandfRange(0f, Mathf.Tau);
+
+                    if (isTree && _treeWrapperScene != null)
+                    {
+                        var wrapper = _treeWrapperScene.Instantiate<Entities.Tree>();
+                        wrapper.Position = center + localPos;
+                        wrapper.RotateY(rotY);
+                        wrapper.Scale = Vector3.One * scale;
+                        var model = scene.Instantiate<Node3D>();
+                        wrapper.GetNode<Node3D>("Model").AddChild(model);
+                        root.AddChild(wrapper);
+                    }
+                    else
+                    {
+                        var inst = scene.Instantiate<Node3D>();
+                        inst.Position = center + localPos;
+                        inst.RotateY(rotY);
+                        inst.Scale = Vector3.One * scale;
+                        root.AddChild(inst);
+                    }
+                }
+            }
+
+            if (profile.EnemyTable != null && profile.EnemyTable.Length > 0 && _enemyScene != null && rng.Randf() < profile.EnemyChance)
+            {
+                int enemyCount = rng.Randf() < 0.2f ? 2 : 1;
+                float enemyHalf = ChunkSize / 2f - 40f;
+                for (int i = 0; i < enemyCount; i++)
+                {
+                    var localPos = new Vector3(rng.RandfRange(-enemyHalf, enemyHalf), 0f, rng.RandfRange(-enemyHalf, enemyHalf));
+                    if (IsExcluded(center + localPos)) continue;
+                    if (IsInNoEnemyZone(center + localPos)) continue;
+                    var e = _enemyScene.Instantiate<Enemy>();
+                    e.EnemyId = PickWeighted(profile.EnemyTable, rng);
+                    e.Position = center + localPos;
+                    e.StatMultiplier = profile.EnemyStatMultiplier * Enemy.SeasonalMultiplier();
+                    root.AddChild(e);
+                }
+            }
+        }
+
+        private static string PickWeighted((string enemyId, float weight)[] table, RandomNumberGenerator rng)
+        {
+            float total = 0f;
+            foreach (var (_, w) in table) total += w;
+            float roll = rng.RandfRange(0f, total);
+            float acc = 0f;
+            foreach (var (id, w) in table)
+            {
+                acc += w;
+                if (roll <= acc) return id;
+            }
+            return table[table.Length - 1].enemyId;
         }
 
         private void GenerateWildernessDecor(Node3D root, Vector3 center, RandomNumberGenerator rng)

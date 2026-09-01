@@ -57,6 +57,83 @@
     "IconPath": "res://assets/items/coins.png"
   },
   {
+    "Id": "xuong",
+    "Name": "Xuong",
+    "Description": "Xuong nhat duoc tu ma nghia dia - nguyen lieu ky la.",
+    "Type": "Material",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 12,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "thao_duoc_rung",
+    "Name": "Thao Duoc Rung",
+    "Description": "Nam/thao duoc hai duoc trong rung sau - tu moc lai sau vai ngay.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 6,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "thao_duoc_dam_lay",
+    "Name": "Thao Duoc Dam Lay",
+    "Description": "Thao duoc hiem chi moc noi dam lay am uot.",
+    "Type": "Material",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 15,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "quang_nui",
+    "Name": "Quang Nui",
+    "Description": "Quang khoang khai thac tu vach nui da.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 10,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "ca",
+    "Name": "Ca",
+    "Description": "Ca cau duoc tu ho/song.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 7,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "co_vat",
+    "Name": "Co Vat",
+    "Description": "Vat pham co xua tim thay trong phe tich.",
+    "Type": "Material",
+    "Rarity": "Rare",
+    "MaxStack": 99,
+    "SellPrice": 60,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "quang_hang",
+    "Name": "Quang Hang Dong",
+    "Description": "Quang hiem sau trong hang dong toi tam.",
+    "Type": "Material",
+    "Rarity": "Rare",
+    "MaxStack": 99,
+    "SellPrice": 50,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
     "Id": "shield",
     "Name": "Khien Soi",
     "Description": "Khien go boc sat, khac hinh dau soi.",

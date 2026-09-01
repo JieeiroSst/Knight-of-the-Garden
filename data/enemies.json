@@ -29,5 +29,117 @@
       { "ItemId": "potion", "Chance": 0.3, "Min": 1, "Max": 1 },
       { "ItemId": "ring", "Chance": 0.05, "Min": 1, "Max": 1 }
     ]
+  },
+  {
+    "Id": "forest_wolf",
+    "Name": "Soi Rung",
+    "MaxHp": 50,
+    "Damage": 10,
+    "Speed": 65,
+    "DetectRange": 150,
+    "ExpReward": 25,
+    "GoldReward": 12,
+    "SpritePath": "res://assets/enemies/mud_monster.png",
+    "TintColor": "5a4a3a",
+    "Loot": [
+      { "ItemId": "mud_core", "Chance": 0.6, "Min": 1, "Max": 2 },
+      { "ItemId": "potion", "Chance": 0.2, "Min": 1, "Max": 1 }
+    ]
+  },
+  {
+    "Id": "mountain_troll",
+    "Name": "Yeu Tinh Nui Da",
+    "MaxHp": 110,
+    "Damage": 20,
+    "Speed": 50,
+    "DetectRange": 160,
+    "ExpReward": 70,
+    "GoldReward": 40,
+    "SpritePath": "res://assets/enemies/spiky_monster.png",
+    "TintColor": "7a7a75",
+    "Loot": [
+      { "ItemId": "spike_shard", "Chance": 0.6, "Min": 1, "Max": 2 },
+      { "ItemId": "potion", "Chance": 0.25, "Min": 1, "Max": 1 }
+    ]
+  },
+  {
+    "Id": "lake_serpent",
+    "Name": "Ran Ho",
+    "MaxHp": 90,
+    "Damage": 18,
+    "Speed": 60,
+    "DetectRange": 170,
+    "ExpReward": 60,
+    "GoldReward": 35,
+    "SpritePath": "res://assets/enemies/spiky_monster.png",
+    "TintColor": "2f6fa8",
+    "Loot": [
+      { "ItemId": "spike_shard", "Chance": 0.5, "Min": 1, "Max": 2 },
+      { "ItemId": "potion", "Chance": 0.3, "Min": 1, "Max": 1 }
+    ]
+  },
+  {
+    "Id": "swamp_lurker",
+    "Name": "Quai Dam Lay",
+    "MaxHp": 80,
+    "Damage": 16,
+    "Speed": 45,
+    "DetectRange": 150,
+    "ExpReward": 55,
+    "GoldReward": 30,
+    "SpritePath": "res://assets/enemies/mud_monster.png",
+    "TintColor": "4a5a34",
+    "Loot": [
+      { "ItemId": "mud_core", "Chance": 0.7, "Min": 1, "Max": 2 },
+      { "ItemId": "potion", "Chance": 0.25, "Min": 1, "Max": 1 }
+    ]
+  },
+  {
+    "Id": "ruins_wraith",
+    "Name": "Bong Ma Phe Tich",
+    "MaxHp": 100,
+    "Damage": 22,
+    "Speed": 75,
+    "DetectRange": 190,
+    "ExpReward": 80,
+    "GoldReward": 45,
+    "SpritePath": "res://assets/enemies/spiky_monster.png",
+    "TintColor": "8a6fa8",
+    "Loot": [
+      { "ItemId": "spike_shard", "Chance": 0.5, "Min": 1, "Max": 2 },
+      { "ItemId": "ring", "Chance": 0.08, "Min": 1, "Max": 1 }
+    ]
+  },
+  {
+    "Id": "cemetery_ghost",
+    "Name": "Ma Nghia Dia",
+    "MaxHp": 70,
+    "Damage": 25,
+    "Speed": 80,
+    "DetectRange": 200,
+    "ExpReward": 75,
+    "GoldReward": 20,
+    "SpritePath": "res://assets/enemies/mud_monster.png",
+    "TintColor": "d8d8d8",
+    "Loot": [
+      { "ItemId": "xuong", "Chance": 0.75, "Min": 1, "Max": 3 },
+      { "ItemId": "potion", "Chance": 0.15, "Min": 1, "Max": 1 }
+    ]
+  },
+  {
+    "Id": "cave_bat",
+    "Name": "Doi Hang Dong",
+    "MaxHp": 45,
+    "Damage": 12,
+    "Speed": 90,
+    "DetectRange": 160,
+    "ExpReward": 30,
+    "GoldReward": 15,
+    "SpritePath": "res://assets/enemies/spiky_monster.png",
+    "TintColor": "2a2a2e",
+    "Loot": [
+      { "ItemId": "spike_shard", "Chance": 0.4, "Min": 1, "Max": 1 },
+      { "ItemId": "potion", "Chance": 0.15, "Min": 1, "Max": 1 }
+    ]
   }
 ]

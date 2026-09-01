@@ -241,6 +241,20 @@ namespace HiepSiVeVuon.Core
             // ben duoi) - da doi xuong.
             SafeBuildStep(BuildPlateaus, nameof(BuildPlateaus));
             SafeBuildStep(BuildMine, nameof(BuildMine));
+            // 10 khu vuc "the gioi mo" moi (xem yeu cau nguoi dung, Mo o tren da tinh la khu thu
+            // 11) - dang ky RegionProfile vao WorldStreamer.Regions TRUOC khi WorldStreamer kip
+            // sinh chunk dau tien (giong cach BuildMine/BuildPlateaus dang ky ExclusionZones).
+            SafeBuildStep(BuildMountainRegion, nameof(BuildMountainRegion));
+            SafeBuildStep(BuildForestRegion, nameof(BuildForestRegion));
+            SafeBuildStep(BuildFieldRegion, nameof(BuildFieldRegion));
+            SafeBuildStep(BuildLakeRegion, nameof(BuildLakeRegion));
+            SafeBuildStep(BuildRiverRegion, nameof(BuildRiverRegion));
+            SafeBuildStep(BuildVillageRegion, nameof(BuildVillageRegion));
+            SafeBuildStep(BuildBigCityRegion, nameof(BuildBigCityRegion));
+            SafeBuildStep(BuildRuinsRegion, nameof(BuildRuinsRegion));
+            SafeBuildStep(BuildCemeteryRegion, nameof(BuildCemeteryRegion));
+            SafeBuildStep(BuildSwampRegion, nameof(BuildSwampRegion));
+            SafeBuildStep(BuildCaveRegion, nameof(BuildCaveRegion));
             SafeBuildStep(BuildSunflowerField, nameof(BuildSunflowerField));
             SafeBuildStep(BuildCityDistrict, nameof(BuildCityDistrict));
             SafeBuildStep(SpawnTownCitizens, nameof(SpawnTownCitizens));
@@ -2040,6 +2054,339 @@ namespace HiepSiVeVuon.Core
         // hang dao thu cong rieng.
         private static readonly Vector3 MineEntrancePos = new(2500, 0, -400);
 
+        // Tien ich tao 1 muc DecorOption (xem WorldStreamer.RegionProfile.DecorOptions) - GD.Load
+        // duoc Godot tu cache theo duong dan nen goi lap lai voi cung 1 path la re, khong can 1
+        // field PackedScene rieng cho tung khu nhu WorldStreamer tu lam voi bo _decorOptions cua no.
+        private static (PackedScene scene, float minScale, float maxScale, bool isTree) MakeDecor(string path, float min, float max, bool isTree = false)
+            => (GD.Load<PackedScene>(path), min, max, isTree);
+
+        // ==== 11 khu vuc "the gioi mo" (xem yeu cau nguoi dung) - Mo (khai thac khoang san) DA
+        // XAY XONG rieng (xem BuildMine ben duoi), day la 10 khu CON LAI. Tat ca dat vong quanh
+        // nong trai o ban kinh ~7200 don vi (du xa khoi vung loai tru cay/quai cua tuong da 10
+        // hecta - r4585.6 quanh (202,390), xem BuildFarmStoneWall) chia deu 11 huong (bao gom ca
+        // Mo) de khong khu nao dam vao khu nao. ====
+        private static readonly Vector3 MountainRegionCenter = new(200, 0, -6800);
+        private static readonly Vector3 ForestRegionCenter = new(-3600, 0, -5700);
+        private static readonly Vector3 FieldRegionCenter = new(-5200, 0, 5100);
+        private static readonly Vector3 LakeRegionCenter = new(-6300, 0, -2650);
+        private static readonly Vector3 RiverRegionCenter = new(2300, 0, 7000);
+        private static readonly Vector3 VillageRegionCenter = new(5700, 0, 5000);
+        private static readonly Vector3 BigCityRegionCenter = new(-1800, 0, 7300);
+        private static readonly Vector3 RuinsRegionCenter = new(6700, 0, -2650);
+        private static readonly Vector3 CemeteryRegionCenter = new(7000, 0, 1400);
+        private static readonly Vector3 SwampRegionCenter = new(-6900, 0, 1400);
+        private static readonly Vector3 CaveRegionCenter = new(4100, 0, -5650);
+
+        // Nui - da xam doc, quai Yeu Tinh Nui Da, tai nguyen Quang Nui, diem den la 1 dinh nui
+        // lon co the leo len (tai su dung AddPlateau).
+        private void BuildMountainRegion()
+        {
+            WorldStreamer.Regions.Add(new WorldStreamer.RegionProfile
+            {
+                Name = "Nui", Center = MountainRegionCenter, HalfSize = 1500f,
+                DecorOptions = new[]
+                {
+                    MakeDecor("res://assets3d/quaternius/nature/rock_1.glb", 20f, 30f),
+                    MakeDecor("res://assets3d/quaternius/nature/rock_2.glb", 20f, 30f),
+                    MakeDecor("res://assets3d/quaternius/nature/tree_birch_1.glb", 26f, 34f, true),
+                },
+                MinDecor = 5, MaxDecor = 10,
+                EnemyTable = new (string, float)[] { ("mountain_troll", 1f) },
+                EnemyChance = 0.55f, EnemyStatMultiplier = 1.3f,
+            });
+
+            AddPlateau(MountainRegionCenter, 300f, 260f, 6, 6101); // tu dang ky ExclusionZone rieng
+            var rng = new RandomNumberGenerator { Seed = 6102 };
+            for (int i = 0; i < 6; i++)
+            {
+                float angle = Mathf.Tau * i / 6f;
+                var pos = MountainRegionCenter + new Vector3(Mathf.Cos(angle) * 500f, 0, Mathf.Sin(angle) * 500f);
+                AddOreNode(pos, "quang_nui", hp: 25, dropAmount: 2, regrowDays: 3, new Color(0.5f, 0.48f, 0.45f));
+            }
+            AddBuildingLabelZone(MountainRegionCenter, 400f, "Nui");
+        }
+
+        // Rung - cay day dac (mat do cao hon vung hoang da mac dinh), quai Soi Rung, tai nguyen
+        // Thao Duoc Rung (tai su dung FruitTree - "cay" thao duoc, chap nhan hinh dang cay thay
+        // vi bui co rieng, xem gioi han da neu trong ke hoach).
+        private void BuildForestRegion()
+        {
+            WorldStreamer.Regions.Add(new WorldStreamer.RegionProfile
+            {
+                Name = "Rung", Center = ForestRegionCenter, HalfSize = 1500f,
+                DecorOptions = new[]
+                {
+                    MakeDecor("res://assets3d/quaternius/nature/tree_normal_1.glb", 34f, 44f, true),
+                    MakeDecor("res://assets3d/quaternius/nature/tree_normal_2.glb", 34f, 44f, true),
+                    MakeDecor("res://assets3d/quaternius/nature/tree_maple_1.glb", 34f, 44f, true),
+                    MakeDecor("res://assets3d/quaternius/nature/tree_maple_2.glb", 34f, 44f, true),
+                    MakeDecor("res://assets3d/kenney/nature/plant_bush.glb", 14f, 20f),
+                },
+                MinDecor = 8, MaxDecor = 14,
+                EnemyTable = new (string, float)[] { ("forest_wolf", 1f) },
+                EnemyChance = 0.5f, EnemyStatMultiplier = 1.1f,
+            });
+
+            WorldStreamer.ExclusionZones.Add((ForestRegionCenter, 260f));
+            var rng = new RandomNumberGenerator { Seed = 6201 };
+            for (int i = 0; i < 8; i++)
+            {
+                float angle = Mathf.Tau * i / 8f;
+                float radius = rng.RandfRange(60f, 200f);
+                var pos = ForestRegionCenter + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
+                AddFruitTree(pos, "thao_duoc_rung", new Color(0.4f, 0.7f, 0.3f), rng);
+            }
+            AddBuildingLabelZone(ForestRegionCenter, 260f, "Rung Sau");
+        }
+
+        // Dong ruong - co/hoa dai thua thot, mo, AN TOAN (khong co quai rieng) - diem den la 1 bu
+        // nhin (tai su dung scarecrow.glb da co san).
+        private void BuildFieldRegion()
+        {
+            WorldStreamer.Regions.Add(new WorldStreamer.RegionProfile
+            {
+                Name = "Dong Ruong", Center = FieldRegionCenter, HalfSize = 1300f,
+                DecorOptions = new[]
+                {
+                    MakeDecor("res://assets3d/kenney/nature/flower_yellowA.glb", 7f, 11f),
+                    MakeDecor("res://assets3d/kenney/nature/grass_large.glb", 10f, 16f),
+                    MakeDecor("res://assets3d/kenney/nature/plant_bush.glb", 10f, 14f),
+                },
+                MinDecor = 3, MaxDecor = 6,
+            });
+
+            WorldStreamer.ExclusionZones.Add((FieldRegionCenter, 120f));
+            if (_scarecrowScene != null)
+            {
+                var scarecrow = _scarecrowScene.Instantiate<Node3D>();
+                scarecrow.Position = FieldRegionCenter;
+                scarecrow.Scale = Vector3.One * 20f;
+                _world.AddChild(scarecrow);
+            }
+            AddBuildingLabelZone(FieldRegionCenter, 260f, "Dong Ruong");
+        }
+
+        // Ho - mat nuoc vuong lon (tai su dung BuildWaterRegion), quai Ran Ho, tai nguyen Ca
+        // (FruitTree), diem den la 1 "ben cau" (tai su dung stone_bridge.glb).
+        private void BuildLakeRegion()
+        {
+            WorldStreamer.Regions.Add(new WorldStreamer.RegionProfile
+            {
+                Name = "Ho", Center = LakeRegionCenter, HalfSize = 1300f,
+                DecorOptions = new[]
+                {
+                    MakeDecor("res://assets3d/quaternius/nature/tree_birch_1.glb", 30f, 40f, true),
+                    MakeDecor("res://assets3d/quaternius/nature/rock_1.glb", 14f, 20f),
+                    MakeDecor("res://assets3d/kenney/nature/grass_large.glb", 10f, 16f),
+                },
+                MinDecor = 4, MaxDecor = 8,
+                EnemyTable = new (string, float)[] { ("lake_serpent", 1f) },
+                EnemyChance = 0.4f, EnemyStatMultiplier = 1.15f,
+            });
+
+            BuildWaterRegion(LakeRegionCenter, 480f, 480f, new Color(0.2f, 0.45f, 0.65f), "Ho Nuoc");
+            if (_stoneBridgeScene != null)
+            {
+                var dock = _stoneBridgeScene.Instantiate<Node3D>();
+                dock.Position = LakeRegionCenter + new Vector3(500f, 2f, 0);
+                dock.Scale = Vector3.One * 20f;
+                _world.AddChild(dock);
+            }
+            var rng = new RandomNumberGenerator { Seed = 6401 };
+            for (int i = 0; i < 4; i++)
+            {
+                float angle = Mathf.Tau * i / 4f;
+                var pos = LakeRegionCenter + new Vector3(Mathf.Cos(angle) * 550f, 0, Mathf.Sin(angle) * 550f);
+                AddFruitTree(pos, "ca", new Color(0.3f, 0.5f, 0.7f), rng);
+            }
+        }
+
+        // Song - 1 doan nuoc dai/hep (don gian hoa - khong phai song uon luon tu nhien, xem gioi
+        // han da neu trong ke hoach) bang qua 1 cau da, AN TOAN (khong co quai rieng).
+        private void BuildRiverRegion()
+        {
+            WorldStreamer.Regions.Add(new WorldStreamer.RegionProfile
+            {
+                Name = "Song", Center = RiverRegionCenter, HalfSize = 1300f,
+                DecorOptions = new[]
+                {
+                    MakeDecor("res://assets3d/quaternius/nature/tree_birch_2.glb", 30f, 40f, true),
+                    MakeDecor("res://assets3d/kenney/nature/grass_large.glb", 10f, 16f),
+                },
+                MinDecor = 4, MaxDecor = 8,
+            });
+
+            BuildWaterRegion(RiverRegionCenter, 120f, 900f, new Color(0.22f, 0.48f, 0.62f), "Song");
+            if (_stoneBridgeScene != null)
+            {
+                var bridge = _stoneBridgeScene.Instantiate<Node3D>();
+                bridge.Position = RiverRegionCenter + Vector3.Up * 2f;
+                bridge.RotationDegrees = new Vector3(0, 90, 0);
+                bridge.Scale = Vector3.One * 30f;
+                _world.AddChild(bridge);
+            }
+            var rng = new RandomNumberGenerator { Seed = 6501 };
+            for (int i = 0; i < 3; i++)
+            {
+                var pos = RiverRegionCenter + new Vector3(180f, 0, (i - 1) * 400f);
+                AddFruitTree(pos, "ca", new Color(0.3f, 0.5f, 0.7f), rng);
+            }
+        }
+
+        // Lang - khu dan cu NHE (xem BuildLightSettlement), gan nong trai hon Thanh Pho.
+        private void BuildVillageRegion()
+        {
+            WorldStreamer.Regions.Add(new WorldStreamer.RegionProfile
+            {
+                Name = "Lang", Center = VillageRegionCenter, HalfSize = 900f,
+                DecorOptions = new[]
+                {
+                    MakeDecor("res://assets3d/kenney/nature/plant_bush.glb", 12f, 18f),
+                    MakeDecor("res://assets3d/kenney/nature/flower_yellowA.glb", 6f, 10f),
+                },
+                MinDecor = 3, MaxDecor = 6,
+            });
+
+            BuildLightSettlement(VillageRegionCenter, houseCount: 10, footprint: 700f, "Lang", "village_npc");
+        }
+
+        // Thanh Pho - khu dan cu NHE quy mo lon hon Lang (xem BuildLightSettlement) - van NHE hon
+        // Khu Do Thi hien co (khong co noi that that su, xem gioi han da neu trong ke hoach).
+        private void BuildBigCityRegion()
+        {
+            WorldStreamer.Regions.Add(new WorldStreamer.RegionProfile
+            {
+                Name = "Thanh Pho", Center = BigCityRegionCenter, HalfSize = 1600f,
+                DecorOptions = new[]
+                {
+                    MakeDecor("res://assets3d/kenney/nature/plant_bush.glb", 10f, 14f),
+                },
+                MinDecor = 2, MaxDecor = 4,
+            });
+
+            BuildLightSettlement(BigCityRegionCenter, houseCount: 28, footprint: 1400f, "Thanh Pho", "city_npc");
+        }
+
+        // Ruins - cum phe tich (xem BuildRuinsCluster), quai Bong Ma Phe Tich.
+        private void BuildRuinsRegion()
+        {
+            WorldStreamer.Regions.Add(new WorldStreamer.RegionProfile
+            {
+                Name = "Phe Tich", Center = RuinsRegionCenter, HalfSize = 1200f,
+                DecorOptions = new[]
+                {
+                    MakeDecor("res://assets3d/quaternius/nature/rock_2.glb", 14f, 20f),
+                    MakeDecor("res://assets3d/kenney/nature/grass_large.glb", 10f, 16f),
+                },
+                MinDecor = 4, MaxDecor = 8,
+                EnemyTable = new (string, float)[] { ("ruins_wraith", 1f) },
+                EnemyChance = 0.5f, EnemyStatMultiplier = 1.25f,
+            });
+
+            BuildRuinsCluster(RuinsRegionCenter);
+        }
+
+        // Nghia dia - bia mo rai rac (xem AddGravestone), quai Ma Nghia Dia (loot Xuong).
+        private void BuildCemeteryRegion()
+        {
+            WorldStreamer.Regions.Add(new WorldStreamer.RegionProfile
+            {
+                Name = "Nghia Dia", Center = CemeteryRegionCenter, HalfSize = 1000f,
+                DecorOptions = new[]
+                {
+                    MakeDecor("res://assets3d/quaternius/nature/tree_birch_2.glb", 26f, 34f, true),
+                    MakeDecor("res://assets3d/kenney/nature/grass_large.glb", 8f, 12f),
+                },
+                MinDecor = 3, MaxDecor = 6,
+                EnemyTable = new (string, float)[] { ("cemetery_ghost", 1f) },
+                EnemyChance = 0.55f, EnemyStatMultiplier = 1.2f,
+            });
+
+            WorldStreamer.ExclusionZones.Add((CemeteryRegionCenter, 300f));
+            var rng = new RandomNumberGenerator { Seed = 6801 };
+            for (int i = 0; i < 16; i++)
+            {
+                float angle = Mathf.Tau * i / 16f;
+                float radius = rng.RandfRange(60f, 240f);
+                var pos = CemeteryRegionCenter + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
+                AddGravestone(pos, rng.RandfRange(0f, 360f), rng);
+            }
+            AddDecor(_smallBarnScene, CemeteryRegionCenter, 12f, 0f, SmallBarnFootprint);
+            AddBuildingLabelZone(CemeteryRegionCenter, 300f, "Nghia Dia");
+        }
+
+        // Dam lay - nuoc duc xanh xam (tai su dung BuildWaterRegion, mau rieng), quai Quai Dam
+        // Lay, tai nguyen Thao Duoc Dam Lay hiem (FruitTree).
+        private void BuildSwampRegion()
+        {
+            WorldStreamer.Regions.Add(new WorldStreamer.RegionProfile
+            {
+                Name = "Dam Lay", Center = SwampRegionCenter, HalfSize = 1300f,
+                DecorOptions = new[]
+                {
+                    MakeDecor("res://assets3d/quaternius/nature/tree_birch_1.glb", 24f, 32f, true),
+                    MakeDecor("res://assets3d/kenney/nature/plant_bush.glb", 14f, 20f),
+                },
+                MinDecor = 6, MaxDecor = 11,
+                EnemyTable = new (string, float)[] { ("swamp_lurker", 1f) },
+                EnemyChance = 0.5f, EnemyStatMultiplier = 1.2f,
+            });
+
+            BuildWaterRegion(SwampRegionCenter, 380f, 380f, new Color(0.22f, 0.28f, 0.2f), "Dam Lay");
+            var rng = new RandomNumberGenerator { Seed = 6901 };
+            for (int i = 0; i < 5; i++)
+            {
+                float angle = Mathf.Tau * i / 5f;
+                var pos = SwampRegionCenter + new Vector3(Mathf.Cos(angle) * 480f, 0, Mathf.Sin(angle) * 480f);
+                AddFruitTree(pos, "thao_duoc_dam_lay", new Color(0.3f, 0.45f, 0.25f), rng);
+            }
+        }
+
+        // Hang dong - KHAC Mo (BuildMine, 3 tang khai thac khoang san): CHI 1 tang, quai Doi Hang
+        // Dong, 1 kho bau OreNode hiem cuoi hang - tai su dung DUNG ky thuat cua Mo (mat tien da +
+        // Y-stacked interior room qua BuildRoom).
+        private void BuildCaveRegion()
+        {
+            WorldStreamer.Regions.Add(new WorldStreamer.RegionProfile
+            {
+                Name = "Hang Dong", Center = CaveRegionCenter, HalfSize = 1200f,
+                DecorOptions = new[]
+                {
+                    MakeDecor("res://assets3d/quaternius/nature/rock_1.glb", 16f, 22f),
+                    MakeDecor("res://assets3d/quaternius/nature/rock_2.glb", 16f, 22f),
+                },
+                MinDecor = 4, MaxDecor = 8,
+                EnemyTable = new (string, float)[] { ("cave_bat", 1f) },
+                EnemyChance = 0.45f, EnemyStatMultiplier = 1.1f,
+            });
+
+            WorldStreamer.ExclusionZones.Add((CaveRegionCenter, 220f));
+            var rockMat = GetCachedMaterial(new Color(0.28f, 0.27f, 0.26f), 1f);
+            _world.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(150f, 80f, 55f) }, Position = CaveRegionCenter + Vector3.Up * 40f, MaterialOverride = rockMat });
+            _world.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 26f, BottomRadius = 26f, Height = 56f }, Position = CaveRegionCenter + Vector3.Up * 27f, RotationDegrees = new Vector3(90, 0, 0), MaterialOverride = GetCachedMaterial(new Color(0.05f, 0.05f, 0.05f), 1f) });
+            var caveBody = new StaticBody3D { Position = CaveRegionCenter };
+            caveBody.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(150f, 80f, 55f) }, Position = Vector3.Up * 40f });
+            _world.AddChild(caveBody);
+            AddBuildingLabelZone(CaveRegionCenter, 220f, "Hang Dong");
+
+            var floorAnchor = new Vector3(CaveRegionCenter.X, 500f + _nextInteriorIndex * 900f, CaveRegionCenter.Z);
+            _nextInteriorIndex++;
+            AddBuildingDoor(CaveRegionCenter, 80f, isExit: false, floorAnchor);
+
+            BuildRoom(floorAnchor, 320f, 130f, new Color(0.26f, 0.24f, 0.22f), new Color(0.18f, 0.17f, 0.15f), null, default, backIsExit: true, null,
+                anchor2 =>
+                {
+                    var rng = new RandomNumberGenerator { Seed = 6902 };
+                    for (int i = 0; i < 8; i++)
+                    {
+                        float angle = Mathf.Tau * i / 8f;
+                        float radius = rng.RandfRange(70f, 130f);
+                        var pos = anchor2 + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
+                        AddOreNode(pos, "quang_hang", hp: 45, dropAmount: 1, regrowDays: 6, new Color(0.45f, 0.4f, 0.55f));
+                    }
+                });
+        }
+
         private void BuildMine()
         {
             // Loai tru trang trai/coi xay/quai hoang da khoi khu vuc cua ham (giong BuildPlateaus).
@@ -2122,6 +2469,143 @@ namespace HiepSiVeVuon.Core
             ore.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(24f, 20f, 22f) }, Position = Vector3.Up * 10f });
             _world.AddChild(ore);
             ore.Init(visual);
+        }
+
+        // ==== He thong "the gioi mo": ham dung chung cho 11 khu vuc moi (xem WorldStreamer.
+        // RegionProfile) - moi khu = 1 RegionProfile (mat do/loai cay/bang quai rieng, dang ky
+        // vao WorldStreamer.Regions) + 1 "diem den" xay tay o TAM khu (dung 1 trong 4 ham duoi
+        // day tuy loai khu) + 1 ExclusionZone bao quanh diem den do (tranh cay/da/quai ngau nhien
+        // choi len tren noi dung xay tay). ====
+
+        // Mat nuoc hinh chu nhat (Ho vuong, Song dai/hep, Dam lay) - tai su dung DUNG cong thuc
+        // mau nuoc da co (BuildWaterFeatures: albedo (0.2,0.45,0.65), roughness 0.15) lam mac
+        // dinh, cho phep doi mau rieng (vd Dam lay nuoc duc hon).
+        private void BuildWaterRegion(Vector3 center, float halfX, float halfZ, Color waterColor, string label)
+        {
+            WorldStreamer.ExclusionZones.Add((center, Mathf.Max(halfX, halfZ) + 60f));
+            var waterMat = GetCachedMaterial(waterColor, 0.15f);
+            var bedMat = GetCachedMaterial(new Color(0.32f, 0.3f, 0.22f), 1f);
+            _world.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(halfX * 2f + 16f, 5f, halfZ * 2f + 16f) }, Position = center + Vector3.Down * 1f, MaterialOverride = bedMat });
+            _world.AddChild(new MeshInstance3D { Mesh = new PlaneMesh { Size = new Vector2(halfX * 2f, halfZ * 2f) }, Position = center + Vector3.Up * 1.5f, MaterialOverride = waterMat });
+            AddBuildingLabelZone(center, Mathf.Max(halfX, halfZ) * 0.5f, label);
+        }
+
+        // 1 khu dan cu NHE (nha CHI la model trang tri, KHONG co noi that that su - dung Y NGUYEN
+        // mau BuildFrenchCountryside/SpawnFrenchVillagers da chung minh giu chi phi node o muc
+        // thap) - dung cho ca Lang (it nha) va Thanh Pho (nhieu nha hon).
+        private static readonly (string name, string[] low, string[] mid, string[] high)[] SettlementFlavors =
+        {
+            ("Nguoi Ban Hang Rong",
+                new[] { "Mua ban gi khong, khach quy?" },
+                new[] { "Hang hoa toi deu tu tay lam ra ca." },
+                new[] { "Lan sau ghe toi se bot gia cho." }),
+            ("Bac Tho San",
+                new[] { "Vung nay thinh thoang co quai xuat hien, can than nhe." },
+                new[] { "Toi hay di san quanh day, quen thuoc lam." },
+                new[] { "Can gi cu hoi toi, toi biet ro vung nay." }),
+            ("Co Giao Lang",
+                new[] { "Chao anh, moi den day lan dau a?" },
+                new[] { "Tre con trong lang deu ngoan ca." },
+                new[] { "Toi rat vui khi co nguoi ghe tham." }),
+            ("Ong Lao",
+                new[] { "Toi song o day lau lam roi." },
+                new[] { "Ngay xua noi nay khac lam, gio doi thay nhieu." },
+                new[] { "De toi ke anh nghe vai chuyen xua." }),
+        };
+
+        private void BuildLightSettlement(Vector3 anchor, int houseCount, float footprint, string label, string idPrefix)
+        {
+            WorldStreamer.ExclusionZones.Add((anchor, footprint));
+            AddBuildingLabelZone(anchor, footprint * 0.35f, label);
+
+            (PackedScene scene, float min, float max)[] houseKinds =
+            {
+                (_cottageScene, 26f, 36f),
+                (_villageHouseScene, 34f, 46f),
+                (_farmhouseScene, 46f, 62f),
+            };
+
+            const float plotSpacing = 190f;
+            int halfGrid = Mathf.CeilToInt(Mathf.Sqrt(houseCount)) + 2;
+            var candidates = new List<Vector2>();
+            for (int gz = -halfGrid; gz <= halfGrid; gz++)
+                for (int gx = -halfGrid; gx <= halfGrid; gx++)
+                {
+                    float x = gx * plotSpacing, z = gz * plotSpacing;
+                    if (Mathf.Abs(x) < 90f && Mathf.Abs(z) < 90f) continue; // chua trong tam cho ten khu
+                    candidates.Add(new Vector2(x, z));
+                }
+            candidates.Sort((a, b) => a.Length().CompareTo(b.Length()));
+
+            var rng = new RandomNumberGenerator { Seed = (ulong)idPrefix.GetHashCode() };
+            var housePositions = new List<Vector3>();
+            for (int i = 0; i < houseCount && i < candidates.Count; i++)
+            {
+                var (scene, min, max) = houseKinds[rng.RandiRange(0, houseKinds.Length - 1)];
+                if (scene == null) continue;
+                var pos = anchor + new Vector3(candidates[i].X, 0, candidates[i].Y);
+                housePositions.Add(pos);
+                var inst = scene.Instantiate<Node3D>();
+                inst.Position = pos;
+                inst.RotationDegrees = new Vector3(0, rng.RandiRange(0, 3) * 90f, 0);
+                inst.Scale = Vector3.One * rng.RandfRange(min, max);
+                _world.AddChild(inst);
+            }
+
+            for (int i = 0; i < housePositions.Count; i++)
+            {
+                var flavor = SettlementFlavors[i % SettlementFlavors.Length];
+                var villager = _citizenScene.Instantiate<TownCitizenNpc>();
+                villager.NpcId = $"{idPrefix}_{i}";
+                villager.NpcName = flavor.name;
+                villager.DialogueLow = flavor.low;
+                villager.DialogueMid = flavor.mid;
+                villager.DialogueHigh = flavor.high;
+                villager.WanderCenter = anchor;
+                villager.WanderRadius = footprint * 0.75f;
+                villager.HomePos = housePositions[i] + new Vector3(0, 0, 45);
+                villager.InteriorHomePos = housePositions[i] + new Vector3(0, 8, -35);
+                _world.AddChild(villager);
+            }
+        }
+
+        // Cum "phe tich do nat" - tai su dung bo Kenney town (tuong/mai module, DA CO SAN tren
+        // dia nhung CHUA dung toi noi nao khac) rai/xoay/nga lech thanh dang do nat, thay vi tim
+        // model "ruins" moi (khong can - bo nay du hop de lam phe tich).
+        private void BuildRuinsCluster(Vector3 center)
+        {
+            WorldStreamer.ExclusionZones.Add((center, 260f));
+            const string kenneyTown = "res://assets3d/kenney/town/Models/GLB format/";
+            string[] pieces = { "wall-block.glb", "wall-arch.glb", "wall-door.glb", "wall-window-stone.glb", "roof-gable.glb", "pillar-stone.glb" };
+            var rng = new RandomNumberGenerator { Seed = 9901 };
+            for (int i = 0; i < 14; i++)
+            {
+                var scene = GD.Load<PackedScene>(kenneyTown + pieces[rng.RandiRange(0, pieces.Length - 1)]);
+                if (scene == null) continue;
+                float angle = Mathf.Tau * i / 14f;
+                float radius = rng.RandfRange(60f, 220f);
+                var pos = center + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
+                var inst = scene.Instantiate<Node3D>();
+                inst.Position = pos;
+                // Xoay/nga LECH ngau nhien (khong dung khoi nhu tuong that) de doc ra dang do nat.
+                inst.RotationDegrees = new Vector3(rng.RandfRange(-8f, 8f), rng.RandfRange(0f, 360f), rng.RandfRange(-6f, 6f));
+                inst.Scale = Vector3.One * rng.RandfRange(11f, 16f);
+                _world.AddChild(inst);
+            }
+            AddOreNode(center, "co_vat", hp: 40, dropAmount: 1, regrowDays: 30, new Color(0.55f, 0.5f, 0.35f));
+            AddBuildingLabelZone(center, 260f, "Phe Tich");
+        }
+
+        // 1 bia mo primitive (khong co model CC0 phu hop, dung nguyen tac da lam voi cac cong
+        // trinh khac trong game) - khoi da dung + phan dinh tron.
+        private void AddGravestone(Vector3 pos, float rotY, RandomNumberGenerator rng)
+        {
+            var stoneMat = GetCachedMaterial(new Color(0.45f, 0.45f, 0.42f), 0.9f);
+            var body = new StaticBody3D { Position = pos, RotationDegrees = new Vector3(0, rotY, 0) };
+            body.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(16f, 24f, 4f) }, Position = Vector3.Up * 12f, MaterialOverride = stoneMat });
+            body.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 8f, BottomRadius = 8f, Height = 4f }, Position = Vector3.Up * 24f, RotationDegrees = new Vector3(90, 0, 0), MaterialOverride = stoneMat });
+            body.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(16f, 28f, 4f) }, Position = Vector3.Up * 14f });
+            _world.AddChild(body);
         }
 
         // 1 cao nguyen: khoi hinh non cut (frustum - CylinderMesh voi TopRadius < BottomRadius)

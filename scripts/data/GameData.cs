@@ -66,6 +66,10 @@ namespace HiepSiVeVuon.Data
         public int GoldReward;
         public string SpritePath;
         public List<LootEntry> Loot = new();
+        // Ma hex (vd "8a5a3c") - nhuom mau model dung chung (xem Enemy.cs) de nhieu EnemyId khac
+        // nhau "nhin khac nhau" du dung CHUNG 1 file model .glb (game chi co 2 model quai) - null/
+        // rong = giu nguyen mau goc cua model.
+        public string TintColor;
     }
 
     public class LootEntry

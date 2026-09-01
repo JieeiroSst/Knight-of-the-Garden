@@ -23,10 +23,21 @@ namespace HiepSiVeVuon.Entities
 		// con da spawn tu truoc/sau do, khong rieng gi con nay.
 		[Export] public float StatMultiplier = 1f;
 
+		// Quai theo khu vuc moi (xem WorldStreamer.RegionProfile) DUNG CHUNG 2 model nay (game
+		// chi co 2 model quai CC0) - "khac nhau" qua TintColor (xem EnemyDef.cs/ApplyTint) +
+		// EnemyId nao dung model nao (chia deu ca 2 hinh dang de co it nhat SU DA DANG hinh dang,
+		// khong chi mau sac).
 		private static readonly Dictionary<string, string> ModelPathByEnemyId = new()
 		{
 			{ "mud_monster", "res://assets3d/quaternius/monsters/slime.glb" },
 			{ "spiky_monster", "res://assets3d/quaternius/monsters/spiky_blob.glb" },
+			{ "forest_wolf", "res://assets3d/quaternius/monsters/slime.glb" },
+			{ "mountain_troll", "res://assets3d/quaternius/monsters/spiky_blob.glb" },
+			{ "lake_serpent", "res://assets3d/quaternius/monsters/spiky_blob.glb" },
+			{ "swamp_lurker", "res://assets3d/quaternius/monsters/slime.glb" },
+			{ "ruins_wraith", "res://assets3d/quaternius/monsters/spiky_blob.glb" },
+			{ "cemetery_ghost", "res://assets3d/quaternius/monsters/slime.glb" },
+			{ "cave_bat", "res://assets3d/quaternius/monsters/spiky_blob.glb" },
 		};
 
 		private const string AnimIdle = "CharacterArmature|Idle";
@@ -75,15 +86,46 @@ namespace HiepSiVeVuon.Entities
 			{
 				string path = ModelPathByEnemyId.TryGetValue(EnemyId, out var p)
 					? p : "res://assets3d/quaternius/monsters/slime.glb";
-				float scale = EnemyId == "spiky_monster" ? ModelScale * 1.15f : ModelScale;
+				// Model spiky_blob can to hon 1 chut de can doi ty le voi slime - ap dung cho MOI
+				// EnemyId dung model nay (khong chi rieng "spiky_monster" nhu truoc, vi gio nhieu
+				// quai theo khu vuc moi cung dung chung model nay - xem ModelPathByEnemyId).
+				float scale = path.EndsWith("spiky_blob.glb") ? ModelScale * 1.15f : ModelScale;
 				_animPlayer = CharacterRig.Attach(_model, path, scale);
 				if (_animPlayer != null)
 				{
 					_animPlayer.AnimationFinished += OnAnimationFinished;
 					PlayLoop(AnimIdle);
 				}
+				// Nhuom mau (xem EnemyDef.TintColor) - game chi co 2 model quai goc, nhieu EnemyId
+				// "khac nhau" (theo khu vuc, xem WorldStreamer.RegionProfile) can nhin KHAC MAU du
+				// dung chung 1 file .glb.
+				if (_def != null && !string.IsNullOrEmpty(_def.TintColor))
+					ApplyTint(_model, new Color("#" + _def.TintColor.TrimStart('#')));
 			}
 			_patrolTarget = GlobalPosition;
+		}
+
+		// Nhan AlbedoColor voi mau nhuom TREN material RIENG (Duplicate() + SetSurfaceOverrideMaterial,
+		// KHONG sua thang material goc - material co the dung CHUNG giua nhieu quai cung model, sua
+		// truc tiep se nhuom nham CA NHUNG CON KHONG can nhuom). Godot tu nhan AlbedoColor voi
+		// AlbedoTexture neu co, nen van giu duoc chi tiet texture goc, chi doi TONG mau.
+		private static void ApplyTint(Node root, Color color)
+		{
+			if (root is MeshInstance3D mi && mi.Mesh != null)
+			{
+				int surfCount = mi.Mesh.GetSurfaceCount();
+				for (int s = 0; s < surfCount; s++)
+				{
+					if (mi.GetActiveMaterial(s) is StandardMaterial3D baseMat)
+					{
+						var dup = (StandardMaterial3D)baseMat.Duplicate();
+						dup.AlbedoColor = color;
+						mi.SetSurfaceOverrideMaterial(s, dup);
+					}
+				}
+			}
+			foreach (var child in root.GetChildren())
+				ApplyTint(child, color);
 		}
 
 		public override void _PhysicsProcess(double delta)
