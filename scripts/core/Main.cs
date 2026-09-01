@@ -3365,15 +3365,18 @@ namespace HiepSiVeVuon.Core
 			// Quy hoach lai: 4 coi xay gio TRONG tuong gio thuoc Khu San Xuat (che bien) - tim gan
 			// OutbuildingsAnchor thay vi ngau nhien khap tuong da.
 			//
-			// searchRadius=1000 (truoc day 500 roi 700, van con canh bao cham nho ~7-41): OutbuildingsAnchor
-			// (850,280) chi cach tam nong trai (202,390) ~657 don vi - GAN HON ca ban kinh 780 cua
-			// vung dat rieng nong trai, nghia la CHINH diem neo da nam trong vung cam do, "an" mat
-			// phan lon dat phia Tay cua khu tim kiem. 700 van chua du rong de 4 coi xay gio
-			// 140-ban-kinh xep het KHONG CHAM NHAU trong phan dat con lai (chu yeu phia Dong). 1000
-			// van an toan (FarmWallHalfSize=3162.5, con rat xa moi cham tuong).
+			// searchRadius=1400 (truoc day 500->700->1000, moi lan deu giam dan canh bao nhung
+			// khong het han: 1000 van con 1 lan cham rat nho ~5/140, do FindOpenSpot chi thu 600
+			// vi tri NGAU NHIEN - khi vung "that su trong" chi la 1 phan nho cua toan bo vong tron
+			// tim kiem (phan lon phia Tay bi vung dat rieng nong trai 780 quanh (202,390) chan,
+			// xem ghi chu duoi day), xac suat 600 lan random deu roi dung vao phan trong con lai
+			// khong phai 100% dam bao. OutbuildingsAnchor(850,280) chi cach tam nong trai ~657 don
+			// vi - GAN HON ca ban kinh 780 do, nghia la CHINH diem neo da nam trong vung cam. 1400
+			// mo rong dang ke phan dat that su trong (phia Dong/Nam), van an toan xa tuong
+			// (FarmWallHalfSize=3162.5).
 			for (int i = 0; i < 4; i++)
 			{
-				var pos = FindOpenSpot(avoid, footprintRadius, rng, searchCenter: OutbuildingsAnchor, searchRadius: 1000f);
+				var pos = FindOpenSpot(avoid, footprintRadius, rng, searchCenter: OutbuildingsAnchor, searchRadius: 1400f);
 				avoid.Add((pos, footprintRadius));
 				_extraPenZones.Add((pos, footprintRadius));
 				float rotY = rng.RandfRange(0f, 360f);
