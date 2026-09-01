@@ -3125,8 +3125,8 @@ namespace HiepSiVeVuon.Core
 		// vd 1 cay thong don le ~17 trieu tam giac - khong the dung truc tiep), nen dung nguon CC0
 		// low-poly da kiem chung (poly.pizza) cho toan bo cong trinh, chi khac han cac model da
 		// dung o nong trai/thi tran de vung nay co dien mao rieng.
-		private static readonly Vector3 FrenchRegionCenter = FarmhousePos + new Vector3(-240000, 0, 0);
-		private const float FrenchRegionHalfSize = 40000f;
+		private static readonly Vector3 FrenchRegionCenter = FarmhousePos + new Vector3(-24000, 0, 0);
+		private const float FrenchRegionHalfSize = 4000f;
 
 		private void BuildFrenchCountryside()
 		{
