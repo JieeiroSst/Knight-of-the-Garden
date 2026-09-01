@@ -1,17 +1,17 @@
 using Godot;
+using System.Collections.Generic;
 using HiepSiVeVuon.Core;
 
 namespace HiepSiVeVuon.Entities
 {
-    // Henri - Bao ve trang trai. Ban ngay (troi thuong) di tuan quanh cac diem kiem tra (cong/
-    // hang rao). Troi MUA ban ngay -> KHONG tuoi cay/tuan tra nhu thuong, chuyen sang dung gan
-    // khu dung cu (the hien "sua cong cu/don kho" - xem GameManager.IsRaining). Ban dem di ĐUNG
-    // 1 LO TRINH CO DINH theo thu tu: Cong trang trai -> Nha kho -> Canh dong -> Bia rung ->
-    // Nha chinh -> lap lai (theo dung yeu cau).
+    // Henri - Bao ve trang trai. QUY HOACH LAI sang Utility AI (xem FarmhandNpc.cs/RepairmanNpc.cs
+    // de biet chi tiet kien truc chung) - KHONG dung GOAP nhieu buoc (moi hanh dong chi la "di
+    // toi 1 diem", khong can lap ke hoach chuoi) nhung VAN la Utility AI THAT: 3 hanh dong tuan
+    // tra ngay/tru mua/tuan tra dem tu cham diem theo GameManager.IsNight/IsRaining thay vi
+    // enum Phase gan cung truoc day. KHONG co hanh dong Sleep (giu dung tinh chat "khong bao gio
+    // ngu" cua Henri).
     public partial class GuardNpc : NPC
     {
-        private enum Phase { DayPatrol, RainHelp, NightPatrol }
-
         [Export] public float Speed = 48f;
         [Export] public float Acceleration = 180f;
         [Export] public float Friction = 220f;
@@ -22,33 +22,24 @@ namespace HiepSiVeVuon.Entities
         [Export] public double PauseAtPointSec = 6.0;
         [Export] public float RainHelpWanderRadius = 60f;
 
-        // Loi thoai rieng theo tinh huong (ngoai bo DialogueLow/Mid/High mac dinh cua NPC, dung
-        // khi troi mua/dang tuan dem) - neu de trong se dung DialogueLow/Mid/High nhu binh
-        // thuong. Main.cs gan cac mang nay ngay sau khi tao.
+        // Loi thoai rieng theo tinh huong. Main.cs gan cac mang nay ngay sau khi tao.
         public string[] DialogueRain = System.Array.Empty<string>();
         public string[] DialogueNight = System.Array.Empty<string>();
 
-        // Main.cs gan ngay sau khi tao (truoc AddChild). KHONG co InteriorHomePos/gio ngu - theo
-        // dung yeu cau, Henri tuan tra CA NGAY LAN DEM lien tuc (ban dem theo lo trinh co dinh
-        // rieng, khong "nghi" nhu cac NPC khac).
+        // Main.cs gan ngay sau khi tao (truoc AddChild). KHONG co InteriorHomePos/gio ngu.
         public Vector3 HomePos;
         public Vector3[] DayCheckpoints = System.Array.Empty<Vector3>();
         public Vector3[] NightPatrolPoints = System.Array.Empty<Vector3>(); // DUNG thu tu: cong -> kho -> dong -> bia rung -> nha chinh
         public Vector3 RainHelpPos;
 
-        private Phase _phase = Phase.DayPatrol;
         private Vector3 _facing = Vector3.Back;
-        private int _pointIndex = 0;
-        private bool _atPoint = false;
-        private double _pauseLeft = 0;
-        private Vector3 _rainWanderTarget;
-        private ulong _nextRainWanderTime = 0;
+        private int _dayIdx = 0;
+        private int _nightIdx = 0;
 
-        private readonly HiepSiVeVuon.Core.SteeringUtil.StuckDetector _stuckDetector = new();
-        // Navmesh THAT SU (xem Main.BuildFarmNavigation) - DoPatrol() dung day de di VONG QUA
-        // hang rao/nha/vat can thay vi di thang toi tung diem tuan tra nhu truoc.
+        private readonly SteeringUtil.StuckDetector _stuckDetector = new();
         private NavigationAgent3D _navAgent;
         private readonly SteeringUtil.NavSteering _nav = new();
+        private readonly UtilityBrain _brain = new();
 
         public override void _Ready()
         {
@@ -56,41 +47,84 @@ namespace HiepSiVeVuon.Entities
 
             _navAgent = new NavigationAgent3D { PathDesiredDistance = 8f, TargetDesiredDistance = 10f, AvoidanceEnabled = false };
             AddChild(_navAgent);
-
-            _phase = CurrentPhase();
             GlobalPosition = HomePos;
-            _pointIndex = 0;
-            _atPoint = false;
 
-            GameManager.Instance.HourChanged += _ => RefreshPhase();
-            GameManager.Instance.WeatherChanged += _ => RefreshPhase();
+            _brain.Actions.Add(MakeNightPatrol());
+            _brain.Actions.Add(MakeRainHelp());
+            _brain.Actions.Add(MakeDayPatrol());
         }
 
-        private Phase CurrentPhase()
+        private UtilityAction MakeDayPatrol()
         {
-            if (GameManager.Instance.IsNight) return Phase.NightPatrol;
-            return GameManager.Instance.IsRaining ? Phase.RainHelp : Phase.DayPatrol;
+            return new UtilityAction
+            {
+                Id = "DayPatrol",
+                Evaluate = ctx => (ctx.IsNight || ctx.IsRaining) ? new UtilityResult(float.NegativeInfinity) : new UtilityResult(20f),
+                InitialState = (ctx, t) => new Dictionary<string, bool> { { "there", false } },
+                Goal = (ctx, t) => new Dictionary<string, bool> { { "there", true } },
+                Steps = new List<GoapAction>
+                {
+                    new GoapAction
+                    {
+                        Id = "Checkpoint", Effects = { { "there", true } }, DurationSec = (float)PauseAtPointSec,
+                        TargetPos = (ctx, t) => DayCheckpoints.Length > 0 ? DayCheckpoints[_dayIdx % DayCheckpoints.Length] : ctx.SelfPos,
+                        Execute = (ctx, t) => { if (DayCheckpoints.Length > 0) _dayIdx = (_dayIdx + 1) % DayCheckpoints.Length; },
+                    },
+                },
+            };
         }
 
-        private void RefreshPhase()
+        private UtilityAction MakeNightPatrol()
         {
-            var newPhase = CurrentPhase();
-            if (newPhase == _phase) return;
-            _phase = newPhase;
-            _pointIndex = 0;
-            _atPoint = false;
+            return new UtilityAction
+            {
+                Id = "NightPatrol",
+                Evaluate = ctx => ctx.IsNight ? new UtilityResult(60f) : new UtilityResult(float.NegativeInfinity),
+                InitialState = (ctx, t) => new Dictionary<string, bool> { { "there", false } },
+                Goal = (ctx, t) => new Dictionary<string, bool> { { "there", true } },
+                Steps = new List<GoapAction>
+                {
+                    new GoapAction
+                    {
+                        Id = "Checkpoint", Effects = { { "there", true } }, DurationSec = (float)PauseAtPointSec,
+                        TargetPos = (ctx, t) => NightPatrolPoints.Length > 0 ? NightPatrolPoints[_nightIdx % NightPatrolPoints.Length] : ctx.SelfPos,
+                        Execute = (ctx, t) => { if (NightPatrolPoints.Length > 0) _nightIdx = (_nightIdx + 1) % NightPatrolPoints.Length; },
+                    },
+                },
+            };
+        }
+
+        private UtilityAction MakeRainHelp()
+        {
+            return new UtilityAction
+            {
+                Id = "RainHelp",
+                Evaluate = ctx => (!ctx.IsNight && ctx.IsRaining) ? new UtilityResult(55f) : new UtilityResult(float.NegativeInfinity),
+                InitialState = (ctx, t) => new Dictionary<string, bool> { { "there", false } },
+                Goal = (ctx, t) => new Dictionary<string, bool> { { "there", true } },
+                Steps = new List<GoapAction>
+                {
+                    new GoapAction
+                    {
+                        Id = "Shelter", Effects = { { "there", true } }, DurationSec = 5f,
+                        TargetPos = (ctx, t) =>
+                        {
+                            var rng = new RandomNumberGenerator();
+                            rng.Randomize();
+                            float angle = rng.RandfRange(0f, Mathf.Tau);
+                            float r = rng.RandfRange(0f, RainHelpWanderRadius);
+                            return RainHelpPos + new Vector3(Mathf.Cos(angle) * r, 0f, Mathf.Sin(angle) * r);
+                        },
+                    },
+                },
+            };
         }
 
         public override void _PhysicsProcess(double delta)
         {
             float dt = (float)delta;
 
-            var (desiredDir, targetSpeed) = _phase switch
-            {
-                Phase.DayPatrol => DoPatrol(DayCheckpoints, dt),
-                Phase.NightPatrol => DoPatrol(NightPatrolPoints, dt),
-                _ => DoRainWander(dt),
-            };
+            var (desiredDir, targetSpeed) = _brain.Tick(dt, this, ArriveDist, Speed, _nav, _navAgent);
 
             bool wantsToMove = desiredDir != Vector3.Zero;
             desiredDir = _stuckDetector.ApplyEscape(desiredDir, GlobalPosition, wantsToMove, dt);
@@ -116,58 +150,12 @@ namespace HiepSiVeVuon.Entities
             }
         }
 
-        private (Vector3 dir, float speed) DoPatrol(Vector3[] points, float dt)
-        {
-            if (points.Length == 0) return (Vector3.Zero, 0f);
-
-            if (_atPoint)
-            {
-                _pauseLeft -= dt;
-                if (_pauseLeft <= 0)
-                {
-                    _atPoint = false;
-                    _pointIndex = (_pointIndex + 1) % points.Length;
-                }
-                return (Vector3.Zero, 0f);
-            }
-
-            Vector3 target = points[_pointIndex];
-            Vector3 straightDir = target - GlobalPosition;
-            straightDir.Y = 0f;
-            if (straightDir.Length() <= ArriveDist)
-            {
-                _atPoint = true;
-                _pauseLeft = PauseAtPointSec;
-                return (Vector3.Zero, 0f);
-            }
-            var navDir = _nav.GetDirection(_navAgent, GlobalPosition, target);
-            return (navDir != Vector3.Zero ? navDir : straightDir.Normalized(), Speed);
-        }
-
-        private (Vector3 dir, float speed) DoRainWander(float dt)
-        {
-            ulong now = Time.GetTicksMsec();
-            if (now >= _nextRainWanderTime)
-            {
-                var rng = new RandomNumberGenerator();
-                rng.Randomize();
-                float angle = rng.RandfRange(0f, Mathf.Tau);
-                float radius = rng.RandfRange(0f, RainHelpWanderRadius);
-                _rainWanderTarget = RainHelpPos + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
-                _nextRainWanderTime = now + (ulong)rng.RandiRange(6000, 14000);
-            }
-            Vector3 dir = _rainWanderTarget - GlobalPosition;
-            dir.Y = 0f;
-            if (dir.Length() <= 10f) return (Vector3.Zero, 0f);
-            return (dir.Normalized(), Speed * 0.5f);
-        }
-
         protected override string PickDialogue()
         {
-            string[] pool = _phase switch
+            string[] pool = _brain.CurrentActionId switch
             {
-                Phase.RainHelp when DialogueRain.Length > 0 => DialogueRain,
-                Phase.NightPatrol when DialogueNight.Length > 0 => DialogueNight,
+                "RainHelp" when DialogueRain.Length > 0 => DialogueRain,
+                "NightPatrol" when DialogueNight.Length > 0 => DialogueNight,
                 _ => null,
             };
             if (pool != null) return pool[(int)(GD.Randi() % (uint)pool.Length)];

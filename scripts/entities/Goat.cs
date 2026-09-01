@@ -1,5 +1,6 @@
 using Godot;
 using HiepSiVeVuon.Core;
+using HiepSiVeVuon.Systems;
 
 namespace HiepSiVeVuon.Entities
 {
@@ -9,7 +10,7 @@ namespace HiepSiVeVuon.Entities
     // De se TRUOT tren mat dat thay vi buoc chan that su - han che that su cua asset hien co,
     // khong phai loi code. Cau truc Wander/GoToTrough/Eating + tang truong/sinh san sao chep
     // NGUYEN Y tu Sheep.cs de nhat quan voi cac loai vat nuoi khac.
-    public partial class Goat : CharacterBody3D
+    public partial class Goat : CharacterBody3D, IHungryAnimal
     {
         private enum State { Wander, GoToTrough, Eating }
 
@@ -30,6 +31,10 @@ namespace HiepSiVeVuon.Entities
         private int _daysFed = 0;
         private bool _ateToday = false;
         private CollisionShape3D _collision;
+
+        // Xem ghi chu chi tiet trong Cow.cs - cung 1 co che doi THAT.
+        public int HungerDays { get; private set; } = 0;
+        public bool IsHungry => HungerDays > 0;
 
         private Node3D _model;
         private Node3D _body; // model tinh (khong AnimationPlayer) - rieng de con truc tiep chinh Scale luc lon
@@ -171,7 +176,8 @@ namespace HiepSiVeVuon.Entities
             if (straightDir.Length() <= 16f)
             {
                 _state = State.Eating;
-                _ateToday = true;
+                if (FarmStorage.Instance.TryRemove("thucan_giasuc", 1)) { _ateToday = true; HungerDays = 0; }
+                else HungerDays++;
                 GetTree().CreateTimer(EatDurationSec).Timeout += () =>
                 {
                     if (IsInstanceValid(this)) _state = State.Wander;

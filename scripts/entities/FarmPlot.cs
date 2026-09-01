@@ -107,6 +107,31 @@ namespace HiepSiVeVuon.Entities
 
         private string GuessSeedFor(string cropId) => cropId + "_seed";
 
+        // Thuoc tinh DOC-ONLY cho Utility AI (xem UtilityAi.cs) cham diem tu ben ngoai - truoc day
+        // KHONG co cach nao hoi "o nay can gi" ma khong goi thang UseOn() (luon THUC THI hanh
+        // dong uu tien nhat thay vi cho biet can gi). Hoan toan KHONG doi hanh vi UseOn()/Plant()/
+        // Harvest() hien co, chi PHOI BAY lai trang thai noi bo da co san.
+        public bool IsEmpty => _cropId == null;
+        public bool NeedsWater => _cropId != null && !_watered && _growStage < _growDays;
+        public bool NeedsFertilizer => _cropId != null && !_fertilized && _growStage < _growDays;
+        public bool HasPest => _pestAfflicted;
+        public bool IsHarvestable => _cropId != null && _growStage >= _growDays;
+        // Tong hop 0..1 muc do "can duoc cham soc ngay" - Utility AI dung truc tiep lam diem so
+        // (nhan them he so uu tien ben ngoai neu can). Uu tien: sau benh > sap chet vi thieu nuoc
+        // > can tuoi/bon phan thuong > da chin cho hai.
+        public float Urgency01
+        {
+            get
+            {
+                if (IsHarvestable) return 0.9f;
+                if (HasPest) return 1f;
+                if (_cropId != null && _daysUnwatered >= NeglectDeathThreshold - 1) return 0.95f; // sap chet
+                if (NeedsWater) return 0.7f;
+                if (NeedsFertilizer) return 0.4f;
+                return 0f;
+            }
+        }
+
         // Goi khi nguoi choi dung cong cu (phim Space). Thu tu uu tien khi cay CHUA chin: diet
         // sau (neu dang bi sau VA co thuoc) -> bon phan (neu CHUA bon VA co phan) -> tuoi nuoc -
         // moi lan bam CHI lam DUNG 1 hanh dong, giong quy uoc cu (khong tu dong gop nhieu buoc).

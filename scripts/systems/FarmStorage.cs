@@ -31,6 +31,20 @@ namespace HiepSiVeVuon.Systems
 
         public int GetCount(string itemId) => _counts.TryGetValue(itemId, out int cur) ? cur : 0;
 
+        // Truoc day KHONG co cach nao "rut hang" ra dung (chi Add) - Utility AI can tieu thu that
+        // (vd chuong an het thuc an trong kho) de "kho sap het" tro thanh 1 su that co the cham
+        // diem duoc thay vi trang tri. Tra false neu khong du (khong tru am).
+        public bool TryRemove(string itemId, int amount)
+        {
+            if (amount <= 0) return true;
+            if (!_counts.TryGetValue(itemId, out int cur) || cur < amount) return false;
+            _counts[itemId] = cur - amount;
+            EmitSignal(SignalName.StorageChanged);
+            return true;
+        }
+
+        public bool IsLow(string itemId, int threshold) => GetCount(itemId) < threshold;
+
         // Antoine (nguoi quan ly kho, xem WarehouseManagerNpc.cs) dung 2 ham nay de bao cao tinh
         // trang kho va de xuat "dua ra cho" khi gan day - CapacityPerItem la 1 gioi han GIA DINH
         // (kho thuc te khong gioi han so luong, xem ghi chu tren) chi dung lam moc so sanh de tao

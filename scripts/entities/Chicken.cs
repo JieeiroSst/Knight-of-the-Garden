@@ -1,5 +1,6 @@
 using Godot;
 using HiepSiVeVuon.Core;
+using HiepSiVeVuon.Systems;
 
 namespace HiepSiVeVuon.Entities
 {
@@ -7,7 +8,7 @@ namespace HiepSiVeVuon.Entities
     // trua va 16h chieu, theo DONG HO THAT cua may tinh qua GameManager.HourChanged - dong bo
     // voi bo/ngua) se tu dong di den cho thuc an, dung mo (Idle_Peck) 1 luc roi quay lai di lai
     // binh thuong.
-    public partial class Chicken : CharacterBody3D
+    public partial class Chicken : CharacterBody3D, IHungryAnimal
     {
         private enum State { Wander, GoToFeed, Eating }
 
@@ -40,6 +41,10 @@ namespace HiepSiVeVuon.Entities
         private int _daysFed = 0;
         private bool _ateToday = false;
         private CollisionShape3D _collision;
+
+        // Xem ghi chu chi tiet trong Cow.cs - cung 1 co che doi THAT.
+        public int HungerDays { get; private set; } = 0;
+        public bool IsHungry => HungerDays > 0;
 
         // Ten hoat canh dung "AnimalArmature|AnimalArmature|AnimalArmature|X" (lap 3 lan) dung
         // theo dung ten that trong file chicken.glb - "Idle_Peck" la dang mo dat, dung vua vac
@@ -271,7 +276,8 @@ namespace HiepSiVeVuon.Entities
             if (dir.Length() <= 14f)
             {
                 _state = State.Eating;
-                _ateToday = true;
+                if (FarmStorage.Instance.TryRemove("thucan_giasuc", 1)) { _ateToday = true; HungerDays = 0; }
+                else HungerDays++;
                 GetTree().CreateTimer(EatDurationSec).Timeout += () =>
                 {
                     if (IsInstanceValid(this)) _state = State.Wander;

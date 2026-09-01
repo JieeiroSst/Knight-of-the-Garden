@@ -1477,7 +1477,7 @@ namespace HiepSiVeVuon.Core
             {
                 "pumpkin_seed", "tomato_seed", "wheat_seed", "carrot_seed", "potato_seed", "cabbage_seed",
                 "pumpkin_seed_premium", "tomato_seed_premium", "wheat_seed_premium", "carrot_seed_premium", "potato_seed_premium", "cabbage_seed_premium",
-                "fertilizer_basic", "pesticide", "potion",
+                "fertilizer_basic", "pesticide", "potion", "thucan_giasuc",
             };
             merchant.DialogueLow = new[] { "Mua gi khong? Hat giong tot day!" };
             merchant.DialogueMid = new[] { "Khach quen roi! Xem hang di." };
@@ -3608,6 +3608,7 @@ namespace HiepSiVeVuon.Core
         {
             var a = OutbuildingsAnchor; // = diem neo Khu San Xuat (gia tri khong doi)
             var s = StorageZoneAnchor;  // diem neo Khu Nha Kho (tach rieng khoi San Xuat)
+            NpcEconomy.RestockPos = s;  // diem "nhap hang" cho GOAP cua NPC (xem NpcEconomy.cs)
 
             // Nha phu (co phong noi that that su) - nha o nho thu 2 canh nha chinh.
             var auxHousePos = a + new Vector3(-60, 0, -80);

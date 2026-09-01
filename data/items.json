@@ -172,6 +172,17 @@
     "IconPath": "res://assets/items/coins.png"
   },
   {
+    "Id": "thucan_giasuc",
+    "Name": "Thuc An Gia Suc",
+    "Description": "Thuc an du tru trong kho de cho vat nuoi an - het thi vat nuoi bi doi that su.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 1,
+    "BuyPrice": 3,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
     "Id": "grape",
     "Name": "Nho",
     "Description": "Chum nho chin tu vuon nho trang trai.",

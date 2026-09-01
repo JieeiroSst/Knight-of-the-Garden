@@ -1,32 +1,25 @@
 using Godot;
+using System.Collections.Generic;
 using HiepSiVeVuon.Core;
 
 namespace HiepSiVeVuon.Entities
 {
-    // Jean - Quan gia trang trai (Farm Steward), 55 tuoi. Di tuan tu qua cac diem moc chinh cua
-    // trang trai (nha chinh/nha kho/chuong bo/canh dong...) ban ngay, ve nha ngu ban dem (giong
-    // mau FarmhandNpc). Tinh cach diem tinh/ky luat/thuc te/khong thich lang phi/thinh thoang
-    // phan nan ve nguoi choi - the hien qua PickDialogue (tron 1 nhom cau "phan nan" xen ke voi
-    // cau binh thuong, KHONG phai lien tuc phan nan).
+    // Jean - Quan gia trang trai (Farm Steward). QUY HOACH LAI sang Utility AI (Patrol + Sleep,
+    // xem FarmhandNpc.cs/RepairmanNpc.cs de biet chi tiet kien truc chung) - THAY THE lich gio co
+    // dinh (WakeHour/SleepHour) bang cham diem do met/ban dem, giong moi NPC khac.
     //
-    // QUAN TRONG - pham vi that su: Jean "dieu phoi trang trai" chi la BOI CANH CAU CHUYEN (loi
-    // thoai phan anh dung vai tro), KHONG phai 1 bo may AI trung tam THAT SU dieu khien cac NPC
-    // khac - moi NPC khac (Marcel/Antoine/Henri/nguoi cham nuoi...) van tu chay logic rieng cua
-    // minh nhu truoc, khong nhan "lenh" tu Jean. Xay dung 1 he thong dieu phoi AI trung tam that
-    // su se can viet lai kien truc cua TAT CA NPC hien co - ngoai pham vi hop ly cua 1 yeu cau bo
-    // sung NPC.
+    // QUAN TRONG - pham vi that su (khong doi so voi truoc): Jean "dieu phoi trang trai" van CHI
+    // la BOI CANH CAU CHUYEN (loi thoai phan anh dung vai tro), KHONG phai 1 bo may AI trung tam
+    // THAT SU dieu khien cac NPC khac - moi NPC (ke ca sau khi chuyen sang Utility AI/GOAP) van tu
+    // cham diem/lap ke hoach RIENG cua minh, khong nhan "lenh" tu Jean hay tu bat ky NPC nao khac.
     public partial class FarmStewardNpc : NPC
     {
-        private enum DayPhase { Sleep, Patrol }
-
         [Export] public float Speed = 45f;
         [Export] public float Acceleration = 170f;
         [Export] public float Friction = 210f;
         [Export] public float TurnSpeed = 6.5f;
         [Export] public bool FlipModelFacing = true;
         [Export] public float Gravity = 980f;
-        [Export] public int WakeHour = 6;
-        [Export] public int SleepHour = 22;
         [Export] public float ArriveDist = 16f;
         [Export] public double PauseAtPointSec = 8.0;
 
@@ -35,17 +28,13 @@ namespace HiepSiVeVuon.Entities
         public Vector3 InteriorHomePos;
         public Vector3[] PatrolPoints = System.Array.Empty<Vector3>();
 
-        private DayPhase _phase = DayPhase.Sleep;
         private Vector3 _facing = Vector3.Back;
         private int _pointIndex = 0;
-        private bool _atPoint = false;
-        private double _pauseLeft = 0;
 
-        private readonly HiepSiVeVuon.Core.SteeringUtil.StuckDetector _stuckDetector = new();
-        // Navmesh THAT SU (xem Main.BuildFarmNavigation) - DoPatrol() dung day de di VONG QUA
-        // hang rao/nha/vat can thay vi di thang toi tung diem tuan tra nhu truoc.
+        private readonly SteeringUtil.StuckDetector _stuckDetector = new();
         private NavigationAgent3D _navAgent;
         private readonly SteeringUtil.NavSteering _nav = new();
+        private readonly UtilityBrain _brain = new();
 
         public override void _Ready()
         {
@@ -53,36 +42,37 @@ namespace HiepSiVeVuon.Entities
 
             _navAgent = new NavigationAgent3D { PathDesiredDistance = 8f, TargetDesiredDistance = 10f, AvoidanceEnabled = false };
             AddChild(_navAgent);
+            GlobalPosition = HomePos;
 
-            int hour = GameManager.Instance.Hour;
-            _phase = IsAwakeHour(hour) ? DayPhase.Patrol : DayPhase.Sleep;
-            GlobalPosition = _phase == DayPhase.Patrol ? HomePos : InteriorHomePos + Vector3.Up * 8f;
-
-            GameManager.Instance.HourChanged += OnHourChanged;
+            _brain.Actions.Add(MakePatrolAction());
+            _brain.Actions.Add(UtilityPresets.MakeSleep(() => InteriorHomePos));
         }
 
-        private bool IsAwakeHour(int hour) => hour >= WakeHour && hour < SleepHour;
-
-        private void OnHourChanged(int hour)
+        private UtilityAction MakePatrolAction()
         {
-            bool awake = IsAwakeHour(hour);
-            var newPhase = awake ? DayPhase.Patrol : DayPhase.Sleep;
-            if (newPhase == _phase) return;
-
-            if (_phase == DayPhase.Sleep && newPhase == DayPhase.Patrol)
-                GlobalPosition = HomePos;
-            if (newPhase == DayPhase.Sleep)
-                GlobalPosition = InteriorHomePos + Vector3.Up * 8f;
-
-            _phase = newPhase;
-            _atPoint = false;
+            return new UtilityAction
+            {
+                Id = "Patrol",
+                Evaluate = ctx => new UtilityResult(15f),
+                InitialState = (ctx, t) => new Dictionary<string, bool> { { "there", false } },
+                Goal = (ctx, t) => new Dictionary<string, bool> { { "there", true } },
+                Steps = new List<GoapAction>
+                {
+                    new GoapAction
+                    {
+                        Id = "Checkpoint", Effects = { { "there", true } }, DurationSec = (float)PauseAtPointSec,
+                        TargetPos = (ctx, t) => PatrolPoints.Length > 0 ? PatrolPoints[_pointIndex % PatrolPoints.Length] : ctx.SelfPos,
+                        Execute = (ctx, t) => { if (PatrolPoints.Length > 0) _pointIndex = (_pointIndex + 1) % PatrolPoints.Length; },
+                    },
+                },
+            };
         }
 
         public override void _PhysicsProcess(double delta)
         {
             float dt = (float)delta;
 
-            var (desiredDir, targetSpeed) = _phase == DayPhase.Patrol ? DoPatrol(dt) : (Vector3.Zero, 0f);
+            var (desiredDir, targetSpeed) = _brain.Tick(dt, this, ArriveDist, Speed, _nav, _navAgent);
 
             bool wantsToMove = desiredDir != Vector3.Zero;
             desiredDir = _stuckDetector.ApplyEscape(desiredDir, GlobalPosition, wantsToMove, dt);
@@ -90,7 +80,7 @@ namespace HiepSiVeVuon.Entities
             if (wantsToMove)
                 _facing = SteeringUtil.SmoothTurn(_facing, desiredDir, TurnSpeed * dt);
 
-            SteeringUtil.ApplyStandingOrLyingPose(_model, _phase == DayPhase.Sleep, _facing, FlipModelFacing, TurnSpeed * dt);
+            SteeringUtil.ApplyStandingOrLyingPose(_model, _brain.IsSleeping && !wantsToMove, _facing, FlipModelFacing, TurnSpeed * dt);
 
             Vector3 targetVel = wantsToMove ? _facing * targetSpeed : Vector3.Zero;
             var horizontal = new Vector3(Velocity.X, 0f, Velocity.Z)
@@ -106,34 +96,6 @@ namespace HiepSiVeVuon.Entities
                 if (_animPlayer.HasAnimation(anim) && _animPlayer.CurrentAnimation != anim)
                     _animPlayer.Play(anim);
             }
-        }
-
-        private (Vector3 dir, float speed) DoPatrol(float dt)
-        {
-            if (PatrolPoints.Length == 0) return (Vector3.Zero, 0f);
-
-            if (_atPoint)
-            {
-                _pauseLeft -= dt;
-                if (_pauseLeft <= 0)
-                {
-                    _atPoint = false;
-                    _pointIndex = (_pointIndex + 1) % PatrolPoints.Length;
-                }
-                return (Vector3.Zero, 0f);
-            }
-
-            Vector3 target = PatrolPoints[_pointIndex];
-            Vector3 straightDir = target - GlobalPosition;
-            straightDir.Y = 0f;
-            if (straightDir.Length() <= ArriveDist)
-            {
-                _atPoint = true;
-                _pauseLeft = PauseAtPointSec;
-                return (Vector3.Zero, 0f);
-            }
-            var navDir = _nav.GetDirection(_navAgent, GlobalPosition, target);
-            return (navDir != Vector3.Zero ? navDir : straightDir.Normalized(), Speed);
         }
     }
 }

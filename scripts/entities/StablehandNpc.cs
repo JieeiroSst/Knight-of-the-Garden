@@ -1,42 +1,36 @@
 using Godot;
+using System.Collections.Generic;
 using HiepSiVeVuon.Core;
+using HiepSiVeVuon.Systems;
 
 namespace HiepSiVeVuon.Entities
 {
-    // NPC nguoi cham ngua: ke thua toan bo he thong hoi thoai/cua hang cua NPC (Interact,
-    // Trust...), them AI di chuyen theo GIO HANH CHINH THAT (6h sang - 18h toi, dong bo dong ho
-    // may tinh qua GameManager.HourChanged): den gio lam thi di tu nha ra chuong ngua, quanh
-    // quan cham soc (cho ngua an/don don), het gio thi di ve nha nghi qua dem (vao han ben
-    // trong phong noi that that su, giong FarmhandNpc.cs).
+    // NPC nguoi cham ngua - QUY HOACH LAI sang Utility AI + GOAP (xem FarmhandNpc.cs de biet chi
+    // tiet ly do/kien truc chung, RepairmanNpc.cs la mau tham chieu dau tien). Thay THE HOAN TOAN
+    // lich gio co dinh cu.
     public partial class StablehandNpc : NPC
     {
-        private enum WorkState { AtHome, GoingToWork, Working, GoingHome }
-
         [Export] public float Speed = 55f;
         [Export] public float Acceleration = 200f;
         [Export] public float Friction = 240f;
         [Export] public float TurnSpeed = 7f;
         [Export] public bool FlipModelFacing = true;
         [Export] public float Gravity = 980f;
-        [Export] public int WorkStartHour = 6;
-        [Export] public int WorkEndHour = 18;
+        [Export] public float ArriveDist = 14f;
         [Export] public float WorkWanderRadius = 110f;
+        [Export] public int FeedRestockThreshold = 10;
+        [Export] public int FeedRestockQty = 20;
 
         // Main.cs gan cac vi tri nay ngay sau khi tao NPC (truoc AddChild).
-        public Vector3 HomePos;       // ngay truoc cua nha (ngoai troi)
-        public Vector3 InteriorHomePos; // phong noi that that su (tang tret) - noi ngu ban dem
+        public Vector3 HomePos;
+        public Vector3 InteriorHomePos;
         public Vector3 WorkPos;
 
-        private WorkState _workState = WorkState.AtHome;
         private Vector3 _facing = Vector3.Back;
-        private Vector3 _wanderTarget;
-        private ulong _nextWanderTime = 0;
-
-        private readonly HiepSiVeVuon.Core.SteeringUtil.StuckDetector _stuckDetector = new();
-        // Navmesh THAT SU (xem Main.BuildFarmNavigation) - GoTo() dung day de di VONG QUA hang
-        // rao/nha/vat can thay vi di thang toi muc tieu nhu truoc.
+        private readonly SteeringUtil.StuckDetector _stuckDetector = new();
         private NavigationAgent3D _navAgent;
         private readonly SteeringUtil.NavSteering _nav = new();
+        private readonly UtilityBrain _brain = new();
 
         public override void _Ready()
         {
@@ -45,39 +39,42 @@ namespace HiepSiVeVuon.Entities
             _navAgent = new NavigationAgent3D { PathDesiredDistance = 8f, TargetDesiredDistance = 10f, AvoidanceEnabled = false };
             AddChild(_navAgent);
 
-            int hour = GameManager.Instance.Hour;
-            bool onDuty = hour >= WorkStartHour && hour < WorkEndHour;
-            _workState = onDuty ? WorkState.Working : WorkState.AtHome;
-            GlobalPosition = onDuty ? WorkPos : InteriorHomePos + Vector3.Up * 8f;
-            _wanderTarget = GlobalPosition;
-
-            GameManager.Instance.HourChanged += OnHourChanged;
+            _brain.Actions.Add(MakeRestockFeedAction());
+            _brain.Actions.Add(UtilityPresets.MakeSleep(() => InteriorHomePos));
+            _brain.Actions.Add(UtilityPresets.MakeWander(() => WorkPos, WorkWanderRadius));
         }
 
-        private void OnHourChanged(int hour)
+        private UtilityAction MakeRestockFeedAction()
         {
-            if (hour == WorkStartHour && _workState == WorkState.AtHome)
+            return new UtilityAction
             {
-                GlobalPosition = HomePos;
-                _workState = WorkState.GoingToWork;
-            }
-            else if (hour == WorkEndHour && _workState != WorkState.AtHome)
-            {
-                _workState = WorkState.GoingHome;
-            }
+                Id = "RestockFeed",
+                Evaluate = ctx =>
+                {
+                    if (!FarmStorage.Instance.IsLow("thucan_giasuc", FeedRestockThreshold))
+                        return new UtilityResult(float.NegativeInfinity);
+                    int hungry = AnimalCareUtil.CountHungryNear(GetTree(), WorkPos, WorkWanderRadius + 60f);
+                    return new UtilityResult(50f + hungry * 15f);
+                },
+                InitialState = (ctx, t) => new Dictionary<string, bool> { { "stocked", false } },
+                Goal = (ctx, t) => new Dictionary<string, bool> { { "stocked", true } },
+                Steps = new List<GoapAction>
+                {
+                    new GoapAction
+                    {
+                        Id = "BuyFeed", Effects = { { "stocked", true } },
+                        TargetPos = (ctx, t) => NpcEconomy.RestockPos,
+                        Execute = (ctx, t) => NpcEconomy.NpcBuy("thucan_giasuc", FeedRestockQty),
+                    },
+                },
+            };
         }
 
         public override void _PhysicsProcess(double delta)
         {
             float dt = (float)delta;
 
-            var (desiredDir, targetSpeed) = _workState switch
-            {
-                WorkState.GoingToWork => GoTo(WorkPos, Speed, WorkState.Working),
-                WorkState.GoingHome => GoTo(HomePos, Speed, WorkState.AtHome),
-                WorkState.Working => DoWorkWander(),
-                _ => (Vector3.Zero, 0f), // AtHome: nghi ngoi, dung yen
-            };
+            var (desiredDir, targetSpeed) = _brain.Tick(dt, this, ArriveDist, Speed, _nav, _navAgent);
 
             bool wantsToMove = desiredDir != Vector3.Zero;
             desiredDir = _stuckDetector.ApplyEscape(desiredDir, GlobalPosition, wantsToMove, dt);
@@ -85,7 +82,7 @@ namespace HiepSiVeVuon.Entities
             if (wantsToMove)
                 _facing = SteeringUtil.SmoothTurn(_facing, desiredDir, TurnSpeed * dt);
 
-            SteeringUtil.ApplyStandingOrLyingPose(_model, _workState == WorkState.AtHome, _facing, FlipModelFacing, TurnSpeed * dt);
+            SteeringUtil.ApplyStandingOrLyingPose(_model, _brain.IsSleeping && !wantsToMove, _facing, FlipModelFacing, TurnSpeed * dt);
 
             Vector3 targetVel = wantsToMove ? _facing * targetSpeed : Vector3.Zero;
             var horizontal = new Vector3(Velocity.X, 0f, Velocity.Z)
@@ -101,39 +98,6 @@ namespace HiepSiVeVuon.Entities
                 if (_animPlayer.HasAnimation(anim) && _animPlayer.CurrentAnimation != anim)
                     _animPlayer.Play(anim);
             }
-        }
-
-        private (Vector3 dir, float speed) GoTo(Vector3 target, float speed, WorkState arrivedState)
-        {
-            Vector3 straightDir = target - GlobalPosition;
-            straightDir.Y = 0f;
-            if (straightDir.Length() <= 14f)
-            {
-                _workState = arrivedState;
-                if (arrivedState == WorkState.AtHome)
-                    GlobalPosition = InteriorHomePos + Vector3.Up * 8f;
-                return (Vector3.Zero, 0f);
-            }
-            var navDir = _nav.GetDirection(_navAgent, GlobalPosition, target);
-            return (navDir != Vector3.Zero ? navDir : straightDir.Normalized(), speed);
-        }
-
-        private (Vector3 dir, float speed) DoWorkWander()
-        {
-            ulong now = Time.GetTicksMsec();
-            if (now >= _nextWanderTime)
-            {
-                var rng = new RandomNumberGenerator();
-                rng.Randomize();
-                float angle = rng.RandfRange(0f, Mathf.Tau);
-                float radius = rng.RandfRange(0f, WorkWanderRadius);
-                _wanderTarget = WorkPos + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
-                _nextWanderTime = now + (ulong)rng.RandiRange(4000, 9000);
-            }
-            Vector3 dir = _wanderTarget - GlobalPosition;
-            dir.Y = 0f;
-            if (dir.Length() <= 10f) return (Vector3.Zero, 0f);
-            return (dir.Normalized(), Speed * 0.5f);
         }
     }
 }
