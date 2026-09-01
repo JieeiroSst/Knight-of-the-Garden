@@ -15,8 +15,11 @@ namespace HiepSiVeVuon.UI
     // quai, la ban chi huong) thay vi cac cham tron dong mau don dieu nhu truoc.
     public partial class MapUI : CanvasLayer
     {
+        private Panel _panel;
         private Control _mapArea;
         private Node3D _player;
+        private Tween _toggleTween;
+        private Texture2D _vignetteTex;
 
         // Diem den nguoi choi tu danh dau bang cach bam vao ban do - HUD doc gia tri nay (qua
         // group "map_ui") de ve mui ten chi huong (xem HUD.DrawCompass).
@@ -86,7 +89,7 @@ namespace HiepSiVeVuon.UI
         {
             AddToGroup("map_ui");
 
-            var panel = new Panel
+            _panel = new Panel
             {
                 Position = MapOrigin - new Vector2(20, 40),
                 CustomMinimumSize = MapSize + new Vector2(40, 70)
@@ -101,8 +104,11 @@ namespace HiepSiVeVuon.UI
                 CornerRadiusTopLeft = 10, CornerRadiusTopRight = 10, CornerRadiusBottomLeft = 10, CornerRadiusBottomRight = 10,
                 ShadowSize = 10, ShadowColor = new Color(0, 0, 0, 0.5f),
             };
-            panel.AddThemeStyleboxOverride("panel", frameStyle);
-            AddChild(panel);
+            _panel.AddThemeStyleboxOverride("panel", frameStyle);
+            // Tam xoay/phong to o CHINH GIUA khung (khong phai goc trai-tren mac dinh) - de hieu
+            // ung "bung mo" luc bam [M] no dan tu tam ra, khong bi lech ve 1 goc.
+            _panel.PivotOffset = (MapSize + new Vector2(40, 70)) / 2f;
+            AddChild(_panel);
 
             var title = new Label
             {
@@ -110,7 +116,7 @@ namespace HiepSiVeVuon.UI
                 Position = new Vector2(20, 8),
             };
             title.AddThemeColorOverride("font_color", FrameGold);
-            panel.AddChild(title);
+            _panel.AddChild(title);
 
             var hint = new Label
             {
@@ -119,7 +125,7 @@ namespace HiepSiVeVuon.UI
             };
             hint.AddThemeColorOverride("font_color", new Color(TextCream, 0.6f));
             hint.AddThemeFontSizeOverride("font_size", 12);
-            panel.AddChild(hint);
+            _panel.AddChild(hint);
 
             _mapArea = new Control
             {
@@ -128,7 +134,7 @@ namespace HiepSiVeVuon.UI
             };
             _mapArea.Draw += DrawMap;
             _mapArea.GuiInput += OnMapInput;
-            panel.AddChild(_mapArea);
+            _panel.AddChild(_mapArea);
 
             Visible = false;
         }
@@ -166,9 +172,34 @@ namespace HiepSiVeVuon.UI
         {
             if (e.IsActionPressed("toggle_map"))
             {
-                Visible = !Visible;
+                if (!Visible) OpenAnimated();
+                else CloseAnimated();
                 GetViewport().SetInputAsHandled();
             }
+        }
+
+        // "Bung mo"/thu lai tu tam khung (thay vi bat/tat tuc thi truoc day) - bam [M] gio co
+        // cam giac 1 cuon ban do that su duoc mo ra chu khong phai 1 o vuong xuat hien dot ngot.
+        private void OpenAnimated()
+        {
+            Visible = true;
+            _panel.Scale = Vector2.One * 0.88f;
+            _panel.Modulate = new Color(1f, 1f, 1f, 0f);
+            _toggleTween?.Kill();
+            _toggleTween = CreateTween().SetParallel(true);
+            _toggleTween.TweenProperty(_panel, "scale", Vector2.One, 0.22f)
+                .SetTrans(Tween.TransitionType.Back).SetEase(Tween.EaseType.Out);
+            _toggleTween.TweenProperty(_panel, "modulate:a", 1f, 0.16f);
+        }
+
+        private void CloseAnimated()
+        {
+            _toggleTween?.Kill();
+            _toggleTween = CreateTween();
+            _toggleTween.TweenProperty(_panel, "scale", Vector2.One * 0.9f, 0.13f)
+                .SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.In);
+            _toggleTween.Parallel().TweenProperty(_panel, "modulate:a", 0f, 0.13f);
+            _toggleTween.TweenCallback(Callable.From(() => Visible = false));
         }
 
         private static Vector2 WorldToMap(Vector2 worldXZ)
@@ -222,11 +253,40 @@ namespace HiepSiVeVuon.UI
             if (_player != null)
             {
                 var p = WorldToMap(new Vector2(_player.GlobalPosition.X, _player.GlobalPosition.Z));
-                _mapArea.DrawCircle(p, 8f, new Color(0.2f, 0.85f, 1f, 0.25f)); // hao quang nhe
+                // Hao quang "tho" theo nhip sin (thay vi 1 vong co dinh truoc day) - dam bao mat
+                // nguoi choi tim ra vi tri ban than ngay lap tuc tren 1 ban do rong 11 khu vuc.
+                float pulse = (Mathf.Sin(Time.GetTicksMsec() / 260f) + 1f) * 0.5f;
+                _mapArea.DrawCircle(p, 8f + pulse * 3f, new Color(0.2f, 0.85f, 1f, 0.22f - pulse * 0.1f));
                 _mapArea.DrawCircle(p, 5f, new Color(0.2f, 0.85f, 1f));
                 _mapArea.DrawCircle(p, 5f, Colors.White, false, 1.5f);
                 DrawLabelPlate(p + new Vector2(9, -4), "Ban");
             }
+
+            DrawVignette();
+        }
+
+        // Lam toi 4 goc ban do (khong dong vao vung giua) - tao chieu sau/cam giac "tam ban do
+        // cu" thay vi 1 hinh chu nhat mau phang deu tap. Dung 1 GradientTexture2D toa tron cache
+        // lai (chi tao 1 lan) ve DE LEN TREN CUNG moi thu khac.
+        private void DrawVignette()
+        {
+            if (_vignetteTex == null)
+            {
+                var gradient = new Gradient();
+                gradient.SetColor(0, new Color(0, 0, 0, 0f));
+                gradient.AddPoint(0.7f, new Color(0, 0, 0, 0f));
+                gradient.SetColor(1, new Color(0, 0, 0, 0.55f));
+                _vignetteTex = new GradientTexture2D
+                {
+                    Gradient = gradient,
+                    Width = 256,
+                    Height = 256,
+                    Fill = GradientTexture2D.FillEnum.Radial,
+                    FillFrom = new Vector2(0.5f, 0.5f),
+                    FillTo = new Vector2(1f, 1f),
+                };
+            }
+            _mapArea.DrawTextureRect(_vignetteTex, new Rect2(Vector2.Zero, MapSize), false);
         }
 
         private void DrawGrid()
@@ -262,10 +322,13 @@ namespace HiepSiVeVuon.UI
         {
             var p = WorldToMap(lm.Pos);
 
-            // Vong tron do canh bao mo, mem (khong dung nhon/dash de tranh phuc tap) quanh cac
-            // khu co quai vat - giup nguoi choi nhan biet NGAY tren ban do truoc khi di toi.
+            // Vong tron do canh bao mo, mem, "tho" nhe theo nhip sin (thay vi 1 vong tinh truoc
+            // day) - de mat nguoi choi tu nhien bi hut ve cac khu nguy hiem tren ban do rong.
             if (lm.Danger)
-                _mapArea.DrawArc(p, 12f, 0f, Mathf.Tau, 28, new Color(0.85f, 0.15f, 0.15f, 0.55f), 1.6f, true);
+            {
+                float pulse = (Mathf.Sin(Time.GetTicksMsec() / 400f + lm.Pos.X) + 1f) * 0.5f;
+                _mapArea.DrawArc(p, 12f + pulse * 2f, 0f, Mathf.Tau, 28, new Color(0.85f, 0.15f, 0.15f, 0.4f + pulse * 0.25f), 1.6f, true);
+            }
 
             switch (lm.Icon)
             {
