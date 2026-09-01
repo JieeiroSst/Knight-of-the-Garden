@@ -1742,6 +1742,21 @@ namespace HiepSiVeVuon.Core
         // chinh that (6h-18h) - xem FarmhandNpc.cs.
         private static readonly Vector3 CowherdHousePos = new(-1100, 0, -250);
 
+        // Ten rieng cho NPC nhan vien trang trai (theo yeu cau "dat ten cho toan bo NPC") - phong
+        // cach Phap, khop voi Jean/Marcel/Antoine/Henri da co san va chu de "vung que Phap" cua
+        // game. Dung PickStaffName(index) de gan TEN THAT thay vi chi hien CHUC VU chung chung
+        // nhu truoc (vd "Nguoi Cham Bo" -> ten rieng, chuc vu chuyen sang loi thoai).
+        private static readonly string[] FarmStaffNames =
+        {
+            "Etienne", "Baptiste", "Severin", "Theodore", "Augustin", "Gaston", "Hubert", "Leon", "Emile", "Fernand",
+            "Gustave", "Adrien", "Cyril", "Denis", "Eugene", "Firmin", "Honore", "Ignace", "Justin", "Lucien",
+            "Modeste", "Norbert", "Octave", "Prosper", "Quentin", "Sylvestre", "Urbain", "Valentin", "Wilfrid", "Alphonse",
+            "Amelie", "Beatrice", "Celestine", "Delphine", "Eugenie", "Fleurette", "Ghislaine", "Henriette", "Isabelle", "Josephine",
+            "Lucienne", "Marguerite", "Nadine", "Odile", "Pauline", "Rosalie", "Solange", "Therese", "Valerie", "Yvette",
+            "Adele", "Blanche", "Colette", "Denise", "Emilie", "Francine", "Genevieve", "Helene", "Irene", "Jacqueline",
+        };
+        private static string PickStaffName(int index) => FarmStaffNames[((index % FarmStaffNames.Length) + FarmStaffNames.Length) % FarmStaffNames.Length];
+
         private void BuildCowherd()
         {
             AddDecor(_smallBarnScene, CowherdHousePos, 12f, 90f, SmallBarnFootprint);
@@ -1750,7 +1765,7 @@ namespace HiepSiVeVuon.Core
 
             var npc = _farmhandScene.Instantiate<FarmhandNpc>();
             npc.NpcId = "cowherd";
-            npc.NpcName = "Nguoi Cham Bo";
+            npc.NpcName = "Etienne";
             npc.DialogueLow = new[] { "Chao, ta la nguoi duoc thue cham dan bo o day. Gio hanh chinh 6 gio sang toi 6 gio toi." };
             npc.DialogueMid = new[] { "Dan bo dao nay khoe re, an uong day du ca." };
             npc.DialogueHigh = new[] { "Cau hay ghe qua chuong bo xem, thinh thoang ta de lai chut sua tuoi day." };
@@ -1828,7 +1843,7 @@ namespace HiepSiVeVuon.Core
 
             var npc = _stablehandScene.Instantiate<StablehandNpc>();
             npc.NpcId = "stablehand";
-            npc.NpcName = "Nguoi Cham Ngua";
+            npc.NpcName = "Baptiste";
             npc.DialogueLow = new[] { "Chao, ta la nguoi duoc thue cham dan ngua o day. Gio hanh chinh 6 gio sang toi 6 gio toi." };
             npc.DialogueMid = new[] { "Dan ngua dao nay khoe re, chay nhanh lam." };
             npc.DialogueHigh = new[] { "Cau muon cuoi ngua thi cu ghe chuong hoi ta nhe." };
@@ -1951,7 +1966,7 @@ namespace HiepSiVeVuon.Core
             if (_poultryKeeperScene == null) { GD.PushError("Khong tai duoc PoultryKeeperNpc.tscn"); return; }
             var npc = _poultryKeeperScene.Instantiate<PoultryKeeperNpc>();
             npc.NpcId = "poultrykeeper";
-            npc.NpcName = "Nguoi Cham Ga";
+            npc.NpcName = "Severin";
             npc.DialogueLow = new[] { "Chao, ta la nguoi duoc thue cham dan ga o day. Gio hanh chinh 6 gio sang toi 6 gio toi." };
             npc.DialogueMid = new[] { "Dan ga dao nay de trung deu lam." };
             npc.DialogueHigh = new[] { "Cau hay ghe qua chuong ga xem, thinh thoang ta de lai vai qua trung tuoi day." };
@@ -2691,7 +2706,7 @@ namespace HiepSiVeVuon.Core
 
             var npc = _farmWorkerScene.Instantiate<FarmWorkerNpc>();
             npc.NpcId = "farmworker";
-            npc.NpcName = "Nguoi Lam Ruong";
+            npc.NpcName = "Theodore";
             npc.DialogueLow = new[] { "Chao, ta duoc thue lam ruong cho anh. Gio hanh chinh 6 gio sang toi 6 gio toi." };
             npc.DialogueMid = new[] { "Canh dong dao nay tot tuoi lam, ta cham soc ky ca." };
             npc.DialogueHigh = new[] { "Thu hoach duoc gi ta deu mang ve giao cho anh day du." };
@@ -2925,7 +2940,7 @@ namespace HiepSiVeVuon.Core
 
             var npc = _estateWorkerScene.Instantiate<EstateWorkerNpc>();
             npc.NpcId = "estateworker";
-            npc.NpcName = "Nguoi Lam Vuon";
+            npc.NpcName = "Augustin";
             npc.DialogueLow = new[] { "Chao, ta phu trach ca khu cuu, heo, vuon cay va to ong o day." };
             npc.DialogueMid = new[] { "Vuon cay va vuon nho dao nay sai qua that." };
             npc.DialogueHigh = new[] { "Thinh thoang ta de lai chut len, mat ong hay ruou vang cho anh." };
@@ -3082,7 +3097,7 @@ namespace HiepSiVeVuon.Core
 
                 var npc = _scheduledFarmNpcScene.Instantiate<ScheduledFarmNpc>();
                 npc.NpcId = $"{r.role}_{i}";
-                npc.NpcName = r.name;
+                npc.NpcName = PickStaffName(35 + i); // +35: tranh trung ten voi 5 vai tro co dinh (0-4) va 28 nguoi cham chuong tap trung (5-32)
                 npc.DialogueLow = r.low;
                 npc.DialogueMid = r.mid;
                 npc.DialogueHigh = r.high;
@@ -3328,7 +3343,7 @@ namespace HiepSiVeVuon.Core
                 {
                     var guard = _palaceGuardScene.Instantiate<PalaceGuardNpc>();
                     guard.NpcId = $"palace_guard_{idx}";
-                    guard.NpcName = $"Cam Ve Quan #{idx + 1}";
+                    guard.NpcName = $"{PickStaffName(idx)} (Cam Ve #{idx + 1})";
                     guard.DialogueLow = dialogueLow;
                     guard.DialogueMid = dialogueMid;
                     guard.DialogueHigh = dialogueHigh;
@@ -3933,7 +3948,7 @@ namespace HiepSiVeVuon.Core
                     {
                         var stablehand = _stablehandScene.Instantiate<StablehandNpc>();
                         stablehand.NpcId = $"district_stablehand_{idx}";
-                        stablehand.NpcName = "Nguoi Cham Ngua";
+                        stablehand.NpcName = PickStaffName(idx + 5); // +5: tranh trung ten voi 5 vai tro co dinh (Etienne...Augustin)
                         stablehand.DialogueLow = new[] { "Toi phu trach mot chuong ngua trong khu chan nuoi." };
                         stablehand.DialogueMid = new[] { "Moi ngay toi di tu day den chuong de cham ngua." };
                         stablehand.DialogueHigh = new[] { "Dan ngua toi cham deu khoe manh ca." };
@@ -3946,7 +3961,7 @@ namespace HiepSiVeVuon.Core
                     {
                         var keeper = _poultryKeeperScene.Instantiate<PoultryKeeperNpc>();
                         keeper.NpcId = $"district_poultrykeeper_{idx}";
-                        keeper.NpcName = "Nguoi Cham Ga";
+                        keeper.NpcName = PickStaffName(idx + 5); // +5: tranh trung ten voi 5 vai tro co dinh (Etienne...Augustin)
                         keeper.DialogueLow = new[] { "Toi phu trach mot chuong ga trong khu chan nuoi." };
                         keeper.DialogueMid = new[] { "Moi ngay toi di tu day den chuong de nhat trung." };
                         keeper.DialogueHigh = new[] { "Trung moi de con am, anh lay ngay di." };
@@ -3959,7 +3974,7 @@ namespace HiepSiVeVuon.Core
                     {
                         var caretaker = _farmhandScene.Instantiate<FarmhandNpc>();
                         caretaker.NpcId = $"district_caretaker_{idx}";
-                        caretaker.NpcName = spec.cow > 0 ? "Nguoi Cham Bo" : "Nguoi Chan Cuu";
+                        caretaker.NpcName = PickStaffName(idx + 5); // +5: tranh trung ten voi 5 vai tro co dinh (Etienne...Augustin)
                         caretaker.DialogueLow = new[] { "Toi phu trach mot chuong trong khu chan nuoi." };
                         caretaker.DialogueMid = new[] { "Moi ngay toi di tu day den chuong de cham soc." };
                         caretaker.DialogueHigh = new[] { "Vat nuoi toi cham deu khoe manh ca." };
