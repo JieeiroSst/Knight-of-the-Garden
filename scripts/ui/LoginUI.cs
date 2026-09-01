@@ -3,90 +3,203 @@ using HiepSiVeVuon.Systems;
 
 namespace HiepSiVeVuon.UI
 {
-    // Man hinh dang nhap MOI - la scene KHOI DAU cua game (thay Main.tscn, xem project.godot
+    // Man hinh dang nhap - la scene KHOI DAU cua game (thay Main.tscn, xem project.godot
     // run/main_scene) vi tu nay moi lan choi/luu deu can dang nhap qua backend truoc (khong con
     // luu file JSON local nua - xem BackendClient.cs). Dang ky/dang nhap thanh cong -> vao Main.tscn.
+    //
+    // Ban DAU dung Panel KICH THUOC CO DINH (400x300) + VBoxContainer dat vi tri thu cong ben
+    // trong - noi dung (title/subtitle/2 truong nhap/2 nut) THUC TE cao hon 300, tran ra ngoai
+    // khung ("be man hinh"). Viet lai dung PanelContainer TU DONG GIAN NO theo noi dung (khong
+    // bao gio tran) + CenterContainer de luon can giua man hinh o moi do phan giai, thay vi
+    // Position co dinh chi dung voi dung 1 kich thuoc thiet ke.
     public partial class LoginUI : Control
     {
         private LineEdit _username;
         private LineEdit _password;
         private Label _status;
-        private Button _loginBtn;
-        private Button _registerBtn;
+        private Button _primaryBtn;
+        private Button _toggleModeBtn;
+        private bool _isRegisterMode = false;
+
+        private static readonly Color GoldAccent = new(0.78f, 0.62f, 0.32f);
+        private static readonly Color CreamText = new(0.95f, 0.92f, 0.85f);
+        private static readonly Color ErrorColor = new(1f, 0.55f, 0.45f);
 
         public override void _Ready()
         {
-            var bg = new ColorRect { Color = new Color(0.05f, 0.06f, 0.08f), AnchorRight = 1, AnchorBottom = 1 };
-            AddChild(bg);
+            AddChild(BuildBackground());
 
-            var panel = new Panel
+            var center = new CenterContainer { AnchorRight = 1, AnchorBottom = 1 };
+            AddChild(center);
+
+            var panel = new PanelContainer { CustomMinimumSize = new Vector2(400, 0) };
+            panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
             {
-                Position = new Vector2(280, 120),
-                CustomMinimumSize = new Vector2(400, 300),
-            };
-            var frameStyle = new StyleBoxFlat
-            {
-                BgColor = new Color(0.11f, 0.09f, 0.07f, 0.97f),
-                BorderColor = new Color(0.75f, 0.62f, 0.35f),
+                BgColor = new Color(0.10f, 0.08f, 0.06f, 0.97f),
+                BorderColor = GoldAccent,
                 BorderWidthTop = 3, BorderWidthBottom = 3, BorderWidthLeft = 3, BorderWidthRight = 3,
-                CornerRadiusTopLeft = 10, CornerRadiusTopRight = 10, CornerRadiusBottomLeft = 10, CornerRadiusBottomRight = 10,
-                ShadowSize = 10, ShadowColor = new Color(0, 0, 0, 0.5f),
-            };
-            panel.AddThemeStyleboxOverride("panel", frameStyle);
-            AddChild(panel);
+                CornerRadiusTopLeft = 14, CornerRadiusTopRight = 14, CornerRadiusBottomLeft = 14, CornerRadiusBottomRight = 14,
+                ShadowSize = 18, ShadowColor = new Color(0, 0, 0, 0.55f),
+                ContentMarginLeft = 34, ContentMarginRight = 34, ContentMarginTop = 30, ContentMarginBottom = 26,
+            });
+            center.AddChild(panel);
 
-            var vb = new VBoxContainer { Position = new Vector2(24, 20), CustomMinimumSize = new Vector2(352, 0) };
-            vb.AddThemeConstantOverride("separation", 6);
+            var vb = new VBoxContainer();
+            vb.AddThemeConstantOverride("separation", 10);
             panel.AddChild(vb);
 
-            var title = new Label { Text = "HIEP SI VE VUON" };
-            title.AddThemeColorOverride("font_color", new Color(0.75f, 0.62f, 0.35f));
-            title.AddThemeFontSizeOverride("font_size", 22);
+            var title = new Label { Text = "HIEP SI VE VUON", HorizontalAlignment = HorizontalAlignment.Center };
+            title.AddThemeColorOverride("font_color", GoldAccent);
+            title.AddThemeFontSizeOverride("font_size", 26);
             vb.AddChild(title);
 
-            var sub = new Label
-            {
-                Text = "Dang nhap de vao trang trai (can server backend dang chay)",
-                AutowrapMode = TextServer.AutowrapMode.Word,
-                CustomMinimumSize = new Vector2(352, 0),
-            };
-            sub.AddThemeColorOverride("font_color", new Color(0.95f, 0.92f, 0.82f, 0.7f));
+            var sub = new Label { Text = "Nong Trai  *  Phieu Luu  *  Chien Dau", HorizontalAlignment = HorizontalAlignment.Center };
+            sub.AddThemeColorOverride("font_color", new Color(CreamText, 0.65f));
+            sub.AddThemeFontSizeOverride("font_size", 13);
             vb.AddChild(sub);
 
             vb.AddChild(new HSeparator());
 
-            vb.AddChild(new Label { Text = "Ten dang nhap (>= 3 ky tu)" });
-            _username = new LineEdit { PlaceholderText = "vd: nongdan01" };
+            vb.AddChild(MakeFieldLabel("Ten dang nhap"));
+            _username = MakeStyledLineEdit("vd: nongdan01");
             vb.AddChild(_username);
 
-            vb.AddChild(new Label { Text = "Mat khau (>= 6 ky tu)" });
-            _password = new LineEdit { PlaceholderText = "mat khau", Secret = true };
-            _password.TextSubmitted += _ => OnLogin();
+            vb.AddChild(MakeFieldLabel("Mat khau"));
+            _password = MakeStyledLineEdit("it nhat 6 ky tu", secret: true);
+            _password.TextSubmitted += _ => Submit(_isRegisterMode);
             vb.AddChild(_password);
 
-            var row = new HBoxContainer();
-            vb.AddChild(row);
+            vb.AddChild(new Control { CustomMinimumSize = new Vector2(0, 4) }); // dem nho truoc nut
 
-            _loginBtn = new Button { Text = "Dang Nhap" };
-            _loginBtn.Pressed += OnLogin;
-            row.AddChild(_loginBtn);
+            _primaryBtn = new Button { Text = "Dang Nhap", CustomMinimumSize = new Vector2(0, 42) };
+            StylePrimaryButton(_primaryBtn);
+            _primaryBtn.Pressed += () => Submit(_isRegisterMode);
+            vb.AddChild(_primaryBtn);
 
-            _registerBtn = new Button { Text = "Dang Ky Tai Khoan Moi" };
-            _registerBtn.Pressed += OnRegister;
-            row.AddChild(_registerBtn);
+            _toggleModeBtn = new Button
+            {
+                Text = "Chua co tai khoan? Bam de dang ky",
+                Flat = true,
+                CustomMinimumSize = new Vector2(0, 28),
+            };
+            _toggleModeBtn.AddThemeColorOverride("font_color", GoldAccent);
+            _toggleModeBtn.AddThemeColorOverride("font_hover_color", new Color(0.9f, 0.75f, 0.45f));
+            _toggleModeBtn.Pressed += ToggleMode;
+            vb.AddChild(_toggleModeBtn);
 
             _status = new Label
             {
                 Text = "",
                 AutowrapMode = TextServer.AutowrapMode.Word,
-                CustomMinimumSize = new Vector2(352, 0),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                CustomMinimumSize = new Vector2(332, 0),
             };
-            _status.AddThemeColorOverride("font_color", new Color(1f, 0.5f, 0.4f));
+            _status.AddThemeColorOverride("font_color", ErrorColor);
             vb.AddChild(_status);
+
+            var footer = new Label
+            {
+                Text = "Gieo hat, nuoi trong, phieu luu - hanh trinh cua ban bat dau tu day.",
+                AutowrapMode = TextServer.AutowrapMode.Word,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                CustomMinimumSize = new Vector2(332, 0),
+            };
+            footer.AddThemeColorOverride("font_color", new Color(CreamText, 0.4f));
+            footer.AddThemeFontSizeOverride("font_size", 11);
+            vb.AddChild(footer);
         }
 
-        private void OnLogin() => Submit(isRegister: false);
-        private void OnRegister() => Submit(isRegister: true);
+        // Nen gradient am (thay ColorRect 1 mau phang) - lay cam hung tu man hinh dang nhap cac
+        // game nong trai/phieu luu khac (Stardew Valley, My Time at Portia...): mau AM/HOANG HON
+        // goi khong khi nong trai, sang dan tu tren xuong duoi de panel giua man hinh noi bat.
+        private static TextureRect BuildBackground()
+        {
+            var gradient = new Gradient();
+            gradient.SetColor(0, new Color(0.22f, 0.18f, 0.10f));
+            gradient.AddPoint(0.55f, new Color(0.14f, 0.12f, 0.08f));
+            gradient.SetColor(1, new Color(0.05f, 0.045f, 0.04f));
+            var tex = new GradientTexture2D
+            {
+                Gradient = gradient,
+                Width = 2,
+                Height = 540,
+                Fill = GradientTexture2D.FillEnum.Linear,
+                FillFrom = new Vector2(0.5f, 0f),
+                FillTo = new Vector2(0.5f, 1f),
+            };
+            return new TextureRect
+            {
+                Texture = tex,
+                StretchMode = TextureRect.StretchModeEnum.Scale,
+                AnchorRight = 1, AnchorBottom = 1,
+            };
+        }
+
+        private static Label MakeFieldLabel(string text)
+        {
+            var l = new Label { Text = text };
+            l.AddThemeColorOverride("font_color", new Color(CreamText, 0.75f));
+            l.AddThemeFontSizeOverride("font_size", 13);
+            return l;
+        }
+
+        private static LineEdit MakeStyledLineEdit(string placeholder, bool secret = false)
+        {
+            var box = new StyleBoxFlat
+            {
+                BgColor = new Color(0.17f, 0.14f, 0.10f),
+                BorderColor = new Color(GoldAccent, 0.5f),
+                BorderWidthTop = 1, BorderWidthBottom = 1, BorderWidthLeft = 1, BorderWidthRight = 1,
+                CornerRadiusTopLeft = 7, CornerRadiusTopRight = 7, CornerRadiusBottomLeft = 7, CornerRadiusBottomRight = 7,
+                ContentMarginLeft = 12, ContentMarginRight = 12, ContentMarginTop = 7, ContentMarginBottom = 7,
+            };
+            var focusBox = (StyleBoxFlat)box.Duplicate();
+            focusBox.BorderColor = GoldAccent;
+            focusBox.BorderWidthTop = 2; focusBox.BorderWidthBottom = 2; focusBox.BorderWidthLeft = 2; focusBox.BorderWidthRight = 2;
+
+            var le = new LineEdit { PlaceholderText = placeholder, Secret = secret, CustomMinimumSize = new Vector2(332, 0) };
+            le.AddThemeStyleboxOverride("normal", box);
+            le.AddThemeStyleboxOverride("focus", focusBox);
+            le.AddThemeColorOverride("font_color", CreamText);
+            le.AddThemeColorOverride("font_placeholder_color", new Color(CreamText, 0.35f));
+            return le;
+        }
+
+        private static void StylePrimaryButton(Button btn)
+        {
+            var normal = new StyleBoxFlat
+            {
+                BgColor = new Color(0.60f, 0.44f, 0.18f),
+                CornerRadiusTopLeft = 8, CornerRadiusTopRight = 8, CornerRadiusBottomLeft = 8, CornerRadiusBottomRight = 8,
+            };
+            var hover = (StyleBoxFlat)normal.Duplicate();
+            hover.BgColor = new Color(0.72f, 0.55f, 0.24f);
+            var pressed = (StyleBoxFlat)normal.Duplicate();
+            pressed.BgColor = new Color(0.50f, 0.36f, 0.14f);
+            var disabled = (StyleBoxFlat)normal.Duplicate();
+            disabled.BgColor = new Color(0.35f, 0.32f, 0.28f);
+
+            btn.AddThemeStyleboxOverride("normal", normal);
+            btn.AddThemeStyleboxOverride("hover", hover);
+            btn.AddThemeStyleboxOverride("pressed", pressed);
+            btn.AddThemeStyleboxOverride("focus", normal);
+            btn.AddThemeStyleboxOverride("disabled", disabled);
+            btn.AddThemeColorOverride("font_color", new Color(0.13f, 0.10f, 0.06f));
+            btn.AddThemeColorOverride("font_hover_color", new Color(0.13f, 0.10f, 0.06f));
+            btn.AddThemeColorOverride("font_pressed_color", new Color(0.13f, 0.10f, 0.06f));
+            btn.AddThemeColorOverride("font_disabled_color", new Color(0.6f, 0.58f, 0.55f));
+            btn.AddThemeFontSizeOverride("font_size", 16);
+        }
+
+        private void ToggleMode()
+        {
+            _isRegisterMode = !_isRegisterMode;
+            _primaryBtn.Text = _isRegisterMode ? "Dang Ky Tai Khoan Moi" : "Dang Nhap";
+            _toggleModeBtn.Text = _isRegisterMode
+                ? "Da co tai khoan? Bam de dang nhap"
+                : "Chua co tai khoan? Bam de dang ky";
+            _status.Text = "";
+        }
 
         private void Submit(bool isRegister)
         {
@@ -121,8 +234,8 @@ namespace HiepSiVeVuon.UI
 
         private void SetBusy(bool busy)
         {
-            _loginBtn.Disabled = busy;
-            _registerBtn.Disabled = busy;
+            _primaryBtn.Disabled = busy;
+            _toggleModeBtn.Disabled = busy;
         }
     }
 }
