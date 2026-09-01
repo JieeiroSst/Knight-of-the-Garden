@@ -317,7 +317,26 @@ namespace HiepSiVeVuon.Core
             // The gioi da dung xong voi trang thai mac dinh - gio moi hoi backend xem nguoi choi
             // dang nhap co ban luu khong (goi MANG bat dong bo, khong the cho dong bo o day nhu
             // doc file truoc day). Neu co, du lieu that se AP LEN TREN sau khi phan hoi ve.
-            SaveSystem.Instance.FetchAndApplySave();
+            SaveSystem.Instance.FetchAndApplySave(RestoreFreeformFarmPlots);
+        }
+
+        // O dat CUOC TU DO (xem FarmPlot.TryTillFreeform) KHONG nam trong luoi 12x6 co dinh
+        // (BuildFarm) nen KHONG duoc tu tao lai moi lan choi nhu cac o luoi - phai tu SPAWN lai
+        // node cho tung o da luu, sau khi save ve toi (goi 1 LAN, sau FetchAndApplySave).
+        private void RestoreFreeformFarmPlots()
+        {
+            foreach (var t in SaveSystem.Instance.FarmState)
+            {
+                if (!t.Freeform) continue;
+                var pos = new Vector3(t.PosX, 0, t.PosZ);
+                var plot = _farmScene.Instantiate<FarmPlot>();
+                plot.GridX = -1;
+                plot.GridY = -1;
+                plot.FreeformPos = pos;
+                plot.Position = pos;
+                AddChild(plot);
+                plot.ApplyState(t);
+            }
         }
 
         public override void _Process(double delta)
@@ -1503,7 +1522,7 @@ namespace HiepSiVeVuon.Core
             var blacksmith = _npcScene.Instantiate<NPC>();
             blacksmith.NpcId = "blacksmith";
             blacksmith.NpcName = "Tho Ren";
-            blacksmith.ShopItems = new[] { "sword", "shield", "ring", "pickaxe" };
+            blacksmith.ShopItems = new[] { "sword", "shield", "ring", "pickaxe", "hoe" };
             blacksmith.DialogueLow = new[] { "Muon vu khi tot thi tim dung nguoi roi day. Nhung ta chua quen cau lam." };
             blacksmith.DialogueMid = new[] { "Thep tot can lua tot. Cau ghe thuong xuyen nhi." };
             blacksmith.DialogueHigh = new[] { "Vi tinh ban, ta se ren cho cau mon do ngon nhat xuong." };
@@ -5253,6 +5272,7 @@ namespace HiepSiVeVuon.Core
             Inventory.Instance.AddItem("tomato_seed", 2);
             Inventory.Instance.AddItem("potion", 2);
             Inventory.Instance.AddItem("sword", 1);
+            Inventory.Instance.AddItem("hoe", 1);
             Inventory.Instance.Equip("sword");
         }
     }

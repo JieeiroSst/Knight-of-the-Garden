@@ -13,8 +13,12 @@ namespace HiepSiVeVuon.Entities
 
     public partial class FarmPlot : StaticBody3D
     {
+        // O luoi co dinh (Main.BuildFarm, 12x6): GridX/GridY >= 0. O CUOC TU DO (Player dung Cuoc
+        // dat - xem TryTillFreeform): GridX=GridY=-1, vi tri that luu trong FreeformPos - dung
+        // lam khoa luu/nap thay cho GridX/GridY (xem SyncToSave/ApplyState).
         public int GridX;
         public int GridY;
+        public Vector3 FreeformPos;
         [Export] public SoilType Soil = SoilType.Normal;
 
         private string _cropId = null;   // hat giong dang trong -> se ra crop
@@ -35,7 +39,8 @@ namespace HiepSiVeVuon.Entities
         private MeshInstance3D _soilMesh;
         private Sprite3D _cropSprite;
 
-        // Hat giong mac dinh de demo (khong co UI chon giong)
+        // Hat giong MAC DINH khi khong co SeedSelectUI trong scene (fallback an toan) - binh
+        // thuong nguoi choi TU CHON giong tu tui do qua SeedSelectUI (xem RequestPlant()).
         [Export] public string DefaultSeedId = "pumpkin_seed";
         [Export] public string DefaultFertilizerId = "fertilizer_basic";
         [Export] public string DefaultPesticideId = "pesticide";
@@ -80,32 +85,36 @@ namespace HiepSiVeVuon.Entities
             UpdateVisual();
         }
 
+        // Chi khop cac o dat trong LUOI CO DINH (Freeform==false) - o dat CUOC TU DO (xem
+        // TryTillFreeform) duoc Main.cs tu spawn + goi ApplyState() truc tiep sau khi nap save,
+        // KHONG di qua duong nay (vi X/Y mac dinh la 0 se trung voi o luoi that o (0,0)).
         private void RestoreFromSave()
         {
             foreach (var t in SaveSystem.Instance.FarmState)
             {
-                if (t.X == GridX && t.Y == GridY)
+                if (!t.Freeform && t.X == GridX && t.Y == GridY)
                 {
-                    _cropId = t.CropId;
-                    _growStage = t.GrowStage;
-                    _watered = t.Watered;
-                    _daysUnwatered = t.DaysUnwatered;
-                    _fertilized = t.Fertilized;
-                    _lastCropId = t.LastCropId;
-                    _pestAfflicted = t.PestAfflicted;
-                    _pestDays = t.PestDays;
-                    _wasPestDamaged = t.WasPestDamaged;
-                    _qualityScore = t.QualityScore;
-                    if (_cropId != null)
-                    {
-                        var seed = ItemDatabase.Instance.GetItem(GuessSeedFor(_cropId));
-                        _growsInto = _cropId;
-                    }
+                    ApplyState(t);
+                    return;
                 }
             }
         }
 
-        private string GuessSeedFor(string cropId) => cropId + "_seed";
+        public void ApplyState(SaveSystem.FarmTileState t)
+        {
+            _cropId = t.CropId;
+            _growStage = t.GrowStage;
+            _watered = t.Watered;
+            _daysUnwatered = t.DaysUnwatered;
+            _fertilized = t.Fertilized;
+            _lastCropId = t.LastCropId;
+            _pestAfflicted = t.PestAfflicted;
+            _pestDays = t.PestDays;
+            _wasPestDamaged = t.WasPestDamaged;
+            _qualityScore = t.QualityScore;
+            if (_cropId != null) _growsInto = _cropId;
+            UpdateVisual();
+        }
 
         // Thuoc tinh DOC-ONLY cho Utility AI (xem UtilityAi.cs) cham diem tu ben ngoai - truoc day
         // KHONG co cach nao hoi "o nay can gi" ma khong goi thang UseOn() (luon THUC THI hanh
@@ -139,7 +148,10 @@ namespace HiepSiVeVuon.Entities
         {
             if (_cropId == null)
             {
-                Plant(DefaultSeedId);
+                // NPC lam thue KHONG BAO GIO goi UseOn() tren o dat trong (loc qua IsEmpty truoc
+                // - xem FarmWorkerNpc/ScheduledFarmNpc), nen mo UI o day AN TOAN, khong lam ket
+                // GOAP cua NPC (chi Player moi thuc su bam Space vao o dat trong).
+                RequestPlant();
             }
             else if (_growStage >= _growDays)
             {
@@ -180,7 +192,18 @@ namespace HiepSiVeVuon.Entities
             SyncToSave();
         }
 
-        private void Plant(string seedId)
+        // Player bam Space tren o dat trong -> mo SeedSelectUI (danh sach giong dang co trong
+        // tui do) thay vi tu dong trong 1 giong co dinh. Neu UI chua san sang (vd thieu node
+        // trong scene) -> fallback an toan ve DefaultSeedId, giu game khong bi "cham".
+        private void RequestPlant()
+        {
+            var ui = GetTree().GetFirstNodeInGroup("seed_select_ui") as HiepSiVeVuon.UI.SeedSelectUI;
+            if (ui != null) ui.Open(this);
+            else Plant(DefaultSeedId);
+        }
+
+        // public: SeedSelectUI goi truc tiep sau khi nguoi choi chon giong tu tui do.
+        public void Plant(string seedId)
         {
             var seed = ItemDatabase.Instance.GetItem(seedId);
             if (seed == null || seed.Type != ItemType.Seed)
@@ -248,6 +271,10 @@ namespace HiepSiVeVuon.Entities
             _wasPestDamaged = false;
             GD.Print($"Da trong {seed.Name}.");
             UpdateVisual();
+            // Goi rieng o day (KHONG dua vao SyncToSave() cuoi UseOn()) vi RequestPlant() mo UI
+            // BAT DONG BO - luc UseOn() ket thuc, Plant() CHUA chay, phai tu luu ngay khi PLANT
+            // THAT SU xay ra (tu SeedSelectUI, khong di qua UseOn() nua).
+            SyncToSave();
         }
 
         private void Harvest()
@@ -276,6 +303,7 @@ namespace HiepSiVeVuon.Entities
             _wasPestDamaged = false;
             _qualityScore = 0f;
             UpdateVisual();
+            SyncToSave();
         }
 
         // Chon ban "thuong/tot/cao cap" cua san pham dua vao _qualityScore tich luy suot chu ky
@@ -418,9 +446,30 @@ namespace HiepSiVeVuon.Entities
             return null;
         }
 
-        private void SyncToSave()
+        // public: Plant()/Harvest() tu goi truc tiep (thay vi chi dua vao UseOn()), va
+        // TryTillFreeform() can luu ngay trang thai "moi cuoc, chua trong" cho o dat tu do.
+        public void SyncToSave()
         {
-            SaveSystem.Instance.FarmState.RemoveAll(t => t.X == GridX && t.Y == GridY);
+            if (GridX < 0)
+            {
+                // O dat CUOC TU DO: khoa luu la VI TRI (khong phai X/Y, luon la -1/-1 cho moi o
+                // tu do) - va LUON luu (ke ca chua trong gi) vi ban than viec "da cuoc" o day da
+                // la 1 trang thai can nho, khac o luoi co dinh (luon duoc BuildFarm() tao lai).
+                SaveSystem.Instance.FarmState.RemoveAll(t =>
+                    t.Freeform && t.PosX == FreeformPos.X && t.PosZ == FreeformPos.Z);
+                SaveSystem.Instance.FarmState.Add(new SaveSystem.FarmTileState
+                {
+                    Freeform = true, PosX = FreeformPos.X, PosZ = FreeformPos.Z,
+                    CropId = _cropId, GrowStage = _growStage, Watered = _watered,
+                    DaysUnwatered = _daysUnwatered, Fertilized = _fertilized,
+                    LastCropId = _lastCropId, PestAfflicted = _pestAfflicted,
+                    PestDays = _pestDays, WasPestDamaged = _wasPestDamaged,
+                    QualityScore = _qualityScore,
+                });
+                return;
+            }
+
+            SaveSystem.Instance.FarmState.RemoveAll(t => !t.Freeform && t.X == GridX && t.Y == GridY);
             // Luu ca khi o dat dang TRONG (_cropId == null) neu van con _lastCropId (lich su
             // luan canh) - neu khong, sau 1 lan luu/nap lai, o dat vua thu hoach se "quen" mat
             // da trong gi lan truoc, mat het thuong/phat luan canh cho lan trong tiep theo.
@@ -428,7 +477,7 @@ namespace HiepSiVeVuon.Entities
             {
                 SaveSystem.Instance.FarmState.Add(new SaveSystem.FarmTileState
                 {
-                    X = GridX, Y = GridY, CropId = _cropId,
+                    Freeform = false, X = GridX, Y = GridY, CropId = _cropId,
                     GrowStage = _growStage, Watered = _watered,
                     DaysUnwatered = _daysUnwatered, Fertilized = _fertilized,
                     LastCropId = _lastCropId, PestAfflicted = _pestAfflicted,
@@ -436,6 +485,48 @@ namespace HiepSiVeVuon.Entities
                     QualityScore = _qualityScore,
                 });
             }
+        }
+
+        // ==== Cuoc dat MOI tren co (Player dung item "hoe") ====
+
+        // Khop voi FarmSpacing (private, o Main.BuildFarm) de o dat tu do thang hang thi giac voi
+        // luoi co dinh - khong tham chieu truc tiep duoc vi FarmSpacing la private trong Main.
+        private const float FreeformTileSize = 84f;
+        private static PackedScene _plotScene;
+
+        public static Vector3 SnapToGrid(Vector3 pos) => new Vector3(
+            Mathf.Round(pos.X / FreeformTileSize) * FreeformTileSize, 0,
+            Mathf.Round(pos.Z / FreeformTileSize) * FreeformTileSize);
+
+        // Thu cuoc 1 o dat MOI tai worldPos (se duoc snap ve luoi FreeformTileSize cho thang
+        // hang). Tra ve null neu qua gan 1 o dat khac (luoi co dinh HOAC tu do) hoac nam trong 1
+        // ExclusionZone (nuoc/toa nha/tuong trai/ham mo... - xem WorldStreamer.ExclusionZones) -
+        // tranh cuoc dat de len nhung noi khong hop ly.
+        public static FarmPlot TryTillFreeform(Vector3 worldPos, Node parent)
+        {
+            Vector3 snapped = SnapToGrid(worldPos);
+
+            foreach (Node n in parent.GetTree().GetNodesInGroup("farm_plots"))
+            {
+                if (n is FarmPlot p && IsInstanceValid(p)
+                    && p.GlobalPosition.DistanceTo(snapped) < FreeformTileSize * 0.7f)
+                    return null;
+            }
+            foreach (var (center, radius) in WorldStreamer.ExclusionZones)
+            {
+                if (new Vector2(snapped.X - center.X, snapped.Z - center.Z).Length() < radius)
+                    return null;
+            }
+
+            _plotScene ??= GD.Load<PackedScene>("res://scenes/FarmPlot.tscn");
+            var plot = _plotScene.Instantiate<FarmPlot>();
+            plot.GridX = -1;
+            plot.GridY = -1;
+            plot.FreeformPos = snapped;
+            plot.Position = snapped;
+            parent.AddChild(plot);
+            plot.SyncToSave();
+            return plot;
         }
     }
 }

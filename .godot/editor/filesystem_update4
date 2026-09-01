@@ -54,3 +54,6 @@ res://scripts/ui/SettingsUI.cs
 res://scripts/systems/BackendClient.cs
 res://scripts/ui/LoginUI.cs
 res://scripts/debug/DebugRegisterTest.cs
+res://scripts/ui/SeedSelectUI.cs
+res://scripts/systems/Backpack.cs
+res://scripts/ui/BackpackUI.cs

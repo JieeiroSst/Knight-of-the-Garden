@@ -11,10 +11,11 @@ namespace HiepSiVeVuon.UI
         {
             ("WASD", "Di chuyen"),
             ("Chuot / J", "Tan cong"),
-            ("Space", "Dung cong cu (cay/tuoi/thu hoach/cuoc quang...)"),
+            ("Space", "Dung cong cu (cuoc dat moi/trong/tuoi/thu hoach/cuoc quang...)"),
             ("E", "Tuong tac / Mo cua / Cau thang"),
             ("R", "Cuoi / Xuong ngua"),
             ("I", "Tui do"),
+            ("B", "Balo (kho chua them 50 o - chuyen do qua lai voi tui do)"),
             ("M", "Ban do the gioi"),
             ("H", "Cai dat / Huong dan (man hinh nay)"),
             ("F5", "Luu game"),
@@ -26,8 +27,8 @@ namespace HiepSiVeVuon.UI
 
             var panel = new Panel
             {
-                Position = new Vector2(260, 100),
-                CustomMinimumSize = new Vector2(420, 360),
+                Position = new Vector2(260, 60),
+                CustomMinimumSize = new Vector2(420, 440),
             };
             var frameStyle = new StyleBoxFlat
             {
@@ -54,16 +55,23 @@ namespace HiepSiVeVuon.UI
             sub.AddThemeColorOverride("font_color", new Color(0.95f, 0.92f, 0.82f, 0.7f));
             vb.AddChild(sub);
 
+            // Danh sach phim tat gio da dai hon 420x360 goc (them Balo/Cuoc dat) - cuon RIENG
+            // trong 1 vung cao co dinh thay vi de tran ra ngoai khung panel.
+            var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(372, 280) };
+            vb.AddChild(scroll);
+            var listVb = new VBoxContainer { CustomMinimumSize = new Vector2(360, 0) };
+            scroll.AddChild(listVb);
+
             foreach (var (key, action) in Controls)
             {
                 var row = new HBoxContainer();
-                vb.AddChild(row);
+                listVb.AddChild(row);
 
                 var keyLabel = new Label { Text = $"[{key}]", CustomMinimumSize = new Vector2(90, 0) };
                 keyLabel.AddThemeColorOverride("font_color", new Color(1f, 0.82f, 0.15f));
                 row.AddChild(keyLabel);
 
-                var actionLabel = new Label { Text = action, AutowrapMode = TextServer.AutowrapMode.Word, CustomMinimumSize = new Vector2(280, 0) };
+                var actionLabel = new Label { Text = action, AutowrapMode = TextServer.AutowrapMode.Word, CustomMinimumSize = new Vector2(260, 0) };
                 actionLabel.AddThemeColorOverride("font_color", new Color(0.95f, 0.92f, 0.82f));
                 row.AddChild(actionLabel);
             }

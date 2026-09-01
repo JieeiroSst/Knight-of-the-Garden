@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://bdebugregtest01"]
-
-[ext_resource type="Script" path="res://scripts/debug/DebugRegisterTest.cs" id="1"]
-
-[node name="DebugRegisterTest" type="Node"]
-script = ExtResource("1")

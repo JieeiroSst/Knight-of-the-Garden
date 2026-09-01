@@ -395,7 +395,15 @@ namespace HiepSiVeVuon.Entities
                     if (d < bestTree) { bestTree = d; nearestTree = t; }
                 }
             }
-            nearestTree?.UseOn();
+            if (nearestTree != null) { nearestTree.UseOn(); return; }
+
+            // Khong co gi gan de dung - neu dang trang bi Cuoc (hoe), thu cuoc dat MOI ngay
+            // truoc mat (xem FarmPlot.TryTillFreeform) de mo rong nong trai tu do.
+            if (Inventory.Instance.EquippedTool == "hoe")
+            {
+                var tilled = FarmPlot.TryTillFreeform(GlobalPosition + _facing * 42f, GetTree().CurrentScene);
+                GD.Print(tilled != null ? "Da cuoc dat moi." : "Khong the cuoc dat o day.");
+            }
         }
 
         private void OnDied()

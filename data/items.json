@@ -24,6 +24,17 @@
     "Damage": 12
   },
   {
+    "Id": "hoe",
+    "Name": "Cuoc Dat",
+    "Description": "Dung de cuoc dat MOI tren co thanh dat trong duoc, o bat ky dau ngoai luoi ruong co san - trang bi tu tui do de dung.",
+    "Type": "Tool",
+    "Rarity": "Common",
+    "MaxStack": 1,
+    "SellPrice": 25,
+    "BuyPrice": 60,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
     "Id": "dong_tho",
     "Name": "Dong Tho",
     "Description": "Quang dong tho, dao duoc tu tang 1 ham mo.",

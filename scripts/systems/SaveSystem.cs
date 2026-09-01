@@ -36,6 +36,9 @@ namespace HiepSiVeVuon.Systems
             public string EquippedArmor { get; set; }
             public string EquippedTool { get; set; }
 
+            // Balo - tui do THU HAI, 50 o (xem Backpack.cs) - cung mau SavedStack voi Inventory.
+            public List<SavedStack> Backpack { get; set; } = new();
+
             public List<string> ActiveQuests { get; set; } = new();
             public List<int> ActiveProgress { get; set; } = new();
             public List<string> CompletedQuests { get; set; } = new();
@@ -67,6 +70,14 @@ namespace HiepSiVeVuon.Systems
             public int PestDays { get; set; }
             public bool WasPestDamaged { get; set; }
             public float QualityScore { get; set; }
+
+            // O dat CUOC TU DO ngoai luoi 12x6 co san (Player dung item "hoe" - xem
+            // FarmPlot.TryTillFreeform): Freeform=true dung PosX/PosZ (vi tri THAT trong the
+            // gioi) lam khoa thay vi X/Y (luon la -1/-1, khong dung). Mac dinh Freeform=false cho
+            // ban luu CU (System.Text.Json tu dien false/0 khi thieu field).
+            public bool Freeform { get; set; }
+            public float PosX { get; set; }
+            public float PosZ { get; set; }
         }
 
         public void SaveGame()
@@ -84,6 +95,8 @@ namespace HiepSiVeVuon.Systems
 
             foreach (var s in Inventory.Instance.Slots)
                 data.Inventory.Add(new SavedStack { Id = s.ItemId, Count = s.Count });
+            foreach (var s in Backpack.Instance.Slots)
+                data.Backpack.Add(new SavedStack { Id = s.ItemId, Count = s.Count });
 
             foreach (var kv in QuestSystem.Instance.Active)
             {
@@ -150,6 +163,8 @@ namespace HiepSiVeVuon.Systems
 
             Inventory.Instance.Clear();
             foreach (var s in data.Inventory) Inventory.Instance.AddItem(s.Id, s.Count);
+            Backpack.Instance.Clear();
+            foreach (var s in data.Backpack) Backpack.Instance.AddItem(s.Id, s.Count);
             if (!string.IsNullOrEmpty(data.EquippedWeapon)) Inventory.Instance.Equip(data.EquippedWeapon);
             if (!string.IsNullOrEmpty(data.EquippedArmor)) Inventory.Instance.Equip(data.EquippedArmor);
             if (!string.IsNullOrEmpty(data.EquippedTool)) Inventory.Instance.Equip(data.EquippedTool);
