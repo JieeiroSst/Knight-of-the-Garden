@@ -3338,15 +3338,15 @@ namespace HiepSiVeVuon.Core
 			// Quy hoach lai: 4 coi xay gio TRONG tuong gio thuoc Khu San Xuat (che bien) - tim gan
 			// OutbuildingsAnchor thay vi ngau nhien khap tuong da.
 			//
-			// searchRadius=700 (truoc day 500): OutbuildingsAnchor(850,280) chi cach tam nong trai
-			// (202,390) ~657 don vi - GAN HON ca ban kinh 780 cua vung dat rieng nong trai, nghia
-			// la CHINH diem neo da nam trong vung cam do. Voi 500, phan lon o vuong tim kiem
-			// (~300 quanh tam sau khi tru margin) van con nam trong 780 do, khong con du cho cho 4
-			// coi xay gio 140-ban-kinh khong cham nhau (xem canh bao "khong tim duoc cho hoan toan
-			// sau 600 lan"). 700 mo rong vung tim ra xa hon nong trai, du cho de 4 cai xep vao.
+			// searchRadius=1000 (truoc day 500 roi 700, van con canh bao cham nho ~7-41): OutbuildingsAnchor
+			// (850,280) chi cach tam nong trai (202,390) ~657 don vi - GAN HON ca ban kinh 780 cua
+			// vung dat rieng nong trai, nghia la CHINH diem neo da nam trong vung cam do, "an" mat
+			// phan lon dat phia Tay cua khu tim kiem. 700 van chua du rong de 4 coi xay gio
+			// 140-ban-kinh xep het KHONG CHAM NHAU trong phan dat con lai (chu yeu phia Dong). 1000
+			// van an toan (FarmWallHalfSize=3162.5, con rat xa moi cham tuong).
 			for (int i = 0; i < 4; i++)
 			{
-				var pos = FindOpenSpot(avoid, footprintRadius, rng, searchCenter: OutbuildingsAnchor, searchRadius: 700f);
+				var pos = FindOpenSpot(avoid, footprintRadius, rng, searchCenter: OutbuildingsAnchor, searchRadius: 1000f);
 				avoid.Add((pos, footprintRadius));
 				_extraPenZones.Add((pos, footprintRadius));
 				float rotY = rng.RandfRange(0f, 360f);
