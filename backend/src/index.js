@@ -1,35 +1,44 @@
-require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
-const { pool } = require("./db");
+// Entrypoint MONG: chi lo khoi dong (chay migration + mo cong lang nghe) va tat mem - toan bo
+// logic ung dung that su nam trong app.js/routes/controllers/services/repositories.
+const { env } = require("./config/env");
+const { createApp } = require("./app");
+const { pool } = require("./db/pool");
+const { runMigrations } = require("./db/migrate");
+const { logger } = require("./utils/logger");
 
-const authRoutes = require("./routes/auth");
-const saveRoutes = require("./routes/save");
-
-const app = express();
-app.use(cors());
-app.use(express.json({ limit: "2mb" })); // save co the kha lon (nhieu o dat/tui do), noi rong gioi han mac dinh 100kb
-
-app.get("/health", (_req, res) => res.json({ ok: true }));
-app.use("/api", authRoutes);
-app.use("/api/save", saveRoutes);
-
-const port = process.env.PORT || 3000;
+let server;
 
 async function start() {
-  // Tu tao bang neu chua co (doc db/schema.sql) - de "docker compose up" chay ngay lan dau,
-  // khong can nguoi dung tu chay migration thu cong.
-  const fs = require("fs");
-  const path = require("path");
-  const schema = fs.readFileSync(path.join(__dirname, "..", "db", "schema.sql"), "utf8");
-  await pool.query(schema);
+  await runMigrations();
 
-  app.listen(port, () => {
-    console.log(`Backend Hiep Si Ve Vuon dang chay tai http://localhost:${port}`);
+  const app = createApp();
+  server = app.listen(env.PORT, () => {
+    logger.info({ port: env.PORT, env: env.NODE_ENV }, "Backend Hiep Si Ve Vuon da khoi dong");
   });
 }
 
+// Tat mem (graceful shutdown): khi chay sau orchestrator (Kubernetes/ECS...), moi lan trien khai
+// ban moi hoac tu dong giam so instance (autoscaling) deu gui SIGTERM truoc khi giet container.
+// Neu khong xu ly, cac request DANG XU LY DO DANG bi cat ngang giua chung (nguoi choi co the mat
+// du lieu dang luu). Doi request hien tai xong roi moi dong ket noi DB + thoat.
+function shutdown(signal) {
+  logger.info({ signal }, "Nhan tin hieu tat, dang tat mem...");
+  if (!server) {
+    process.exit(0);
+    return;
+  }
+  server.close(async () => {
+    await pool.end();
+    logger.info("Da dong het ket noi, thoat.");
+    process.exit(0);
+  });
+  // Du phong: neu con request "treo" qua lau, buoc thoat sau 10s thay vi cho vo han.
+  setTimeout(() => process.exit(1), 10000).unref();
+}
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
+
 start().catch((err) => {
-  console.error("Khong khoi dong duoc backend:", err);
+  logger.error({ err }, "Khong khoi dong duoc backend");
   process.exit(1);
 });

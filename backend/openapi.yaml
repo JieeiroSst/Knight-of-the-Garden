@@ -1,0 +1,165 @@
+openapi: 3.0.3
+info:
+  title: Hiep Si Ve Vuon - Backend API
+  description: >
+    Backend luu tru game (dang ky/dang nhap + luu-nap ban luu cua CHINH nguoi choi dang dang
+    nhap). Game don nguoi choi - khong co API lien quan giua nhieu nguoi choi voi nhau.
+  version: "2.0.0"
+servers:
+  - url: http://localhost:3000
+    description: Local (docker compose)
+
+paths:
+  /health:
+    get:
+      summary: Liveness - process con song khong
+      tags: [Health]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OkResponse" }
+
+  /health/ready:
+    get:
+      summary: Readiness - instance co san sang nhan luu luong khong (co kiem tra Postgres)
+      tags: [Health]
+      responses:
+        "200":
+          description: San sang
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OkResponse" }
+        "503":
+          description: Chua san sang (vd mat ket noi database)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /api/register:
+    post:
+      summary: Tao tai khoan moi
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Credentials" }
+      responses:
+        "201":
+          description: Tao thanh cong, tra ve JWT
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TokenResponse" }
+        "400":
+          description: Du lieu khong hop le (username/password sai dinh dang)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "409":
+          description: Username da ton tai
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "429":
+          description: Qua nhieu lan thu (rate limit)
+
+  /api/login:
+    post:
+      summary: Dang nhap
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Credentials" }
+      responses:
+        "200":
+          description: Dang nhap thanh cong, tra ve JWT
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TokenResponse" }
+        "401":
+          description: Sai username hoac password
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "429":
+          description: Qua nhieu lan thu (rate limit)
+
+  /api/save:
+    get:
+      summary: Lay ban luu cua nguoi choi dang dang nhap
+      tags: [Save]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Co ban luu
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SaveResponse" }
+        "401":
+          description: Thieu/sai token
+        "404":
+          description: Nguoi choi moi, chua tung luu
+    put:
+      summary: Ghi de (upsert) ban luu duy nhat cua nguoi choi dang dang nhap
+      tags: [Save]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SaveRequest" }
+      responses:
+        "200":
+          description: Da luu
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OkResponse" }
+        "400":
+          description: Thieu du lieu luu
+        "401":
+          description: Thieu/sai token
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Credentials:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string, minLength: 3, maxLength: 32 }
+        password: { type: string, minLength: 6, maxLength: 200 }
+    TokenResponse:
+      type: object
+      properties:
+        token: { type: string }
+    SaveRequest:
+      type: object
+      required: [data]
+      properties:
+        data:
+          description: Toan bo SaveData (JSON tuy y, xuat tu Godot SaveSystem.SaveData)
+          type: object
+    SaveResponse:
+      type: object
+      properties:
+        data: { type: object }
+        updatedAt: { type: string, format: date-time }
+    OkResponse:
+      type: object
+      properties:
+        ok: { type: boolean }
+    ErrorResponse:
+      type: object
+      properties:
+        error: { type: string }
+        details:
+          type: array
+          items: { type: string }
