@@ -3337,9 +3337,16 @@ namespace HiepSiVeVuon.Core
 
 			// Quy hoach lai: 4 coi xay gio TRONG tuong gio thuoc Khu San Xuat (che bien) - tim gan
 			// OutbuildingsAnchor thay vi ngau nhien khap tuong da.
+			//
+			// searchRadius=700 (truoc day 500): OutbuildingsAnchor(850,280) chi cach tam nong trai
+			// (202,390) ~657 don vi - GAN HON ca ban kinh 780 cua vung dat rieng nong trai, nghia
+			// la CHINH diem neo da nam trong vung cam do. Voi 500, phan lon o vuong tim kiem
+			// (~300 quanh tam sau khi tru margin) van con nam trong 780 do, khong con du cho cho 4
+			// coi xay gio 140-ban-kinh khong cham nhau (xem canh bao "khong tim duoc cho hoan toan
+			// sau 600 lan"). 700 mo rong vung tim ra xa hon nong trai, du cho de 4 cai xep vao.
 			for (int i = 0; i < 4; i++)
 			{
-				var pos = FindOpenSpot(avoid, footprintRadius, rng, searchCenter: OutbuildingsAnchor, searchRadius: 500f);
+				var pos = FindOpenSpot(avoid, footprintRadius, rng, searchCenter: OutbuildingsAnchor, searchRadius: 700f);
 				avoid.Add((pos, footprintRadius));
 				_extraPenZones.Add((pos, footprintRadius));
 				float rotY = rng.RandfRange(0f, 360f);
@@ -5043,7 +5050,14 @@ namespace HiepSiVeVuon.Core
 		private void BuildPenCaretakerDorm(List<(Vector3 c, float r)> avoid, RandomNumberGenerator rng,
 			List<(Vector3 pos, (string tag, float half, int cow, int sheep, int pig, int horse, int chicken) spec)> pens)
 		{
-			var dormPos = FindOpenSpot(avoid, 200f, rng, searchCenter: HousingZoneAnchor, searchRadius: 900f);
+			// avoid[] duoc TRUYEN VAO tu BuildAnimalPenDistrict (chi loai LivestockZoneOrigin) -
+			// van con nguyen entry (HousingZoneAnchor, 900f), trong khi ham nay tim cho QUANH
+			// CHINH HousingZoneAnchor -> cung loi tu-tham-chieu da sua o cac ham khac (xem
+			// KnownOccupiedZonesExcluding), phai loc rieng o day vi avoid[] la tham so nhan vao
+			// chu khong tu goi KnownOccupiedZones().
+			var dormAvoid = new List<(Vector3 c, float r)>();
+			foreach (var z in avoid) if (z.c != HousingZoneAnchor) dormAvoid.Add(z);
+			var dormPos = FindOpenSpot(dormAvoid, 200f, rng, searchCenter: HousingZoneAnchor, searchRadius: 900f);
 			_caretakerDormPos = dormPos;
 			AddDecor(_farmhouseScene, dormPos, 60f, 90f, FarmhouseFootprint);
 			var interior = AddBuildingEntrance(dormPos, 90f, 110f, 80f, RoomKind.Village);
