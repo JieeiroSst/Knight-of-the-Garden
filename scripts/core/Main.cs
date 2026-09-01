@@ -4757,6 +4757,23 @@ namespace HiepSiVeVuon.Core
 			return zones;
 		}
 
+		// Nhu KnownOccupiedZones() nhung LOAI BO zone co tam == excludeCenter - BAT BUOC dung
+		// thay vi goi KnownOccupiedZones() truc tiep khi mot he thong dat vi tri BEN TRONG chinh
+		// vung dat rieng cua no (vd BuildAnimalPenDistrict dat chuong GAN LivestockZoneOrigin,
+		// trong khi KnownOccupiedZones() cung co san entry (LivestockZoneOrigin, 2100f) - entry
+		// do CHI danh cho HE THONG KHAC biet ma tranh xa ca khu). Neu khong loai bo, MOI vi tri
+		// ung vien deu tu bi tinh la "cham" chinh vung dat rieng cua minh (khoang cach toi tam
+		// luon nho hon ban kinh du phong+can thiet, khong bao gio thoat duoc ve mat toan hoc),
+		// khien FindOpenSpot luon that bai sau 600 lan thu va phai dung ung vien du phong chat
+		// luong kem (xem canh bao "khong tim duoc cho hoan toan trong sau 600 lan").
+		private List<(Vector3 c, float r)> KnownOccupiedZonesExcluding(Vector3 excludeCenter)
+		{
+			var zones = new List<(Vector3 c, float r)>();
+			foreach (var z in KnownOccupiedZones())
+				if (z.c != excludeCenter) zones.Add(z);
+			return zones;
+		}
+
 		// Mang luoi duong mon noi CAC KHU VUC CHINH cua nong trai voi nhau (theo yeu cau "co
 		// duong di cho NPC va player di xung quanh trang trai") - dung AddPath (duong dat mon
 		// don gian, KHONG dung AddRoad vi ham do gan them 1 cai cau go moi doan, hop cho duong
@@ -4866,7 +4883,16 @@ namespace HiepSiVeVuon.Core
 		// qua - dam bao KHONG BAO GIO mat mot chuong nao ca.
 		private void BuildAnimalPenDistrict()
 		{
-			var avoid = KnownOccupiedZones();
+			// KnownOccupiedZones() bao gom CA "(LivestockZoneOrigin, 2100f)" - vung dat rieng cho
+			// CHINH khu chan nuoi nay, dung de CAC HE THONG KHAC (duong mon, cong trinh rieng le...)
+			// biet ma tranh xa. Neu giu nguyen entry do trong avoid[] o day, MOI chuong deu bi coi
+			// la "cham" chinh vung dat rieng cua no (tam chuong luon nam GAN LivestockZoneOrigin,
+			// khong the nao cach xa 2100+ban kinh chuong) - day la nguyen nhan THAT SU khien
+			// FindOpenSpot lien tuc bao "khong tim duoc cho hoan toan" (khong phai do cellSpacing).
+			// Phai LOAI BO entry tu-tham-chieu nay truoc khi dung lam avoid[] cho chinh khu vuc do.
+			var avoid = new List<(Vector3 c, float r)>();
+			foreach (var z in KnownOccupiedZones())
+				if (z.c != LivestockZoneOrigin) avoid.Add(z);
 			var rng = new RandomNumberGenerator { Seed = 11000 };
 
 			// (tag, half, cow, sheep, pig, horse, chicken) - gop CHINH XAC so luong/loai vat nuoi
@@ -4885,7 +4911,14 @@ namespace HiepSiVeVuon.Core
 			};
 
 			const int cols = 7;
-			const float cellSpacing = 450f;
+			// 450 TRUOC DAY qua nho: hang 0 co 6 chuong LIEN TIEP ban kinh 252 (bo_1..3/ngua_1..3,
+			// half=168*1.5) - 2 chuong 252 canh nhau can cach nhau >= 504 moi khong tu cham nhau,
+			// 450 < 504 nen CHINH LUOI (khong phai ngoai canh) da tu gay cham lien tuc suot hang
+			// do, don avoid[] day nhanh khien FindOpenSpot fallback het cho trong ban kinh 2100
+			// (xem canh bao "khong tim duoc cho hoan toan trong sau 600 lan"). 520 dam bao 2
+			// chuong 252 canh nhau luon co it nhat 16 don vi ho, ma goc luoi van nam trong ban
+			// kinh 2100 dang danh rieng cho khu nay (khong can doi gi khac).
+			const float cellSpacing = 520f;
 			// Quy hoach lai: diem neo Khu Chan Nuoi gio la 1 HANG SO CO DINH (LivestockZoneOrigin)
 			// thay vi FindOpenSpot ngau nhien - de toan bo khu (28 chuong + 4 chuong cu gop vao +
 			// chuong De) luon nam DUNG cho trong ban do, khong doi vi tri moi lan chay.
