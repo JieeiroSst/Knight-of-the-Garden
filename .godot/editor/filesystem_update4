@@ -1,7 +1,7 @@
 res://scenes/Main.tscn
 res://scripts/entities/StablehandNpc.cs
 res://scripts/entities/Sheep.cs
-res://scripts/entities/FarmCat.cs
+res://scripts/entities/FarmDog.cs
 res://scripts/entities/Boat.cs
 res://scripts/systems/Inventory.cs
 res://scripts/entities/FarmStewardNpc.cs
@@ -13,14 +13,14 @@ res://scripts/systems/QuestSystem.cs
 res://scripts/entities/Horse.cs
 res://scripts/ui/BuildMenuUI.cs
 res://scripts/entities/BuildingLabelZone.cs
-res://scripts/entities/Enemy.cs
+res://scripts/entities/EstateWorkerNpc.cs
 res://scripts/entities/TownCitizenNpc.cs
 res://scripts/ui/HUD.cs
 res://scripts/entities/WindmillBlades.cs
 res://scripts/ui/ShopUI.cs
 res://scripts/entities/WaterTower.cs
 res://scripts/entities/Tree.cs
-res://scripts/entities/EstateWorkerNpc.cs
+res://scripts/entities/FarmCat.cs
 res://scripts/ui/InventoryUI.cs
 res://scripts/ui/FarmStorageBoard.cs
 res://scripts/entities/Player.cs
@@ -43,7 +43,7 @@ res://scripts/core/DayNightCycle.cs
 res://scripts/entities/CookingStation.cs
 res://scripts/entities/PlacedBuilding.cs
 res://scripts/core/WorldStreamer.cs
-res://scripts/entities/FarmDog.cs
+res://scripts/entities/FarmGateDoor.cs
 res://scripts/ui/BackpackUI.cs
 res://scripts/entities/GuardNpc.cs
 res://scripts/entities/OreNode.cs
@@ -67,4 +67,4 @@ res://scripts/entities/PalaceGuardNpc.cs
 res://scripts/ui/SettingsUI.cs
 res://scripts/entities/WildAnimal.cs
 res://scripts/entities/Dog.cs
-res://scripts/entities/FarmGateDoor.cs
+res://scripts/entities/Enemy.cs
