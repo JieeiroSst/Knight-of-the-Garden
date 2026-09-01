@@ -218,12 +218,10 @@ namespace HiepSiVeVuon.Core
             // Moi buoc dung san chay trong try/catch RIENG (xem SafeBuildStep) - TRUOC DAY ca 30
             // buoc nay dung CHUNG 1 try/catch duy nhat: neu 1 buoc BAT KY loi (vd 1 PackedScene
             // load hong, 1 index sai), TOAN BO cac buoc SAU no trong danh sach se KHONG BAO GIO
-            // chay - day la nguyen nhan that su rat co the gay ra tinh trang "cac chuong moi
-            // (BuildExtraPastures/BuildExtraSheepPens/BuildExtraCowPensRound2/
-            // BuildExtraDairyCowPens - deu nam CUOI danh sach) bi trong khong co con vat nao" da
-            // duoc bao cao nhieu lan, du ban than tung ham do khong he co loi gi. Cach ly tung
-            // buoc dam bao 1 buoc loi chi mat DUNG phan cua buoc do, moi buoc khac van chay day du
-            // binh thuong.
+            // chay - day la nguyen nhan that su rat co the gay ra tinh trang "cac chuong moi bi
+            // trong khong co con vat nao" da duoc bao cao nhieu lan, du ban than tung ham do khong
+            // he co loi gi. Cach ly tung buoc dam bao 1 buoc loi chi mat DUNG phan cua buoc do,
+            // moi buoc khac van chay day du binh thuong.
             SafeBuildStep(BuildFarm, nameof(BuildFarm));
             SafeBuildStep(BuildFarmFence, nameof(BuildFarmFence));
             SafeBuildStep(SpawnNpcs, nameof(SpawnNpcs));
@@ -258,11 +256,7 @@ namespace HiepSiVeVuon.Core
             SafeBuildStep(BuildBigVineyard, nameof(BuildBigVineyard));
             SafeBuildStep(BuildEstateLandscaping, nameof(BuildEstateLandscaping));
             SafeBuildStep(BuildFarmOutbuildings, nameof(BuildFarmOutbuildings));
-            SafeBuildStep(BuildExtraPastures, nameof(BuildExtraPastures));
-            SafeBuildStep(BuildExtraSheepPens, nameof(BuildExtraSheepPens));
-            SafeBuildStep(BuildExtraCowPensRound2, nameof(BuildExtraCowPensRound2));
-            SafeBuildStep(BuildExtraDairyCowPens, nameof(BuildExtraDairyCowPens));
-            SafeBuildStep(BuildExtraSheepPensRound2, nameof(BuildExtraSheepPensRound2));
+            SafeBuildStep(BuildAnimalPenDistrict, nameof(BuildAnimalPenDistrict));
             SafeBuildStep(BuildWindmills, nameof(BuildWindmills));
             SafeBuildStep(BuildOuterWindmills, nameof(BuildOuterWindmills));
 
@@ -1901,8 +1895,8 @@ namespace HiepSiVeVuon.Core
         }
 
         // homeCenterOverride/pastureHalfOverride: giong SpawnCow o tren - cho phep dung ham nay
-        // cho CAC CHUONG GA KHAC (xem BuildExtraPastures), tranh loi ga hard-code "nha" ve chuong
-        // ga GOC o xa (gay chuong moi nhin "trong khong co con nao" du da sinh du so luong).
+        // cho CAC CHUONG GA KHAC (xem BuildAnimalPenDistrict), tranh loi ga hard-code "nha" ve
+        // chuong ga GOC o xa (gay chuong moi nhin "trong khong co con nao" du da sinh du so luong).
         private void SpawnChicken(Vector3 pos, Vector3 feedPos, Vector3? homeCenterOverride = null, float? pastureHalfOverride = null)
         {
             if (_chickenScene == null) { GD.PushError("Khong tai duoc Chicken.tscn"); return; }
@@ -2316,12 +2310,26 @@ namespace HiepSiVeVuon.Core
 
         private void BuildFarmStoneWall()
         {
-            // Chan quai vat sinh trong pham vi tuong (WorldStreamer van sinh cay/da binh thuong
-            // o day, chi rieng quai bi chan - xem WorldStreamer.NoEnemyZoneCenter) - tuong nay
-            // RONG HON han ReservedZones cu nen can dang ky rieng, neu khong quai van "lot" duoc
-            // vao phan dat moi them.
+            // Chan quai vat sinh trong pham vi tuong - tuong nay RONG HON han ReservedZones cu
+            // (chi ~3000x3000 quanh GOC TOA DO, trong khi tuong nay rong toi 6325x6325 quanh
+            // FarmWallCenter) nen can dang ky rieng, neu khong quai van "lot" duoc vao phan dat
+            // moi them.
             WorldStreamer.NoEnemyZoneCenter = FarmWallCenter;
             WorldStreamer.NoEnemyZoneHalfSize = FarmWallHalfSize;
+
+            // QUAN TRONG: chan LUON CA CAY/DA/DECOR hoang da cua WorldStreamer trong TOAN BO
+            // pham vi tuong (khong chi rieng quai nhu tren) - ReservedZones (bo qua ca chunk) chi
+            // phu ~3000x3000 quanh GOC TOA DO, con tuong nay rong toi 6325x6325 quanh
+            // FarmWallCenter (202,390) NEN VANH NGOAI cua trang trai (tu ~1500 don vi tro ra,
+            // dung noi cac chuong ve tinh/coi xay gio hay duoc dat qua FindOpenSpot) VAN nam
+            // NGOAI ReservedZones - WorldStreamer se tu sinh cay/da hoang da O DAY MA KHONG HE
+            // BIET gi ve cac chuong da dat (Main.cs va WorldStreamer la 2 he thong hoan toan
+            // doc lap, khong chia se danh sach vi tri). Cay/da moc chen vao/xung quanh 1 chuong
+            // se che khuat vat nuoi, day rat co the la nguyen nhan that su cua bao cao "chuong o
+            // xa/gan tuong khong thay dong vat" - dang ky 1 vung loai tru DUY NHAT phu kin ca
+            // buc tuong se chan hoan toan van de nay (dung ban kinh *1.45 > sqrt(2)=1.414 de phu
+            // het ca 4 goc vuong cua tuong).
+            WorldStreamer.ExclusionZones.Add((FarmWallCenter, FarmWallHalfSize * 1.45f));
 
             float minX = FarmWallCenter.X - FarmWallHalfSize;
             float maxX = FarmWallCenter.X + FarmWallHalfSize;
@@ -3717,22 +3725,46 @@ namespace HiepSiVeVuon.Core
         // dung cho viec them nhieu chuong moi ma khong the dat toa do tay chinh xac an toan (ban
         // do da qua chat). "avoid" LON DAN theo tung lan goi thanh cong (tham so ByRef qua List)
         // de cac chuong MOI cung khong dung cham LAN NHAU.
-        private Vector3 FindOpenSpot(List<(Vector3 c, float r)> avoid, float neededRadius, RandomNumberGenerator rng)
+        // boundsFraction: gioi han vung tim kiem con (FarmWallHalfSize * boundsFraction) thay vi
+        // dung toan bo pham vi tuong (mac dinh 1f = nhu truoc). Cac ham dat CHUONG DONG VAT truyen
+        // gia tri nho hon (vd 0.6f) de CHUONG LUON nam GAN TRUNG TAM nong trai, khong bao gio ra
+        // sat tuong nua - theo dung yeu cau "sap xep cac chuong gan tuong lai gan trung tam".
+        private Vector3 FindOpenSpot(List<(Vector3 c, float r)> avoid, float neededRadius, RandomNumberGenerator rng, float boundsFraction = 1f)
         {
             float margin = neededRadius + 60f;
-            float minX = FarmWallCenter.X - FarmWallHalfSize + margin, maxX = FarmWallCenter.X + FarmWallHalfSize - margin;
-            float minZ = FarmWallCenter.Z - FarmWallHalfSize + margin, maxZ = FarmWallCenter.Z + FarmWallHalfSize - margin;
+            float effectiveHalf = FarmWallHalfSize * boundsFraction;
+            float minX = FarmWallCenter.X - effectiveHalf + margin, maxX = FarmWallCenter.X + effectiveHalf - margin;
+            float minZ = FarmWallCenter.Z - effectiveHalf + margin, maxZ = FarmWallCenter.Z + effectiveHalf - margin;
+
+            // Theo doi UNG VIEN TOT NHAT tung thay (it cham vao vung khac nhat) trong luc thu,
+            // de dung lam du phong NEU khong co diem nao hoan toan trong sau 600 lan - truoc day
+            // du phong la 1 GOC CO DINH (minX, minZ, gan sat tuong) KHONG HE kiem tra avoid, nen
+            // khi nhieu lan goi FindOpenSpot LIEN TIEP deu roi vao truong hop nay (ban do cang
+            // ngay cang chat - da co toi ~40 chuong/cong trinh dung FindOpenSpot), tat ca deu bi
+            // day ve DUNG 1 GOC gan tuong giong het nhau, chong chat len nhau - day rat co the la
+            // nguyen nhan that su cua bao cao "chuong gan tuong khong co dong vat/NPC".
+            Vector3 bestPos = new(minX, 0, minZ);
+            float bestClearance = float.NegativeInfinity;
+
             for (int tries = 0; tries < 600; tries++)
             {
                 var p = new Vector3(rng.RandfRange(minX, maxX), 0, rng.RandfRange(minZ, maxZ));
-                bool ok = true;
+                float minClearance = float.PositiveInfinity;
                 foreach (var (c, r) in avoid)
                 {
-                    if (new Vector2(p.X - c.X, p.Z - c.Z).Length() < r + neededRadius) { ok = false; break; }
+                    float clearance = new Vector2(p.X - c.X, p.Z - c.Z).Length() - (r + neededRadius);
+                    if (clearance < minClearance) minClearance = clearance;
                 }
-                if (ok) return p;
+                if (minClearance >= 0f) return p; // hoan toan trong - dung ngay, khong can thu them
+                if (minClearance > bestClearance) { bestClearance = minClearance; bestPos = p; }
             }
-            return new Vector3(minX, 0, minZ); // du phong (rat hiem khi toi day)
+            // Khong tim duoc diem hoan toan trong sau 600 lan - dung UNG VIEN IT CHAM NHAT da
+            // thay (van co the hoi cham nhe vao 1 vung nao do, nhung KHONG con la 1 goc co dinh
+            // co the trung lap voi nhieu lan goi khac). In canh bao de xac nhan neu truong hop
+            // nay THAT SU xay ra (xem Debugger > Errors trong Godot).
+            if (bestClearance < 0f)
+                GD.PushWarning($"FindOpenSpot: khong tim duoc cho hoan toan trong sau 600 lan (neededRadius={neededRadius}, do cham={-bestClearance:F0}), dung ung vien it cham nhat tai {bestPos}.");
+            return bestPos;
         }
 
         // Vi tri+ban kinh TAT CA cac "chuong them" da dat qua NHIEU LAN goi (BuildExtraPastures/
@@ -3764,346 +3796,181 @@ namespace HiepSiVeVuon.Core
             return zones;
         }
 
-        // Them 3 chuong nua cho MOI loai gia suc/gia cam (bo/ngua/ga/cuu-heo) - tong 12 chuong
-        // moi, moi chuong tu tim 1 vi tri TRONG con lai trong pham vi tuong da 10 hecta (qua
-        // FindOpenSpot, tranh dung cham voi TAT CA khu da xay + CAC CHUONG MOI vua dat).
-        private void BuildExtraPastures()
+        // QUY HOACH LAI theo yeu cau: TRUOC DAY 28 chuong ve tinh nam rai rac trong 6 ham rieng
+        // (moi ham tu FindOpenSpot ngau nhien mot minh), nha o cua NPC cham soc dat NGAY SAT tung
+        // chuong. GIO GOP LAI thanh 1 khu quy hoach DUY NHAT:
+        //   - Ca 28 chuong xep THANG HANG theo 1 LUOI (7 cot x 4 hang, cung 1 khoang cach deu
+        //     nhau) trong CUNG 1 vung rieng - "chuong dong vat quy hoach 1 cho rieng".
+        //   - Nha o cua TAT CA 28 NPC cham soc GOM VE 1 DOANH TRAI DUY NHAT, TACH HAN khoi khu
+        //     chuong (xem BuildPenCaretakerDorm ben duoi) - "nha o npc quy hoach 1 cho rieng". NPC
+        //     di lam moi ngay tu doanh trai toi dung chuong minh phu trach (dung lai WorkPos/
+        //     HomePos da co san trong FarmhandNpc/StablehandNpc/PoultryKeeperNpc).
+        // Neu 1 o luoi vo tinh trung vao 1 vung da chiem (hiem, vi luoi nam trong 1 khu da duoc
+        // FindOpenSpot chon rieng truoc), tu dong roi sang tim cho gan nhat con trong thay vi bo
+        // qua - dam bao KHONG BAO GIO mat mot chuong nao ca.
+        private void BuildAnimalPenDistrict()
         {
             var avoid = KnownOccupiedZones();
-            var rng = new RandomNumberGenerator { Seed = 9800 };
-            // Luu lai vi tri+ban kinh CA 12 chuong moi (bat ke loai) de xu ly rieng theo huong
-            // (vd "cac chuong o phia tay") sau khi da dat xong het - xem doan bo sung bo o cuoi ham.
-            var allNewPens = new List<(Vector3 pos, float half)>();
+            var rng = new RandomNumberGenerator { Seed = 11000 };
 
-            // MOI chuong (moi lan lap i) chay trong SafeBuildStep RIENG: neu 1 chuong loi vi ly
-            // do gi (vd instantiate that bai), CHI chuong do bi anh huong - cac chuong SAU no
-            // trong CUNG method nay (truoc day se bi bo qua theo phan ung day chuyen vi throw se
-            // thoat het ca vong lap) van tiep tuc duoc dat binh thuong. Day la nguyen nhan RAT CO
-            // THE gay ra tinh trang "mot vai chuong ve tinh van con trong" da duoc bao cao nhieu
-            // lan du moi buoc Build... rieng le da duoc SafeBuildStep bao boc (xem _Ready) - boc
-            // o muc TUNG CHUONG moi thuc su chan duoc loi 1 CHUONG lam mat CA CAC CHUONG SAU no.
-            for (int i = 0; i < 3; i++)
+            // (tag, half, cow, sheep, pig, horse, chicken) - gop CHINH XAC so luong/loai vat nuoi
+            // tu 6 ham cu (khong doi tong dan so vat nuoi, chi doi CACH SAP XEP vi tri).
+            var specs = new (string tag, float half, int cow, int sheep, int pig, int horse, int chicken)[]
+            {
+                ("bo_1", 168f, 16,0,0,0,0), ("bo_2", 168f, 16,0,0,0,0), ("bo_3", 168f, 16,0,0,0,0),
+                ("ngua_1", 168f, 0,0,0,14,0), ("ngua_2", 168f, 0,0,0,14,0), ("ngua_3", 168f, 0,0,0,14,0),
+                ("ga_1", 144f, 0,0,0,0,20), ("ga_2", 144f, 0,0,0,0,20), ("ga_3", 144f, 0,0,0,0,20),
+                ("cuuheo_1", 156f, 0,12,8,0,0), ("cuuheo_2", 156f, 0,12,8,0,0), ("cuuheo_3", 156f, 0,12,8,0,0),
+                ("cuurieng_1", 140f, 0,20,0,0,0), ("cuurieng_2", 140f, 0,20,0,0,0),
+                ("bo2_1", 150f, 16,0,0,0,0), ("bo2_2", 150f, 16,0,0,0,0), ("bo2_3", 150f, 16,0,0,0,0),
+                ("bosua_1", 150f, 16,0,0,0,0), ("bosua_2", 150f, 16,0,0,0,0), ("bosua_3", 150f, 16,0,0,0,0), ("bosua_4", 150f, 16,0,0,0,0),
+                ("cuumoi_1", 140f, 0,8,0,0,0), ("cuumoi_2", 140f, 0,8,0,0,0), ("cuumoi_3", 140f, 0,8,0,0,0),
+                ("vanhbo", 150f, 16,0,0,0,0), ("vanhcuu", 140f, 0,18,0,0,0), ("vanhngua", 150f, 0,0,0,14,0), ("vanhga", 140f, 0,0,0,0,22),
+            };
+
+            const int cols = 7;
+            const float cellSpacing = 450f;
+            var districtOrigin = FindOpenSpot(avoid, 700f, rng, boundsFraction: 0.55f);
+            // Giu truoc 1 vung uoc luong cho CA khu (ban kinh tho, dam bao khu nha o NPC dat sau
+            // nay khong de len tren luoi chuong).
+            avoid.Add((districtOrigin, 1900f));
+            _extraPenZones.Add((districtOrigin, 1900f));
+
+            var built = new List<(Vector3 pos, (string tag, float half, int cow, int sheep, int pig, int horse, int chicken) spec)>();
+
+            for (int i = 0; i < specs.Length; i++)
             {
                 int idx = i;
                 SafeBuildStep(() =>
                 {
-                    // Ban kinh vung chiem dung PHAI >= nua duong cheo hinh vuong chuong
-                    // (half*sqrt2 = half*1.414) de tranh chong goc len chuong khac dat sau nay -
-                    // truoc day dung 200/228 (nho hon 168*1.414=237.6), la loi khien cac chuong
-                    // dat SAU (cuu rieng, bo vong 2, bo sua) van co the chong goc len chuong nay
-                    // du da co _extraPenZones.
-                    float zoneR = 168f * 1.5f;
-                    var pos = FindOpenSpot(avoid, zoneR, rng);
+                    var spec = specs[idx];
+                    int col = idx % cols, row = idx / cols;
+                    var gridPos = districtOrigin + new Vector3((col - (cols - 1) / 2f) * cellSpacing, 0, (row - 1.5f) * cellSpacing);
+
+                    float zoneR = spec.half * 1.5f;
+                    bool gridSlotFree = true;
+                    foreach (var (c, r) in avoid)
+                        if (new Vector2(gridPos.X - c.X, gridPos.Z - c.Z).Length() < r + zoneR) { gridSlotFree = false; break; }
+                    var pos = gridSlotFree ? gridPos : FindOpenSpot(avoid, zoneR, rng, boundsFraction: 0.55f);
+
                     avoid.Add((pos, zoneR));
                     _extraPenZones.Add((pos, zoneR));
-                    allNewPens.Add((pos, 168f));
-                    BuildSimplePasture(pos, 168f, "bo", (c, half) =>
+                    built.Add((pos, spec));
+
+                    BuildSimplePasture(pos, spec.half, spec.tag, (c, half) =>
                     {
-                        // +5 con nua (11 -> 16) - dam bao dung dung SpawnCow(...homeCenterOverride)
-                        // nen lan nay se KHONG con bi loi "quay ve chuong goc" nhu truoc.
-                        for (int k = 0; k < 16; k++)
+                        for (int k = 0; k < spec.cow; k++)
                         {
-                            float angle = Mathf.Tau * k / 16f;
+                            float angle = Mathf.Tau * k / spec.cow;
                             float radius = rng.RandfRange(30f, half - 35f);
                             SpawnCow(c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius), isAdult: true, homeCenterOverride: c, pastureHalfOverride: half);
                         }
-                    });
-                    // Bo sua that su ("de lay sua" theo yeu cau): moi chuong bo moi co RIENG 1
-                    // nguoi van sua (tai su dung FarmhandNpc.cs y het nguoi cham bo chinh - tu
-                    // dong tha vat pham "milk" dinh ky khi lam viec), khong chi la bo trang tri
-                    // di lai. KHONG dung 1 ngoi nha rieng day du (tranh cong them 3 cap phong noi
-                    // that nua) - "ngu" bang cach dung khuat ngay sau 1 diem gan chuong, giong
-                    // cach lam cho dan lang vung que Phap (xem SpawnFrenchVillagers).
-                    var milkmaid = _farmhandScene.Instantiate<FarmhandNpc>();
-                    milkmaid.NpcId = $"extra_cowherd_{idx}";
-                    milkmaid.NpcName = "Nguoi Van Sua Phu";
-                    milkmaid.DialogueLow = new[] { "Toi phu trach van sua o chuong bo nay." };
-                    milkmaid.DialogueMid = new[] { "Dan bo o day cho sua deu lam." };
-                    milkmaid.DialogueHigh = new[] { "Sua tuoi moi van, anh cu lay dung dung." };
-                    milkmaid.WorkPos = pos + new Vector3(0, 0, -40);
-                    milkmaid.TroughPos = pos;
-                    milkmaid.HomePos = pos + new Vector3(0, 0, 160);
-                    milkmaid.InteriorHomePos = pos + new Vector3(0, 8, 190);
-                    _world.AddChild(milkmaid);
-                }, $"BuildExtraPastures[bo {idx}]");
-            }
-
-            for (int i = 0; i < 3; i++)
-            {
-                int idx = i;
-                SafeBuildStep(() =>
-                {
-                    float zoneR = 168f * 1.5f;
-                    var pos = FindOpenSpot(avoid, zoneR, rng);
-                    avoid.Add((pos, zoneR));
-                    _extraPenZones.Add((pos, zoneR));
-                    allNewPens.Add((pos, 168f));
-                    BuildSimplePasture(pos, 168f, "ngua", (c, half) =>
-                    {
-                        // +5 con nua (9 -> 14)
-                        for (int k = 0; k < 14; k++)
+                        for (int k = 0; k < spec.sheep; k++)
                         {
-                            float angle = Mathf.Tau * k / 14f;
+                            float angle = Mathf.Tau * k / spec.sheep;
+                            float radius = rng.RandfRange(30f, half - 35f);
+                            var sheep = _sheepScene.Instantiate<Sheep>();
+                            sheep.Position = c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
+                            sheep.TroughPosition = c; sheep.HomeCenter = c; sheep.PastureHalfExtent = half - 35f;
+                            _world.AddChild(sheep);
+                        }
+                        for (int k = 0; k < spec.pig; k++)
+                        {
+                            float angle = Mathf.Tau * k / spec.pig + 0.4f;
+                            float radius = rng.RandfRange(20f, half - 45f);
+                            var pig = _pigScene.Instantiate<Pig>();
+                            pig.Position = c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
+                            pig.TroughPosition = c; pig.HomeCenter = c; pig.PastureHalfExtent = half - 35f;
+                            _world.AddChild(pig);
+                        }
+                        for (int k = 0; k < spec.horse; k++)
+                        {
+                            float angle = Mathf.Tau * k / spec.horse;
                             float radius = rng.RandfRange(30f, half - 35f);
                             var horse = _horseScene.Instantiate<Horse>();
                             horse.Position = c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
-                            horse.TroughPosition = c;
-                            horse.HomeCenter = c;
-                            horse.PastureHalfExtent = half - 35f;
+                            horse.TroughPosition = c; horse.HomeCenter = c; horse.PastureHalfExtent = half - 35f;
                             _world.AddChild(horse);
                         }
-                    });
-                }, $"BuildExtraPastures[ngua {idx}]");
-            }
-
-            for (int i = 0; i < 3; i++)
-            {
-                int idx = i;
-                SafeBuildStep(() =>
-                {
-                    float zoneR = 144f * 1.5f;
-                    var pos = FindOpenSpot(avoid, zoneR, rng);
-                    avoid.Add((pos, zoneR));
-                    _extraPenZones.Add((pos, zoneR));
-                    allNewPens.Add((pos, 144f));
-                    BuildSimplePasture(pos, 144f, "ga", (c, half) =>
-                    {
-                        // +5 con nua (15 -> 20)
-                        for (int k = 0; k < 20; k++)
+                        for (int k = 0; k < spec.chicken; k++)
                         {
-                            float angle = Mathf.Tau * k / 20f;
+                            float angle = Mathf.Tau * k / spec.chicken;
                             float radius = rng.RandfRange(20f, half - 25f);
                             SpawnChicken(c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius), c, homeCenterOverride: c, pastureHalfOverride: half);
                         }
                     });
-                }, $"BuildExtraPastures[ga {idx}]");
+                }, $"BuildAnimalPenDistrict[{specs[idx].tag}]");
             }
 
-            for (int i = 0; i < 3; i++)
+            BuildPenCaretakerDorm(avoid, rng, built);
+        }
+
+        // 1 doanh trai DUY NHAT cho TAT CA NPC cham soc chuong (xem BuildAnimalPenDistrict) -
+        // TACH HAN khoi khu chuong (khac han truoc day, moi NPC "o" ngay sau chuong minh phu
+        // trach). Dung 1 luoi cho ngu trong noi that (10 cot) giong mau BuildPalaceGuardBarracks/
+        // BuildWorkerDormsAndStaff - moi NPC van di lam moi ngay toi DUNG chuong cua minh qua
+        // WorkPos (chi la noi "o" duoc gom lai 1 cho, khong phai noi "lam viec").
+        private void BuildPenCaretakerDorm(List<(Vector3 c, float r)> avoid, RandomNumberGenerator rng,
+            List<(Vector3 pos, (string tag, float half, int cow, int sheep, int pig, int horse, int chicken) spec)> pens)
+        {
+            var dormPos = FindOpenSpot(avoid, 200f, rng, boundsFraction: 0.6f);
+            AddDecor(_farmhouseScene, dormPos, 60f, 90f, FarmhouseFootprint);
+            var interior = AddBuildingEntrance(dormPos, 90f, 110f, 80f, RoomKind.Village);
+            AddBuildingLabelZone(dormPos, 130f, "Nha O Nguoi Cham Nuoi");
+
+            var homeFront = dormPos + new Vector3(0, 0, 90);
+            const int cols = 10;
+
+            for (int i = 0; i < pens.Count; i++)
             {
                 int idx = i;
                 SafeBuildStep(() =>
                 {
-                    float zoneR = 156f * 1.5f;
-                    var pos = FindOpenSpot(avoid, zoneR, rng);
-                    avoid.Add((pos, zoneR));
-                    _extraPenZones.Add((pos, zoneR));
-                    allNewPens.Add((pos, 156f));
-                    BuildSimplePasture(pos, 156f, "cuu_heo", (c, half) =>
-                    {
-                        // +5 con nua tong cong cho chuong ghep (3 cuu + 2 heo): cuu 9->12
-                        for (int k = 0; k < 12; k++)
-                        {
-                            float angle = Mathf.Tau * k / 12f;
-                            float radius = rng.RandfRange(30f, half - 35f);
-                            var sheep = _sheepScene.Instantiate<Sheep>();
-                            sheep.Position = c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
-                            sheep.TroughPosition = c;
-                            sheep.HomeCenter = c;
-                            sheep.PastureHalfExtent = half - 35f;
-                            _world.AddChild(sheep);
-                        }
-                        // ...va heo 6->8
-                        for (int k = 0; k < 8; k++)
-                        {
-                            float angle = Mathf.Tau * k / 8f + 0.4f;
-                            float radius = rng.RandfRange(20f, half - 45f);
-                            var pig = _pigScene.Instantiate<Pig>();
-                            pig.Position = c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
-                            pig.TroughPosition = c;
-                            pig.HomeCenter = c;
-                            pig.PastureHalfExtent = half - 35f;
-                            _world.AddChild(pig);
-                        }
-                    });
-                }, $"BuildExtraPastures[cuu_heo {idx}]");
-            }
+                    var (penPos, spec) = pens[idx];
+                    var interiorSlot = interior + new Vector3((idx % cols - 4.5f) * 20f, 0, (idx / cols - 1.5f) * 20f);
 
-            // "Cac chuong moi ben phia TAY (trai) nong trai" - loc trong so 12 chuong vua dat,
-            // chi lay chuong nao co X < tam tuong nong trai (phia tay), them 6 bo/chuong vao MOI
-            // chuong do (bat ke chuong goc la loai gi - vd chuong ngua/ga/cuu-heo o phia tay
-            // cung se co them bo, dung theo dung nghia den cua yeu cau). Moi chuong xu ly rieng
-            // qua SafeBuildStep - 1 chuong loi khong lam mat bo sung cua CAC CHUONG KHAC.
-            foreach (var (wPos, wHalf) in allNewPens)
-            {
-                if (wPos.X >= FarmWallCenter.X) continue; // chi chuong o phia TAY (X nho hon tam tuong)
-                var pos2 = wPos; var half2 = wHalf;
-                SafeBuildStep(() =>
-                {
-                    for (int k = 0; k < 6; k++)
+                    if (spec.horse > 0)
                     {
-                        float angle = Mathf.Tau * k / 6f + 0.2f;
-                        float radius = rng.RandfRange(20f, half2 - 40f);
-                        SpawnCow(pos2 + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius),
-                            isAdult: true, homeCenterOverride: pos2, pastureHalfOverride: half2);
+                        var stablehand = _stablehandScene.Instantiate<StablehandNpc>();
+                        stablehand.NpcId = $"district_stablehand_{idx}";
+                        stablehand.NpcName = "Nguoi Cham Ngua";
+                        stablehand.DialogueLow = new[] { "Toi phu trach mot chuong ngua trong khu chan nuoi." };
+                        stablehand.DialogueMid = new[] { "Moi ngay toi di tu day den chuong de cham ngua." };
+                        stablehand.DialogueHigh = new[] { "Dan ngua toi cham deu khoe manh ca." };
+                        stablehand.WorkPos = penPos + new Vector3(0, 0, -40);
+                        stablehand.HomePos = homeFront;
+                        stablehand.InteriorHomePos = interiorSlot;
+                        _world.AddChild(stablehand);
                     }
-                }, "BuildExtraPastures[tay-side cow supplement]");
-            }
-        }
-
-        // 2 chuong cuu RIENG (khong ghep heo nhu chuong ve tinh cu) - moi chuong 10 con, tu tim
-        // vi tri trong (FindOpenSpot) nhu BuildExtraPastures.
-        private void BuildExtraSheepPens()
-        {
-            var avoid = KnownOccupiedZones();
-            var rng = new RandomNumberGenerator { Seed = 9900 };
-
-            for (int i = 0; i < 2; i++)
-            {
-                SafeBuildStep(() =>
-                {
-                    float zoneR = 140f * 1.5f;
-                    var pos = FindOpenSpot(avoid, zoneR, rng);
-                    avoid.Add((pos, zoneR));
-                    _extraPenZones.Add((pos, zoneR));
-                    // +10 con nua (10 -> 20) - chuong cuu rieng thuoc nhom "it con nhat" (de bi
-                    // nham la "trong" khi nhin tu xa), bo sung theo yeu cau review lai toan bo
-                    // chuong.
-                    BuildSimplePasture(pos, 140f, "cuu_rieng", (c, half) =>
+                    else if (spec.chicken > 0)
                     {
-                        for (int k = 0; k < 20; k++)
-                        {
-                            float angle = Mathf.Tau * k / 20f;
-                            float radius = rng.RandfRange(30f, half - 35f);
-                            var sheep = _sheepScene.Instantiate<Sheep>();
-                            sheep.Position = c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
-                            sheep.TroughPosition = c;
-                            sheep.HomeCenter = c;
-                            sheep.PastureHalfExtent = half - 35f;
-                            _world.AddChild(sheep);
-                        }
-                    });
-                }, $"BuildExtraSheepPens[{i}]");
-            }
-        }
-
-        // 3 chuong bo THEM NUA (nguoi choi bao "3 chuong nay dang bi trong") - 6 con/chuong.
-        // Dung DUNG homeCenterOverride/pastureHalfOverride (xem SpawnCow) tu dau, dam bao KHONG
-        // the mac phai loi "bo quay ve chuong goc" da gap va sua truoc do.
-        private void BuildExtraCowPensRound2()
-        {
-            var avoid = KnownOccupiedZones();
-            var rng = new RandomNumberGenerator { Seed = 10100 };
-
-            for (int i = 0; i < 3; i++)
-            {
-                SafeBuildStep(() =>
-                {
-                    float zoneR = 150f * 1.5f;
-                    var pos = FindOpenSpot(avoid, zoneR, rng);
-                    avoid.Add((pos, zoneR));
-                    _extraPenZones.Add((pos, zoneR));
-                    // +10 con nua (6 -> 16) - chuong nay chi co 6 con, de trong nhat trong toan
-                    // bo cac chuong, bo sung theo yeu cau review lai toan bo chuong.
-                    BuildSimplePasture(pos, 150f, "bo2", (c, half) =>
+                        var keeper = _poultryKeeperScene.Instantiate<PoultryKeeperNpc>();
+                        keeper.NpcId = $"district_poultrykeeper_{idx}";
+                        keeper.NpcName = "Nguoi Cham Ga";
+                        keeper.DialogueLow = new[] { "Toi phu trach mot chuong ga trong khu chan nuoi." };
+                        keeper.DialogueMid = new[] { "Moi ngay toi di tu day den chuong de nhat trung." };
+                        keeper.DialogueHigh = new[] { "Trung moi de con am, anh lay ngay di." };
+                        keeper.WorkPos = penPos + new Vector3(0, 0, -30);
+                        keeper.HomePos = homeFront;
+                        keeper.InteriorHomePos = interiorSlot;
+                        _world.AddChild(keeper);
+                    }
+                    else
                     {
-                        for (int k = 0; k < 16; k++)
-                        {
-                            float angle = Mathf.Tau * k / 16f;
-                            float radius = rng.RandfRange(30f, half - 35f);
-                            SpawnCow(c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius),
-                                isAdult: true, homeCenterOverride: c, pastureHalfOverride: half);
-                        }
-                    });
-                }, $"BuildExtraCowPensRound2[{i}]");
-            }
-        }
-
-        // 4 chuong BO SUA nua (6 con/chuong + 1 nguoi van sua rieng/chuong, giong vong 1 trong
-        // BuildExtraPastures) - dung _extraPenZones (xem KnownOccupiedZones) nen KHONG the chong
-        // len bat ky chuong nao truoc do, du la chuong loai gi hay dat luc nao.
-        private void BuildExtraDairyCowPens()
-        {
-            var avoid = KnownOccupiedZones();
-            var rng = new RandomNumberGenerator { Seed = 10200 };
-
-            for (int i = 0; i < 4; i++)
-            {
-                int idx = i;
-                SafeBuildStep(() =>
-                {
-                    float zoneR = 150f * 1.5f;
-                    var pos = FindOpenSpot(avoid, zoneR, rng);
-                    avoid.Add((pos, zoneR));
-                    _extraPenZones.Add((pos, zoneR));
-                    // +10 con nua (6 -> 16) - cung nam trong nhom "it con nhat", bo sung theo
-                    // yeu cau review lai toan bo chuong.
-                    BuildSimplePasture(pos, 150f, "bo_sua", (c, half) =>
-                    {
-                        for (int k = 0; k < 16; k++)
-                        {
-                            float angle = Mathf.Tau * k / 16f;
-                            float radius = rng.RandfRange(30f, half - 35f);
-                            SpawnCow(c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius),
-                                isAdult: true, homeCenterOverride: c, pastureHalfOverride: half);
-                        }
-                    });
-
-                    var milkmaid = _farmhandScene.Instantiate<FarmhandNpc>();
-                    milkmaid.NpcId = $"dairy_cowherd_{idx}";
-                    milkmaid.NpcName = "Nguoi Van Sua Bo";
-                    milkmaid.DialogueLow = new[] { "Toi phu trach van sua o chuong bo sua nay." };
-                    milkmaid.DialogueMid = new[] { "Bo o day cho sua tuoi ngon lam." };
-                    milkmaid.DialogueHigh = new[] { "Sua moi van, anh cu ghe lay." };
-                    milkmaid.WorkPos = pos + new Vector3(0, 0, -40);
-                    milkmaid.TroughPos = pos;
-                    milkmaid.HomePos = pos + new Vector3(0, 0, 170);
-                    milkmaid.InteriorHomePos = pos + new Vector3(0, 8, 200);
-                    _world.AddChild(milkmaid);
-                }, $"BuildExtraDairyCowPens[{idx}]");
-            }
-        }
-
-        // Sau khi review toan bo source code cac chuong (xem SafeBuildStep o _Ready): KHONG tim
-        // thay chuong nao thieu hoan toan lenh sinh vat nuoi trong code - nhung phat hien 1 loi
-        // he thong that su (try/catch DUY NHAT boc CA 30 buoc dung san, 1 buoc loi se lam MOI
-        // buoc SAU no khong bao gio chay, bao gom toan bo cac chuong ve tinh vi chung nam CUOI
-        // danh sach) da duoc sua (SafeBuildStep). De dam bao chac chan co du "chuong dang trong"
-        // duoc lap day theo dung yeu cau, them 3 chuong CUU MOI - 8 con/chuong + 1 NGUOI CHAN CUU
-        // rieng cho MOI chuong (chuong ve tinh cuu truoc day - BuildExtraSheepPens - CHUA co NPC
-        // cham soc rieng).
-        private void BuildExtraSheepPensRound2()
-        {
-            var avoid = KnownOccupiedZones();
-            var rng = new RandomNumberGenerator { Seed = 10500 };
-
-            for (int i = 0; i < 3; i++)
-            {
-                int idx = i;
-                SafeBuildStep(() =>
-                {
-                    float zoneR = 140f * 1.5f;
-                    var pos = FindOpenSpot(avoid, zoneR, rng);
-                    avoid.Add((pos, zoneR));
-                    _extraPenZones.Add((pos, zoneR));
-                    BuildSimplePasture(pos, 140f, "cuu_moi", (c, half) =>
-                    {
-                        for (int k = 0; k < 8; k++)
-                        {
-                            float angle = Mathf.Tau * k / 8f;
-                            float radius = rng.RandfRange(30f, half - 35f);
-                            var sheep = _sheepScene.Instantiate<Sheep>();
-                            sheep.Position = c + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
-                            sheep.TroughPosition = c;
-                            sheep.HomeCenter = c;
-                            sheep.PastureHalfExtent = half - 35f;
-                            _world.AddChild(sheep);
-                        }
-                    });
-
-                    var shepherd = _farmhandScene.Instantiate<FarmhandNpc>();
-                    shepherd.NpcId = $"extra_shepherd_{idx}";
-                    shepherd.NpcName = "Nguoi Chan Cuu";
-                    shepherd.DialogueLow = new[] { "Toi phu trach cham soc dan cuu o chuong nay." };
-                    shepherd.DialogueMid = new[] { "Dan cuu o day duoc an co tuoi moi ngay." };
-                    shepherd.DialogueHigh = new[] { "Len that day, cat theo mua la co ngay." };
-                    shepherd.ProduceItemId = "wool"; // cham cuu thi thu len, khong phai sua bo
-                    shepherd.WorkPos = pos + new Vector3(0, 0, -40);
-                    shepherd.TroughPos = pos;
-                    shepherd.HomePos = pos + new Vector3(0, 0, 160);
-                    shepherd.InteriorHomePos = pos + new Vector3(0, 8, 190);
-                    _world.AddChild(shepherd);
-                }, $"BuildExtraSheepPensRound2[{idx}]");
+                        var caretaker = _farmhandScene.Instantiate<FarmhandNpc>();
+                        caretaker.NpcId = $"district_caretaker_{idx}";
+                        caretaker.NpcName = spec.cow > 0 ? "Nguoi Cham Bo" : "Nguoi Chan Cuu";
+                        caretaker.DialogueLow = new[] { "Toi phu trach mot chuong trong khu chan nuoi." };
+                        caretaker.DialogueMid = new[] { "Moi ngay toi di tu day den chuong de cham soc." };
+                        caretaker.DialogueHigh = new[] { "Vat nuoi toi cham deu khoe manh ca." };
+                        if (spec.sheep > 0 || spec.pig > 0) caretaker.ProduceItemId = "wool";
+                        caretaker.WorkPos = penPos + new Vector3(0, 0, -40);
+                        caretaker.TroughPos = penPos;
+                        caretaker.HomePos = homeFront;
+                        caretaker.InteriorHomePos = interiorSlot;
+                        _world.AddChild(caretaker);
+                    }
+                }, $"BuildPenCaretakerDorm[{idx}]");
             }
         }
 

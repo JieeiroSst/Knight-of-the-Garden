@@ -25,8 +25,8 @@ namespace HiepSiVeVuon.Entities
         [Export] public float WorkWanderRadius = 90f;
         [Export] public double MilkIntervalSec = 150.0;
         // San pham dinh ky tha ra (mac dinh "milk" - giu nguyen hanh vi cu cho nguoi cham bo/van
-        // sua). Nguoi chan cuu (xem Main.BuildExtraSheepPensRound2) dat lai thanh "wool" de dung
-        // dung nghia "cham soc cuu, thu len" thay vi tiep tuc tha nham sua bo.
+        // sua). Nguoi chan cuu (xem Main.BuildAnimalPenDistrict/BuildPenCaretakerDorm) dat lai
+        // thanh "wool" de dung dung nghia "cham soc cuu, thu len" thay vi tiep tuc tha nham sua bo.
         [Export] public string ProduceItemId = "milk";
 
         // Main.cs gan cac vi tri nay ngay sau khi tao NPC (truoc AddChild).
