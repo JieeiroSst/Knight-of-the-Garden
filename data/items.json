@@ -779,5 +779,39 @@
     "GrowsIntoCropId": "cabbage",
     "GrowDays": 3,
     "ValidSeasons": ["Spring", "Fall", "Winter"]
-  }
+  },
+
+  { "Id": "mut_wheat", "Name": "Mut Lua Mi", "Description": "Nong san che bien tu Lo Say - gia tri cao hon ban tho.", "Type": "Material", "Rarity": "Uncommon", "MaxStack": 99, "SellPrice": 33, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
+  { "Id": "mut_tomato", "Name": "Mut Ca Chua", "Description": "Nong san che bien tu Lo Say - gia tri cao hon ban tho.", "Type": "Material", "Rarity": "Uncommon", "MaxStack": 99, "SellPrice": 44, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
+  { "Id": "mut_carrot", "Name": "Mut Ca Rot", "Description": "Nong san che bien tu Lo Say - gia tri cao hon ban tho.", "Type": "Material", "Rarity": "Uncommon", "MaxStack": 99, "SellPrice": 40, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
+  { "Id": "mut_potato", "Name": "Mut Khoai Tay", "Description": "Nong san che bien tu Lo Say - gia tri cao hon ban tho.", "Type": "Material", "Rarity": "Uncommon", "MaxStack": 99, "SellPrice": 35, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
+  { "Id": "mut_cabbage", "Name": "Mut Bap Cai", "Description": "Nong san che bien tu Lo Say - gia tri cao hon ban tho.", "Type": "Material", "Rarity": "Uncommon", "MaxStack": 99, "SellPrice": 48, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
+  { "Id": "mut_pumpkin", "Name": "Mut Bi Ngo", "Description": "Nong san che bien tu Lo Say - gia tri cao hon ban tho.", "Type": "Material", "Rarity": "Uncommon", "MaxStack": 99, "SellPrice": 77, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
+
+  { "Id": "ruou_wheat", "Name": "Ruou Lua Mi", "Description": "U tu May Ep - gia tri cao hon nhieu so voi nong san tho.", "Type": "Material", "Rarity": "Rare", "MaxStack": 99, "SellPrice": 48, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
+  { "Id": "ruou_tomato", "Name": "Ruou Ca Chua", "Description": "U tu May Ep - gia tri cao hon nhieu so voi nong san tho.", "Type": "Material", "Rarity": "Rare", "MaxStack": 99, "SellPrice": 64, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
+  { "Id": "ruou_carrot", "Name": "Ruou Ca Rot", "Description": "U tu May Ep - gia tri cao hon nhieu so voi nong san tho.", "Type": "Material", "Rarity": "Rare", "MaxStack": 99, "SellPrice": 58, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
+  { "Id": "ruou_potato", "Name": "Ruou Khoai Tay", "Description": "U tu May Ep - gia tri cao hon nhieu so voi nong san tho.", "Type": "Material", "Rarity": "Rare", "MaxStack": 99, "SellPrice": 51, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
+  { "Id": "ruou_cabbage", "Name": "Ruou Bap Cai", "Description": "U tu May Ep - gia tri cao hon nhieu so voi nong san tho.", "Type": "Material", "Rarity": "Rare", "MaxStack": 99, "SellPrice": 70, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
+  { "Id": "ruou_pumpkin", "Name": "Ruou Bi Ngo", "Description": "U tu May Ep - gia tri cao hon nhieu so voi nong san tho.", "Type": "Material", "Rarity": "Rare", "MaxStack": 99, "SellPrice": 112, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
+
+  { "Id": "pho_mai", "Name": "Pho Mai", "Description": "Ep tu sua bo - gia tri cao hon sua tho.", "Type": "Material", "Rarity": "Uncommon", "MaxStack": 99, "SellPrice": 25, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
+  { "Id": "mayonnaise", "Name": "Sot Mayonnaise", "Description": "Che bien tu trung ga - gia tri cao hon trung tho.", "Type": "Material", "Rarity": "Uncommon", "MaxStack": 99, "SellPrice": 20, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
+  { "Id": "vai", "Name": "Vai Det", "Description": "Det tu len cuu - gia tri cao hon len tho.", "Type": "Material", "Rarity": "Uncommon", "MaxStack": 99, "SellPrice": 30, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
+  { "Id": "mat_ong", "Name": "Mat Ong", "Description": "Thu hoach tu chuong ong - khong can cham soc hang ngay.", "Type": "Material", "Rarity": "Uncommon", "MaxStack": 99, "SellPrice": 25, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
+
+  { "Id": "sup_rau", "Name": "Sup Rau Cu", "Description": "Nau tu ca rot + bap cai - hoi phuc sinh luc.", "Type": "Consumable", "Rarity": "Common", "MaxStack": 20, "SellPrice": 30, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png", "HealAmount": 40 },
+  { "Id": "trung_chien", "Name": "Trung Chien", "Description": "Nau tu 2 trung ga - hoi phuc sinh luc.", "Type": "Consumable", "Rarity": "Common", "MaxStack": 20, "SellPrice": 18, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png", "HealAmount": 25 },
+  { "Id": "banh_bi_ngo", "Name": "Banh Bi Ngo", "Description": "Nau tu bi ngo + sua bo - hoi phuc sinh luc lon.", "Type": "Consumable", "Rarity": "Uncommon", "MaxStack": 20, "SellPrice": 45, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png", "HealAmount": 55 },
+  { "Id": "salad_ca_chua", "Name": "Salad Ca Chua Pho Mai", "Description": "Nau tu ca chua + pho mai - hoi phuc sinh luc lon.", "Type": "Consumable", "Rarity": "Uncommon", "MaxStack": 20, "SellPrice": 40, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png", "HealAmount": 50 },
+  { "Id": "banh_mi_trung", "Name": "Banh Mi Trung Ga", "Description": "Nau tu lua mi + trung ga - hoi phuc sinh luc.", "Type": "Consumable", "Rarity": "Common", "MaxStack": 20, "SellPrice": 25, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png", "HealAmount": 35 },
+  { "Id": "sup_ca", "Name": "Sup Ca", "Description": "Nau tu ca + ca rot - hoi phuc sinh luc.", "Type": "Consumable", "Rarity": "Uncommon", "MaxStack": 20, "SellPrice": 35, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png", "HealAmount": 45 },
+
+  { "Id": "cuoc_bac", "Name": "Cuoc Bac", "Description": "Cuoc nang cap - cay/tuoi/thu hoach CA VUNG 3x3 quanh diem ngam thay vi tung o.", "Type": "Tool", "Rarity": "Uncommon", "MaxStack": 1, "SellPrice": 60, "BuyPrice": 220, "IconPath": "res://assets/items/coins.png" },
+  { "Id": "cuoc_vang", "Name": "Cuoc Vang", "Description": "Cuoc nang cap cao nhat - cay/tuoi/thu hoach CA VUNG 5x5 quanh diem ngam.", "Type": "Tool", "Rarity": "Rare", "MaxStack": 1, "SellPrice": 150, "BuyPrice": 600, "IconPath": "res://assets/items/coins.png" },
+  { "Id": "pickaxe_bac", "Name": "Cuoc Da Bac", "Description": "Cuoc da nang cap - dao quang manh hon.", "Type": "Tool", "Rarity": "Uncommon", "MaxStack": 1, "SellPrice": 70, "BuyPrice": 240, "IconPath": "res://assets/items/coins.png", "Damage": 24 },
+  { "Id": "pickaxe_vang", "Name": "Cuoc Da Vang", "Description": "Cuoc da nang cap cao nhat - dao quang rat manh.", "Type": "Tool", "Rarity": "Rare", "MaxStack": 1, "SellPrice": 160, "BuyPrice": 650, "IconPath": "res://assets/items/coins.png", "Damage": 42 },
+
+  { "Id": "may_tuoi_tu_dong", "Name": "May Tuoi Tu Dong", "Description": "Trang bi roi bam Space gan o dat de dat may - tu dong tuoi CAC O DAT quanh no MOI NGAY.", "Type": "Tool", "Rarity": "Rare", "MaxStack": 10, "SellPrice": 80, "BuyPrice": 350, "IconPath": "res://assets/items/coins.png" },
+  { "Id": "da", "Name": "Da", "Description": "Vat lieu xay dung co ban - dung de xay nha/chuong qua Bang Xay Dung.", "Type": "Material", "Rarity": "Common", "MaxStack": 99, "SellPrice": 4, "BuyPrice": 12, "IconPath": "res://assets/items/coins.png" }
 ]

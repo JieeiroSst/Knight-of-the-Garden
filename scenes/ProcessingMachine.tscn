@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3 uid="uid://bprocmachine01"]
+
+[ext_resource type="Script" path="res://scripts/entities/ProcessingMachine.cs" id="1"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1"]
+size = Vector3(28, 40, 28)
+
+[node name="ProcessingMachine" type="StaticBody3D" groups=["processing_machines"]]
+script = ExtResource("1")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 20, 0)
+shape = SubResource("BoxShape3D_1")

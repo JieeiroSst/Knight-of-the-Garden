@@ -21,6 +21,8 @@ namespace HiepSiVeVuon.Entities
 
         private ulong _lastAttackTime = 0;
         private Vector3 _facing = Vector3.Back;
+        // public: BuildMenuUI.cs can dung de dat cong trinh MOI truoc mat nguoi choi.
+        public Vector3 Facing => _facing;
         private Area3D _interactArea;
         private Node3D _model;
         private AnimationPlayer _animPlayer;
@@ -366,6 +368,9 @@ namespace HiepSiVeVuon.Entities
                 if (body is DroppedItem drop) { drop.PickUp(); return; }
                 if (body is WaterTower tower) { tower.Interact(); return; }
                 if (body is WildAnimal wild && wild.SpeciesId == "duck") { TryFeedDuck(); return; }
+                if (body is ProcessingMachine machine) { machine.Interact(); return; }
+                if (body is CookingStation cooking) { cooking.Interact(); return; }
+                if (body is GreenhouseGate gate) { gate.Interact(); return; }
             }
             foreach (var area in _interactArea.GetOverlappingAreas())
             {
@@ -417,10 +422,34 @@ namespace HiepSiVeVuon.Entities
         // con nguoi that, khong phai mot thao tac tuong tac rieng biet nhu mo cua.
         public void TriggerFloorChange(Vector3 targetAnchor) => ChangeFloor(targetAnchor);
 
+        // Cuoc nang cap (xem items.json "cuoc_bac"/"cuoc_vang") tac dong CA VUNG quanh nguoi choi
+        // thay vi tung o - 0 = hanh vi co ban (chi 1 o gan nhat, khong doi hanh vi cu).
+        private static float ToolAreaRadius(string toolId) => toolId switch
+        {
+            "cuoc_bac" => 100f,  // ~3x3 o (FreeformTileSize=84 o FarmPlot.cs)
+            "cuoc_vang" => 180f, // ~5x5 o
+            _ => 0f,
+        };
+
         private void TryUseTool()
         {
-            // Tim o dat gan nhat de cay/trong/tuoi/bon phan/diet sau/thu hoach
             var plots = GetTree().GetNodesInGroup("farm_plots");
+            float areaRadius = ToolAreaRadius(Inventory.Instance.EquippedTool);
+
+            if (areaRadius > 0f)
+            {
+                // Cuoc nang cap: dung TAT CA o dat trong ban kinh (khong chi 1 o gan nhat).
+                bool didAny = false;
+                foreach (var n in plots)
+                    if (n is FarmPlot ap && GlobalPosition.DistanceTo(ap.GlobalPosition) <= areaRadius)
+                    {
+                        ap.UseOn();
+                        didAny = true;
+                    }
+                if (didAny) return;
+            }
+
+            // Tim o dat gan nhat de cay/trong/tuoi/bon phan/diet sau/thu hoach
             FarmPlot nearest = null;
             float best = 48f;
             foreach (var n in plots)
@@ -449,16 +478,34 @@ namespace HiepSiVeVuon.Entities
             }
             if (nearestTree != null) { nearestTree.UseOn(); return; }
 
-            // Khong co gi gan de dung - neu dang trang bi Cuoc (hoe), thu cuoc dat MOI ngay
-            // truoc mat (xem FarmPlot.TryTillFreeform) de mo rong nong trai tu do.
-            if (Inventory.Instance.EquippedTool == "hoe")
+            // Khong co gi gan de dung - neu dang trang bi Cuoc (bat ky cap nao), thu cuoc dat MOI
+            // ngay truoc mat (xem FarmPlot.TryTillFreeform) de mo rong nong trai tu do. Cuoc nang
+            // cap (bac/vang) cuoc CA CUM O (3x3/5x5) cung 1 lan thay vi tung o.
+            string tool = Inventory.Instance.EquippedTool;
+            if (tool == "hoe" || tool == "cuoc_bac" || tool == "cuoc_vang")
             {
-                var tilled = FarmPlot.TryTillFreeform(GlobalPosition + _facing * 42f, GetTree().CurrentScene);
-                GD.Print(tilled != null ? "Da cuoc dat moi." : "Khong the cuoc dat o day.");
+                int tilesPerSide = tool switch { "cuoc_bac" => 3, "cuoc_vang" => 5, _ => 1 };
+                int half = tilesPerSide / 2;
+                Vector3 center = GlobalPosition + _facing * 42f;
+                Vector3 right = _facing.Cross(Vector3.Up).Normalized();
+                int tilled = 0;
+                for (int r = -half; r <= half; r++)
+                {
+                    for (int c = -half; c <= half; c++)
+                    {
+                        var spot = center + right * (c * 84f) + _facing * (r * 84f);
+                        if (FarmPlot.TryTillFreeform(spot, GetTree().CurrentScene) != null) tilled++;
+                    }
+                }
+                GD.Print(tilled > 0 ? $"Da cuoc {tilled} o dat moi." : "Khong the cuoc dat o day.");
             }
-            else if (Inventory.Instance.EquippedTool == "can_cau")
+            else if (tool == "can_cau")
             {
                 TryFish();
+            }
+            else if (tool == "may_tuoi_tu_dong")
+            {
+                TryPlaceSprinkler();
             }
         }
 
@@ -494,6 +541,22 @@ namespace HiepSiVeVuon.Entities
             {
                 GD.Print("Ca chua can, thu lai sau.");
             }
+        }
+
+        private static PackedScene _sprinklerScene;
+
+        private void TryPlaceSprinkler()
+        {
+            if (!Inventory.Instance.RemoveItem("may_tuoi_tu_dong", 1))
+            {
+                GD.Print("Khong co May Tuoi Tu Dong trong tui do.");
+                return;
+            }
+            _sprinklerScene ??= GD.Load<PackedScene>("res://scenes/AutoSprinkler.tscn");
+            var sprinkler = _sprinklerScene.Instantiate<AutoSprinkler>();
+            sprinkler.Position = GlobalPosition + _facing * 50f;
+            GetTree().CurrentScene.AddChild(sprinkler);
+            GD.Print("Da dat May Tuoi Tu Dong - se tu tuoi ruong quanh day moi ngay.");
         }
 
         private void TryFeedDuck()

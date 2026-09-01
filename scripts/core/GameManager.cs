@@ -18,6 +18,10 @@ namespace HiepSiVeVuon.Core
         public int Gold = 50;
         public int Day = 1;
 
+        // Da tra vang mo khoa Nha Kinh chua (xem GreenhouseGate.cs) - mo 1 LAN DUY NHAT, luu qua
+        // SaveSystem de khong phai tra lai moi lan choi.
+        public bool GreenhouseUnlocked = false;
+
         // ==== Thoi gian thuc: dong bo hoan toan theo dong ho/lich may tinh ====
         // 1 ngay trong game = 1 ngay thuc (24h that), khong con bo dem gia lap.
         public float DayProgress => (float)(System.DateTime.Now.TimeOfDay.TotalSeconds / 86400.0);

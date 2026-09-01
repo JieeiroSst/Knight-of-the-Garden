@@ -61,3 +61,10 @@ res://scripts/entities/WildAnimal.cs
 res://scripts/entities/WaterTower.cs
 res://scripts/systems/WaterEcosystem.cs
 res://scripts/entities/Boat.cs
+res://scripts/entities/AutoSprinkler.cs
+res://scripts/entities/ProcessingMachine.cs
+res://scripts/ui/CookingUI.cs
+res://scripts/entities/CookingStation.cs
+res://scripts/entities/GreenhouseGate.cs
+res://scripts/ui/BuildMenuUI.cs
+res://scripts/entities/PlacedBuilding.cs

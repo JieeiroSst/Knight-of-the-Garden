@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://bmainhsvv01"]
+[gd_scene load_steps=13 format=3 uid="uid://bmainhsvv01"]
 
 [ext_resource type="Script" path="res://scripts/core/Main.cs" id="1"]
 [ext_resource type="Script" path="res://scripts/ui/HUD.cs" id="2"]
@@ -9,6 +9,8 @@
 [ext_resource type="Script" path="res://scripts/ui/SettingsUI.cs" id="7"]
 [ext_resource type="Script" path="res://scripts/ui/SeedSelectUI.cs" id="8"]
 [ext_resource type="Script" path="res://scripts/ui/BackpackUI.cs" id="9"]
+[ext_resource type="Script" path="res://scripts/ui/CookingUI.cs" id="10"]
+[ext_resource type="Script" path="res://scripts/ui/BuildMenuUI.cs" id="11"]
 
 [sub_resource type="Environment" id="Environment_1"]
 background_mode = 1
@@ -71,3 +73,9 @@ script = ExtResource("8")
 
 [node name="BackpackUI" type="CanvasLayer" parent="."]
 script = ExtResource("9")
+
+[node name="CookingUI" type="CanvasLayer" parent="."]
+script = ExtResource("10")
+
+[node name="BuildMenuUI" type="CanvasLayer" parent="."]
+script = ExtResource("11")

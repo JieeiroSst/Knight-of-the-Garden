@@ -77,6 +77,13 @@ namespace HiepSiVeVuon.Core
 		private PackedScene _wildAquaticScene = GD.Load<PackedScene>("res://scenes/WildAquatic.tscn");
 		private PackedScene _boatScene = GD.Load<PackedScene>("res://scenes/Boat.tscn");
 
+		// Nong dan toan dien hon (xem BuildGreenhouse/BuildProcessingArea/BuildCookingStation/
+		// BuildBeehives) - nha kinh, may che bien, bep nau an.
+		private PackedScene _greenhouseGateScene = GD.Load<PackedScene>("res://scenes/GreenhouseGate.tscn");
+		private PackedScene _processingMachineScene = GD.Load<PackedScene>("res://scenes/ProcessingMachine.tscn");
+		private PackedScene _cookingStationScene = GD.Load<PackedScene>("res://scenes/CookingStation.tscn");
+		private PackedScene _autoSprinklerScene = GD.Load<PackedScene>("res://scenes/AutoSprinkler.tscn");
+
 		// Danh sach vi tri cac can nha trong khu do thi (xem BuildCityDistrict) - dung de gan
 		// "nha rieng" cho tung nguoi dan (SpawnTownCitizens) sau khi khu do thi da dung xong.
 		private readonly List<Vector3> _cityHousePositions = new();
@@ -285,6 +292,10 @@ namespace HiepSiVeVuon.Core
 			// quy hoach lai 5 khu vuc), neu chay SAU se doc phai Vector3.Zero (mac dinh).
 			SafeBuildStep(BuildAnimalPenDistrict, nameof(BuildAnimalPenDistrict));
 			SafeBuildStep(BuildGoatPen, nameof(BuildGoatPen));
+			SafeBuildStep(BuildGreenhouse, nameof(BuildGreenhouse));
+			SafeBuildStep(BuildProcessingArea, nameof(BuildProcessingArea));
+			SafeBuildStep(BuildCookingStation, nameof(BuildCookingStation));
+			SafeBuildStep(BuildBeehives, nameof(BuildBeehives));
 			// Nha + NPC ten rieng cua 3 chuong "cu" (Bo/Ngua/Ga) - PHAI chay SAU
 			// BuildAnimalPenDistrict (doc CowPastureCenter/HorseStableCenter/ChickenCoopCenter).
 			SafeBuildStep(BuildCowherd, nameof(BuildCowherd));
@@ -343,6 +354,22 @@ namespace HiepSiVeVuon.Core
 				plot.Position = pos;
 				AddChild(plot);
 				plot.ApplyState(t);
+			}
+
+			if (_autoSprinklerScene != null)
+			{
+				foreach (var xz in SaveSystem.Instance.SprinklerPositions)
+				{
+					var sprinkler = _autoSprinklerScene.Instantiate<AutoSprinkler>();
+					sprinkler.Position = new Vector3(xz.X, 0, xz.Y);
+					AddChild(sprinkler);
+				}
+			}
+
+			foreach (var (id, pos) in SaveSystem.Instance.PlacedBuildings)
+			{
+				var def = BuildingCatalog.Get(id);
+				if (def != null) PlacedBuilding.Spawn(def, new Vector3(pos.X, 0, pos.Y), this);
 			}
 		}
 
@@ -1517,7 +1544,7 @@ namespace HiepSiVeVuon.Core
 			{
 				"pumpkin_seed", "tomato_seed", "wheat_seed", "carrot_seed", "potato_seed", "cabbage_seed",
 				"pumpkin_seed_premium", "tomato_seed_premium", "wheat_seed_premium", "carrot_seed_premium", "potato_seed_premium", "cabbage_seed_premium",
-				"fertilizer_basic", "pesticide", "potion", "thucan_giasuc",
+				"fertilizer_basic", "pesticide", "potion", "thucan_giasuc", "may_tuoi_tu_dong",
 			};
 			merchant.DialogueLow = new[] { "Mua gi khong? Hat giong tot day!" };
 			merchant.DialogueMid = new[] { "Khach quen roi! Xem hang di." };
@@ -1529,7 +1556,7 @@ namespace HiepSiVeVuon.Core
 			var blacksmith = _npcScene.Instantiate<NPC>();
 			blacksmith.NpcId = "blacksmith";
 			blacksmith.NpcName = "Tho Ren";
-			blacksmith.ShopItems = new[] { "sword", "shield", "ring", "pickaxe", "hoe", "can_cau" };
+			blacksmith.ShopItems = new[] { "sword", "shield", "ring", "pickaxe", "hoe", "can_cau", "cuoc_bac", "cuoc_vang", "pickaxe_bac", "pickaxe_vang" };
 			blacksmith.DialogueLow = new[] { "Muon vu khi tot thi tim dung nguoi roi day. Nhung ta chua quen cau lam." };
 			blacksmith.DialogueMid = new[] { "Thep tot can lua tot. Cau ghe thuong xuyen nhi." };
 			blacksmith.DialogueHigh = new[] { "Vi tinh ban, ta se ren cho cau mon do ngon nhat xuong." };
@@ -1573,7 +1600,7 @@ namespace HiepSiVeVuon.Core
 			var carpenter = _npcScene.Instantiate<NPC>();
 			carpenter.NpcId = "carpenter";
 			carpenter.NpcName = "Tho Moc";
-			carpenter.ShopItems = new[] { "shield" };
+			carpenter.ShopItems = new[] { "shield", "da", "wood" };
 			carpenter.DialogueLow = new[] { "Co go tot thi mang den day, ta mua het." };
 			carpenter.DialogueMid = new[] { "Go cau chat chat luong day. Con bao nhieu mang toi nhe." };
 			carpenter.DialogueHigh = new[] { "Ta se dong cho cau mot mon do go dep nhat xuong lang." };
@@ -5164,6 +5191,140 @@ namespace HiepSiVeVuon.Core
 			caretaker.HomePos = goatHomePos;
 			caretaker.InteriorHomePos = goatHomePos;
 			_world.AddChild(caretaker);
+		}
+
+		// Nha Kinh - trong duoc QUANH NAM (bo qua ValidSeasons) + tu dong tuoi moi ngay (xem
+		// FarmPlot.IsGreenhouse). Xay NGOAI TROI (khong phai phong noi that day chuyen tele port -
+		// don gian hoa, tranh rui ro noi day AddBuildingEntrance/BuildRoom sai) - 1 khung "kinh"
+		// (tuong dac mau sang, GetCachedMaterial khong ho tro alpha that) + mai phang + Cong khoa
+		// (xem GreenhouseGate.cs) chan loi vao cho toi khi tra vang mo khoa 1 lan.
+		private static readonly Vector3 GreenhouseAnchor = CropsExtensionAnchor + new Vector3(430, 0, -260);
+
+		private void BuildGreenhouse()
+		{
+			const int gridSize = 4;
+			const float spacing = 100f;
+			float half = (gridSize - 1) * spacing / 2f + 60f;
+			const float doorGap = 60f;
+			float segLen = half - doorGap / 2f;
+
+			_extraPenZones.Add((GreenhouseAnchor, half + 60f));
+
+			var wallMat = GetCachedMaterial(new Color(0.78f, 0.88f, 0.86f), 0.2f);
+			_world.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(half * 2f, 70f, 6f) }, Position = GreenhouseAnchor + new Vector3(0, 35f, -half), MaterialOverride = wallMat });
+			_world.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(6f, 70f, half * 2f) }, Position = GreenhouseAnchor + new Vector3(-half, 35f, 0), MaterialOverride = wallMat });
+			_world.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(6f, 70f, half * 2f) }, Position = GreenhouseAnchor + new Vector3(half, 35f, 0), MaterialOverride = wallMat });
+			// Tuong Nam chia 2 doan, chua khoang trong o giua lam loi vao (Cong khoa dat dung do).
+			_world.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(segLen, 70f, 6f) }, Position = GreenhouseAnchor + new Vector3(-(doorGap / 2f + segLen / 2f), 35f, half), MaterialOverride = wallMat });
+			_world.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(segLen, 70f, 6f) }, Position = GreenhouseAnchor + new Vector3(doorGap / 2f + segLen / 2f, 35f, half), MaterialOverride = wallMat });
+			_world.AddChild(new MeshInstance3D { Mesh = new PlaneMesh { Size = new Vector2(half * 2f + 10f, half * 2f + 10f) }, Position = GreenhouseAnchor + Vector3.Up * 72f, MaterialOverride = GetCachedMaterial(new Color(0.72f, 0.86f, 0.86f), 0.15f) });
+
+			if (_greenhouseGateScene != null)
+			{
+				var gate = _greenhouseGateScene.Instantiate<GreenhouseGate>();
+				gate.Position = GreenhouseAnchor + new Vector3(0, 0, half);
+				_world.AddChild(gate);
+			}
+
+			for (int gx = 0; gx < gridSize; gx++)
+			{
+				for (int gz = 0; gz < gridSize; gz++)
+				{
+					var plot = _farmScene.Instantiate<FarmPlot>();
+					// GridX/GridY 300+ - nam NGOAI pham vi luoi that (0-11, BuildFarm) va sentinel
+					// tu do (-1) - tranh trung khoa luu voi FarmTileState cua he thong khac.
+					plot.GridX = 300 + gx;
+					plot.GridY = 300 + gz;
+					plot.IsGreenhouse = true;
+					plot.Soil = SoilType.Fertile;
+					plot.Position = GreenhouseAnchor + new Vector3((gx - (gridSize - 1) / 2f) * spacing, 0, (gz - (gridSize - 1) / 2f) * spacing);
+					_world.AddChild(plot);
+				}
+			}
+
+			AddBuildingLabelZone(GreenhouseAnchor, half, "Nha Kinh");
+		}
+
+		// May che bien nong san (xem ProcessingMachine.cs) - 5 may CANH NHAU gan Khu Nha Kho:
+		// Lo Say/May Ep (nhan BAT KY nong san), May Lam Pho Mai/May Mayonnaise/May Det (nhan
+		// DUNG 1 loai san pham chan nuoi).
+		private static readonly Vector3 ProcessingAnchor = StorageZoneAnchor + new Vector3(400, 0, 220);
+
+		private void BuildProcessingArea()
+		{
+			if (_processingMachineScene == null) return;
+			_extraPenZones.Add((ProcessingAnchor, 220f));
+
+			(string name, bool anyCrop, string fixedIn, string prefix, string fixedOut, int days)[] machines =
+			{
+				("Lo Say", true, "", "mut_", "", 2),
+				("May Ep", true, "", "ruou_", "", 3),
+				("May Lam Pho Mai", false, "milk", "", "pho_mai", 1),
+				("May Mayonnaise", false, "egg", "", "mayonnaise", 1),
+				("May Det", false, "wool", "", "vai", 1),
+			};
+
+			for (int i = 0; i < machines.Length; i++)
+			{
+				var (name, anyCrop, fixedIn, prefix, fixedOut, days) = machines[i];
+				var machine = _processingMachineScene.Instantiate<ProcessingMachine>();
+				machine.MachineName = name;
+				machine.AcceptsAnyCrop = anyCrop;
+				machine.FixedInputId = fixedIn;
+				machine.OutputPrefix = prefix;
+				machine.FixedOutputId = fixedOut;
+				machine.ProcessDays = days;
+				machine.Position = ProcessingAnchor + new Vector3((i - (machines.Length - 1) / 2f) * 70f, 0, 0);
+				_world.AddChild(machine);
+				AddBuildingLabelZone(machine.Position, 30f, name);
+			}
+		}
+
+		// Bep nau an (xem CookingStation.cs/CookingUI.cs) - canh khu che bien.
+		private void BuildCookingStation()
+		{
+			if (_cookingStationScene == null) return;
+			var station = _cookingStationScene.Instantiate<CookingStation>();
+			station.Position = ProcessingAnchor + new Vector3(0, 0, -150);
+			_world.AddChild(station);
+			AddBuildingLabelZone(station.Position, 30f, "Bep");
+		}
+
+		// Chuong ong (xem AddBeehive) - san xuat mat ong THU DONG (khong can cham soc hang ngay,
+		// tai su dung chu ky chin/hai/moc lai cua FruitTree.cs giong sen/rong o ho).
+		private void BuildBeehives()
+		{
+			var rng = new RandomNumberGenerator { Seed = 13000 };
+			for (int i = 0; i < 3; i++)
+			{
+				var pos = CropsExtensionAnchor + new Vector3(-250 + i * 90f, 0, 300f);
+				AddBeehive(pos, rng);
+			}
+		}
+
+		private void AddBeehive(Vector3 pos, RandomNumberGenerator rng)
+		{
+			var hiveMat = GetCachedMaterial(new Color(0.78f, 0.6f, 0.32f), 0.6f);
+			_world.AddChild(new MeshInstance3D
+			{
+				Mesh = new CylinderMesh { TopRadius = 10f, BottomRadius = 14f, Height = 26f },
+				Position = pos + Vector3.Up * 13f,
+				MaterialOverride = hiveMat,
+			});
+
+			// "Mat ong" (san pham) - AN khi chua chin, HIEN khi chin (xem FruitTree.Init).
+			var honeyVisual = new Node3D { Position = pos + Vector3.Up * 28f };
+			_world.AddChild(honeyVisual);
+			honeyVisual.AddChild(new MeshInstance3D
+			{
+				Mesh = new SphereMesh { Radius = 4f, Height = 7f },
+				MaterialOverride = GetCachedMaterial(new Color(0.9f, 0.7f, 0.15f), 0.4f),
+			});
+
+			var hive = new FruitTree { Position = pos, RipenDays = 4, FruitItemId = "mat_ong" };
+			hive.AddChild(new CollisionShape3D { Shape = new CylinderShape3D { Radius = 12f, Height = 26f } });
+			_world.AddChild(hive);
+			hive.Init(honeyVisual);
 		}
 
 		// Chuong don gian dung chung: hang rao vuong + 1 cong o giua canh Nam + mang an + 2 cot

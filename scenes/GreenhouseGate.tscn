@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3 uid="uid://bgreenhousegate01"]
+
+[ext_resource type="Script" path="res://scripts/entities/GreenhouseGate.cs" id="1"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1"]
+size = Vector3(60, 50, 10)
+
+[node name="GreenhouseGate" type="StaticBody3D" groups=["greenhouse_gates"]]
+script = ExtResource("1")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 25, 0)
+shape = SubResource("BoxShape3D_1")

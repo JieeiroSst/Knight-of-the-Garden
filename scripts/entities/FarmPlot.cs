@@ -20,6 +20,9 @@ namespace HiepSiVeVuon.Entities
         public int GridY;
         public Vector3 FreeformPos;
         [Export] public SoilType Soil = SoilType.Normal;
+        // O dat trong Nha Kinh (xem Main.BuildGreenhouse) - trong duoc QUANH NAM (bo qua
+        // ValidSeasons) va TU DONG duoc tuoi moi ngay (khong can nguoi choi/may tuoi).
+        [Export] public bool IsGreenhouse = false;
 
         private string _cropId = null;   // hat giong dang trong -> se ra crop
         private string _growsInto = null;
@@ -141,6 +144,17 @@ namespace HiepSiVeVuon.Entities
             }
         }
 
+        // May tuoi tu dong (AutoSprinkler.cs) goi MOI NGAY cho cac o dat trong tam - CHI tuoi
+        // (khac UseOn: khong cay/bon phan/thu hoach thay nguoi choi), khong lam gi neu dang trong.
+        public void AutoWater()
+        {
+            if (_cropId == null || _watered) return;
+            _watered = true;
+            _daysUnwatered = 0;
+            UpdateVisual();
+            SyncToSave();
+        }
+
         // Goi khi nguoi choi dung cong cu (phim Space). Thu tu uu tien khi cay CHUA chin: diet
         // sau (neu dang bi sau VA co thuoc) -> bon phan (neu CHUA bon VA co phan) -> tuoi nuoc -
         // moi lan bam CHI lam DUNG 1 hanh dong, giong quy uoc cu (khong tu dong gop nhieu buoc).
@@ -211,8 +225,10 @@ namespace HiepSiVeVuon.Entities
                 GD.Print("Khong co hat giong hop le.");
                 return;
             }
-            // Han che theo mua (xem GameManager.Season) - null/rong = trong duoc quanh nam.
-            if (seed.ValidSeasons != null && seed.ValidSeasons.Length > 0
+            // Han che theo mua (xem GameManager.Season) - null/rong = trong duoc quanh nam. O dat
+            // Nha Kinh (IsGreenhouse) BO QUA han che nay hoan toan - dung y "khong con bi gioi
+            // han theo mua" cua nha kinh.
+            if (!IsGreenhouse && seed.ValidSeasons != null && seed.ValidSeasons.Length > 0
                 && System.Array.IndexOf(seed.ValidSeasons, GameManager.Instance.CurrentSeason.ToString()) < 0)
             {
                 GD.Print($"Mua nay khong trong duoc {seed.Name}.");
@@ -331,6 +347,8 @@ namespace HiepSiVeVuon.Entities
             // su, thay vi bia them 1 co che "bao lam hong cay" tach biet khoi he thong thoi tiet
             // da co - xem GameManager.IsRaining).
             if (GameManager.Instance.IsRaining) _watered = true;
+            // Nha Kinh tu dong tuoi MOI NGAY (khong can nguoi choi/may tuoi tu dong).
+            if (IsGreenhouse) _watered = true;
 
             // Sau benh: chi phat sinh khi con dang lon (chua chin) va chua dang bi. Mua Xuan
             // nhieu con trung hon - nhan he so vao ty le roll THAY VI bia them 1 co che rieng.

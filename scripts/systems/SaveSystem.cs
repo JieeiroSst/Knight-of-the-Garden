@@ -15,6 +15,11 @@ namespace HiepSiVeVuon.Systems
 
         // Trang thai nong trai duoc dang ky boi FarmPlot (de save khong phu thuoc scene)
         public List<FarmTileState> FarmState = new();
+        // Vi tri (X,Z) cac May Tuoi Tu Dong da luu - Main.cs doc lai sau khi FetchAndApplySave
+        // xong de tu spawn lai node (giong FarmState cho o dat cuoc tu do).
+        public List<Vector2> SprinklerPositions = new();
+        // Cong trinh nguoi choi tu xay (xem BuildMenuUI.cs/PlacedBuilding.cs) - (BuildingId, X, Z).
+        public List<(string id, Vector2 pos)> PlacedBuildings = new();
 
         public override void _EnterTree()
         {
@@ -57,6 +62,26 @@ namespace HiepSiVeVuon.Systems
             public Dictionary<string, float> LakePopulation { get; set; } = new();
             public float LakeWaterQuality { get; set; } = 90f;
             public bool LakeTowerMaintained { get; set; } = true;
+
+            // Da mo khoa Nha Kinh chua (xem GreenhouseGate.cs).
+            public bool GreenhouseUnlocked { get; set; }
+
+            // Vi tri cac May Tuoi Tu Dong da dat (xem AutoSprinkler.cs) - danh sach song song
+            // X/Z (cung mau voi cac danh sach khac trong file nay), vi Vector3 cua Godot khong
+            // serialize truc tiep gon qua System.Text.Json.
+            public List<float> SprinklerX { get; set; } = new();
+            public List<float> SprinklerZ { get; set; } = new();
+
+            // Cong trinh nguoi choi tu xay (xem BuildMenuUI.cs/BuildingCatalog.cs) - 3 danh sach
+            // song song (Id/X/Z), cung mau voi Sprinkler o tren.
+            public List<string> BuildingIds { get; set; } = new();
+            public List<float> BuildingX { get; set; } = new();
+            public List<float> BuildingZ { get; set; } = new();
+
+            // Trang thai may che bien (xem ProcessingMachine.cs) KHONG duoc luu - don gian hoa co
+            // y: may reset ve trong moi lan nap lai save, nguoi choi mat toi da vai ngay che bien
+            // dang do dang (chap nhan duoc, tranh phai gan ID on dinh cho tung may + doi chieu lai
+            // dung thu tu luc nap).
         }
 
         public class SavedStack { public string Id { get; set; } public int Count { get; set; } }
@@ -125,6 +150,25 @@ namespace HiepSiVeVuon.Systems
             data.LakePopulation = new Dictionary<string, float>(WaterEcosystem.Instance.Population);
             data.LakeWaterQuality = WaterEcosystem.Instance.WaterQuality;
             data.LakeTowerMaintained = WaterEcosystem.Instance.TowerMaintained;
+
+            data.GreenhouseUnlocked = GameManager.Instance.GreenhouseUnlocked;
+            foreach (Node n in GetTree().GetNodesInGroup("auto_sprinklers"))
+            {
+                if (n is Node3D sprinkler)
+                {
+                    data.SprinklerX.Add(sprinkler.Position.X);
+                    data.SprinklerZ.Add(sprinkler.Position.Z);
+                }
+            }
+            foreach (Node n in GetTree().GetNodesInGroup("player_buildings"))
+            {
+                if (n is HiepSiVeVuon.Entities.PlacedBuilding pb && !string.IsNullOrEmpty(pb.BuildingId))
+                {
+                    data.BuildingIds.Add(pb.BuildingId);
+                    data.BuildingX.Add(pb.Position.X);
+                    data.BuildingZ.Add(pb.Position.Z);
+                }
+            }
 
             string json = JsonSerializer.Serialize(data);
             BackendClient.Instance.PushSave(json, (ok, err) =>
@@ -206,6 +250,15 @@ namespace HiepSiVeVuon.Systems
                     WaterEcosystem.Instance.Population[kv.Key] = kv.Value;
             WaterEcosystem.Instance.WaterQuality = data.LakeWaterQuality > 0 ? data.LakeWaterQuality : 90f;
             WaterEcosystem.Instance.TowerMaintained = data.LakeTowerMaintained;
+
+            GameManager.Instance.GreenhouseUnlocked = data.GreenhouseUnlocked;
+            SprinklerPositions.Clear();
+            for (int i = 0; i < data.SprinklerX.Count && i < data.SprinklerZ.Count; i++)
+                SprinklerPositions.Add(new Vector2(data.SprinklerX[i], data.SprinklerZ[i]));
+
+            PlacedBuildings.Clear();
+            for (int i = 0; i < data.BuildingIds.Count && i < data.BuildingX.Count && i < data.BuildingZ.Count; i++)
+                PlacedBuildings.Add((data.BuildingIds[i], new Vector2(data.BuildingX[i], data.BuildingZ[i])));
 
             GD.Print("Da nap game.");
         }
