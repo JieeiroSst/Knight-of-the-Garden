@@ -1,15 +1,17 @@
 using Godot;
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using HiepSiVeVuon.Core;
 
 namespace HiepSiVeVuon.Systems
 {
-    // Luu/nap game ra user:// duoi dang JSON. Luu chi so, tui do, quest, nong trai.
+    // Luu/nap game qua BACKEND that su tren Internet (Node.js/Express + PostgreSQL - xem
+    // BackendClient.cs va thu muc backend/) - KHONG con ghi file JSON local (user://) nua. Luu
+    // chi so, tui do, quest, hop dong, nong trai.
     public partial class SaveSystem : Node
     {
         public static SaveSystem Instance { get; private set; }
-        private const string SavePath = "user://savegame.json";
 
         // Trang thai nong trai duoc dang ky boi FarmPlot (de save khong phu thuoc scene)
         public List<FarmTileState> FarmState = new();
@@ -100,28 +102,49 @@ namespace HiepSiVeVuon.Systems
             foreach (var c in ContractSystem.Instance.Completed)
                 data.CompletedContracts.Add(c);
 
-            string json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
-            using var f = FileAccess.Open(SavePath, FileAccess.ModeFlags.Write);
-            f.StoreString(json);
-            GD.Print("Da luu game.");
+            string json = JsonSerializer.Serialize(data);
+            BackendClient.Instance.PushSave(json, (ok, err) =>
+            {
+                GD.Print(ok ? "Da luu game len server." : $"Loi luu game len server: {err}");
+            });
         }
 
-        public bool HasSave() => FileAccess.FileExists(SavePath);
-
-        public SaveData LoadRaw()
+        // Tai save cua nguoi choi dang dang nhap tu backend (goi MANG bat dong bo - KHONG the
+        // "cho" dong bo nhu doc file truoc day) va AP DUNG vao cac he thong neu co. Goi 1 lan
+        // SAU KHI the gioi da dung xong voi trang thai mac dinh (xem Main.cs) - the gioi se hien
+        // trang thai mac dinh trong choc lat truoc khi du lieu that (neu co) duoc ap len tren.
+        public void FetchAndApplySave(Action onDone = null)
         {
-            if (!HasSave()) return null;
-            using var f = FileAccess.Open(SavePath, FileAccess.ModeFlags.Read);
-            string json = f.GetAsText();
-            return JsonSerializer.Deserialize<SaveData>(json);
+            if (BackendClient.Instance == null || !BackendClient.Instance.IsLoggedIn)
+            {
+                onDone?.Invoke();
+                return;
+            }
+
+            BackendClient.Instance.FetchSave((found, json) =>
+            {
+                if (found && !string.IsNullOrEmpty(json))
+                {
+                    var data = JsonSerializer.Deserialize<SaveData>(json);
+                    ApplyLoadedData(data);
+                    GD.Print("Da nap game tu server.");
+                }
+                else if (json != null)
+                {
+                    // json bat dau bang "ERR:" = loi that su (mat mang/server loi), KHAC voi
+                    // json==null (nguoi choi moi, chua tung luu - giu nguyen the gioi mac dinh).
+                    GD.PrintErr($"Khong tai duoc ban luu: {json}");
+                }
+                else
+                {
+                    GD.Print("Nguoi choi moi - chua co ban luu tren server, giu the gioi mac dinh.");
+                }
+                onDone?.Invoke();
+            });
         }
 
-        // Nap va ap dung vao cac he thong. Farm duoc tra ve de scene tu dung.
-        public void LoadGame()
+        private void ApplyLoadedData(SaveData data)
         {
-            var data = LoadRaw();
-            if (data == null) { GD.Print("Khong co ban luu."); return; }
-
             GameManager.Instance.ApplyLoadedStats(
                 data.Hp, data.MaxHp, data.Level, data.Exp, data.ExpToNext, data.Gold, data.Day);
 

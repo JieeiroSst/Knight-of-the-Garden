@@ -16,7 +16,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 config/name="Hiep Si Ve Vuon"
 config/description="Game nong trai + phieu luu + chien dau. Godot 4 / C#."
-run/main_scene="res://scenes/Main.tscn"
+run/main_scene="res://scenes/LoginScreen.tscn"
 config/features=PackedStringArray("4.3", "C#", "Forward Plus")
 config/icon="res://icon.svg"
 
@@ -31,6 +31,7 @@ MusicPlayer="*res://scripts/systems/MusicPlayer.cs"
 FarmStorage="*res://scripts/systems/FarmStorage.cs"
 WarehouseDatabase="*res://scripts/systems/WarehouseDatabase.cs"
 ContractSystem="*res://scripts/systems/ContractSystem.cs"
+BackendClient="*res://scripts/systems/BackendClient.cs"
 
 [display]
 

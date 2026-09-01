@@ -314,11 +314,10 @@ namespace HiepSiVeVuon.Core
             GameManager.Instance.DayChanged += _ => TryBreedHorses();
             GameManager.Instance.DayChanged += _ => TryBreedGoats();
 
-            // Neu co ban luu -> nap
-            if (SaveSystem.Instance.HasSave())
-            {
-                SaveSystem.Instance.LoadGame();
-            }
+            // The gioi da dung xong voi trang thai mac dinh - gio moi hoi backend xem nguoi choi
+            // dang nhap co ban luu khong (goi MANG bat dong bo, khong the cho dong bo o day nhu
+            // doc file truoc day). Neu co, du lieu that se AP LEN TREN sau khi phan hoi ve.
+            SaveSystem.Instance.FetchAndApplySave();
         }
 
         public override void _Process(double delta)
@@ -5246,8 +5245,10 @@ namespace HiepSiVeVuon.Core
 
         private void GiveStartingItems()
         {
-            // Chi cap do khoi dau neu chua co ban luu
-            if (SaveSystem.Instance.HasSave()) return;
+            // Luon cap do khoi dau truoc - neu nguoi choi co ban luu tren server, FetchAndApplySave
+            // (cuoi _Ready, xem duoi day) se GHI DE len ngay sau do (Inventory.Clear() + nap lai
+            // tu save that). Truoc day co the kiem tra HasSave() dong bo qua file - nay la goi
+            // MANG bat dong bo nen khong the biet truoc luc nay, phai luon cap do mac dinh truoc.
             Inventory.Instance.AddItem("pumpkin_seed", 3);
             Inventory.Instance.AddItem("tomato_seed", 2);
             Inventory.Instance.AddItem("potion", 2);

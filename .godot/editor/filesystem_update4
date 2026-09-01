@@ -50,3 +50,6 @@ res://scripts/entities/FruitTree.cs
 res://scripts/entities/Goat.cs
 res://scripts/entities/OreNode.cs
 res://scripts/systems/ContractSystem.cs
+res://scripts/ui/SettingsUI.cs
+res://scripts/systems/BackendClient.cs
+res://scripts/ui/LoginUI.cs
