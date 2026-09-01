@@ -109,7 +109,9 @@ namespace HiepSiVeVuon.Entities
 		// KHONG sua thang material goc - material co the dung CHUNG giua nhieu quai cung model, sua
 		// truc tiep se nhuom nham CA NHUNG CON KHONG can nhuom). Godot tu nhan AlbedoColor voi
 		// AlbedoTexture neu co, nen van giu duoc chi tiet texture goc, chi doi TONG mau.
-		private static void ApplyTint(Node root, Color color)
+		// public: dung lai boi WildAnimal.cs de nhuom mau cho dong vat hoang da tai su dung model
+		// (vd dog.glb -> "cao" mau cam) - cung 1 ky thuat, khong lien quan gi den logic quai.
+		public static void ApplyTint(Node root, Color color)
 		{
 			if (root is MeshInstance3D mi && mi.Mesh != null)
 			{

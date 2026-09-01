@@ -50,6 +50,13 @@ namespace HiepSiVeVuon.Systems
             public List<string> CompletedContracts { get; set; } = new();
 
             public List<FarmTileState> Farm { get; set; } = new();
+
+            // He sinh thai ho (xem WaterEcosystem.cs) - Dictionary<string,float> serialize thang
+            // qua System.Text.Json (khong can tach thanh 2 list key/value nhu Quest/Contract o
+            // tren, vi key la id loai co dinh don gian, khong can giu THU TU nhu quest/contract).
+            public Dictionary<string, float> LakePopulation { get; set; } = new();
+            public float LakeWaterQuality { get; set; } = 90f;
+            public bool LakeTowerMaintained { get; set; } = true;
         }
 
         public class SavedStack { public string Id { get; set; } public int Count { get; set; } }
@@ -114,6 +121,10 @@ namespace HiepSiVeVuon.Systems
             }
             foreach (var c in ContractSystem.Instance.Completed)
                 data.CompletedContracts.Add(c);
+
+            data.LakePopulation = new Dictionary<string, float>(WaterEcosystem.Instance.Population);
+            data.LakeWaterQuality = WaterEcosystem.Instance.WaterQuality;
+            data.LakeTowerMaintained = WaterEcosystem.Instance.TowerMaintained;
 
             string json = JsonSerializer.Serialize(data);
             BackendClient.Instance.PushSave(json, (ok, err) =>
@@ -189,6 +200,13 @@ namespace HiepSiVeVuon.Systems
             foreach (var c in data.CompletedContracts) ContractSystem.Instance.Completed.Add(c);
 
             FarmState = data.Farm ?? new List<FarmTileState>();
+
+            if (data.LakePopulation != null && data.LakePopulation.Count > 0)
+                foreach (var kv in data.LakePopulation)
+                    WaterEcosystem.Instance.Population[kv.Key] = kv.Value;
+            WaterEcosystem.Instance.WaterQuality = data.LakeWaterQuality > 0 ? data.LakeWaterQuality : 90f;
+            WaterEcosystem.Instance.TowerMaintained = data.LakeTowerMaintained;
+
             GD.Print("Da nap game.");
         }
     }

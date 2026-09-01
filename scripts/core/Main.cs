@@ -71,6 +71,12 @@ namespace HiepSiVeVuon.Core
         private PackedScene _poultryKeeperScene = GD.Load<PackedScene>("res://scenes/PoultryKeeperNpc.tscn");
         private PackedScene _citizenScene = GD.Load<PackedScene>("res://scenes/TownCitizenNpc.tscn");
 
+        // He sinh thai ho nuoc (xem BuildLakeRegion/WaterEcosystem.cs) - dong vat hoang da tren
+        // can dung 1 scene chung (WildAnimal.tscn), duoi nuoc dung scene rieng va cham nho hon.
+        private PackedScene _wildAnimalScene = GD.Load<PackedScene>("res://scenes/WildAnimal.tscn");
+        private PackedScene _wildAquaticScene = GD.Load<PackedScene>("res://scenes/WildAquatic.tscn");
+        private PackedScene _boatScene = GD.Load<PackedScene>("res://scenes/Boat.tscn");
+
         // Danh sach vi tri cac can nha trong khu do thi (xem BuildCityDistrict) - dung de gan
         // "nha rieng" cho tung nguoi dan (SpawnTownCitizens) sau khi khu do thi da dung xong.
         private readonly List<Vector3> _cityHousePositions = new();
@@ -301,6 +307,7 @@ namespace HiepSiVeVuon.Core
 
             // Sang ngay thuc moi (GameManager tu phat hien qua dong ho may tinh) -> sinh them quai
             GameManager.Instance.DayChanged += _ => RespawnSomeEnemies();
+            GameManager.Instance.DayChanged += _ => RespawnWildlife();
             // Den duong tu bat/tat theo dung gio (18h - 6h sang). Ap dung trang thai ban dau
             // MOT LAN cho TAT CA cot den (ca 4 cot rieng va 2*13 cot o tung cong trinh) - phai
             // dat SAU khi toan bo cong trinh da duoc xay xong (BuildPoultryKeeper la cong trinh cuoi
@@ -1522,7 +1529,7 @@ namespace HiepSiVeVuon.Core
             var blacksmith = _npcScene.Instantiate<NPC>();
             blacksmith.NpcId = "blacksmith";
             blacksmith.NpcName = "Tho Ren";
-            blacksmith.ShopItems = new[] { "sword", "shield", "ring", "pickaxe", "hoe" };
+            blacksmith.ShopItems = new[] { "sword", "shield", "ring", "pickaxe", "hoe", "can_cau" };
             blacksmith.DialogueLow = new[] { "Muon vu khi tot thi tim dung nguoi roi day. Nhung ta chua quen cau lam." };
             blacksmith.DialogueMid = new[] { "Thep tot can lua tot. Cau ghe thuong xuyen nhi." };
             blacksmith.DialogueHigh = new[] { "Vi tinh ban, ta se ren cho cau mon do ngon nhat xuong." };
@@ -2184,8 +2191,11 @@ namespace HiepSiVeVuon.Core
             AddBuildingLabelZone(FieldRegionCenter, 260f, "Dong Ruong");
         }
 
-        // Ho - mat nuoc vuong lon (tai su dung BuildWaterRegion), quai Ran Ho, tai nguyen Ca
-        // (FruitTree), diem den la 1 "ben cau" (tai su dung stone_bridge.glb).
+        // Ho - mat nuoc vuong lon (tai su dung BuildWaterRegion) + 1 he sinh thai THAT (xem
+        // WaterEcosystem.cs): thap nuoc cap nguon sach, sen/rong ven bo, dong vat hoang da
+        // (Utility AI), ben thuyen. Quai Ran Ho van giu nguyen (nguy hiem tu nhien, khong doi
+        // khang voi he sinh thai). "Ca" gio CAU duoc qua can cau (xem Player.TryFish) thay vi hai
+        // nhu cay - da bo 4 "cay ca" FruitTree cu (AddFruitTree) vi trung mục dich voi co che moi.
         private void BuildLakeRegion()
         {
             WorldStreamer.Regions.Add(new WorldStreamer.RegionProfile
@@ -2203,19 +2213,230 @@ namespace HiepSiVeVuon.Core
             });
 
             BuildWaterRegion(LakeRegionCenter, 480f, 480f, new Color(0.2f, 0.45f, 0.65f), "Ho Nuoc");
+            WaterEcosystem.Instance.LakeCenter = LakeRegionCenter;
+            WaterEcosystem.Instance.LakeRadius = 460f;
+
+            Vector3 dockPos = LakeRegionCenter + new Vector3(500f, 2f, 0);
             if (_stoneBridgeScene != null)
             {
                 var dock = _stoneBridgeScene.Instantiate<Node3D>();
-                dock.Position = LakeRegionCenter + new Vector3(500f, 2f, 0);
+                dock.Position = dockPos;
                 dock.Scale = Vector3.One * 20f;
                 _world.AddChild(dock);
             }
-            var rng = new RandomNumberGenerator { Seed = 6401 };
-            for (int i = 0; i < 4; i++)
+            if (_boatScene != null)
             {
-                float angle = Mathf.Tau * i / 4f;
-                var pos = LakeRegionCenter + new Vector3(Mathf.Cos(angle) * 550f, 0, Mathf.Sin(angle) * 550f);
-                AddFruitTree(pos, "ca", new Color(0.3f, 0.5f, 0.7f), rng);
+                var boat = _boatScene.Instantiate<Boat>();
+                boat.Position = LakeRegionCenter + new Vector3(420f, 3f, 60f);
+                boat.BoundsCenter = LakeRegionCenter;
+                boat.BoundsRadius = 430f;
+                _world.AddChild(boat);
+                AddBoatHull(boat);
+            }
+
+            BuildWaterTower(LakeRegionCenter + new Vector3(-560f, 0, -260f));
+
+            var rng = new RandomNumberGenerator { Seed = 6401 };
+            for (int i = 0; i < 6; i++)
+            {
+                float angle = Mathf.Tau * i / 6f;
+                var pos = LakeRegionCenter + new Vector3(Mathf.Cos(angle) * 380f, 1.6f, Mathf.Sin(angle) * 380f);
+                AddPondPlant(pos, i % 2 == 0 ? "sen" : "rong", i % 2 == 0 ? new Color(0.85f, 0.55f, 0.7f) : new Color(0.3f, 0.5f, 0.25f), rng);
+            }
+
+            SpawnLakeWildlife(rng);
+        }
+
+        // Thap nuoc + ong dan xuong ho (xem WaterTower.cs) - dung hinh khoi nguyen thuy (khong
+        // tim duoc model CC0 phu hop) giong ky thuat da dung cho mo/bia mo: tru tron (bon nuoc)
+        // tren cot do, 1 "ong" (tru hep) noi xuong huong ho.
+        private void BuildWaterTower(Vector3 anchor)
+        {
+            var pillarMat = GetCachedMaterial(new Color(0.55f, 0.54f, 0.5f), 0.7f);
+            var tankMat = GetCachedMaterial(new Color(0.7f, 0.68f, 0.6f), 0.5f);
+            var pipeMat = GetCachedMaterial(new Color(0.4f, 0.4f, 0.42f), 0.6f);
+
+            const float pillarHeight = 140f;
+            _world.AddChild(new MeshInstance3D
+            {
+                Mesh = new CylinderMesh { TopRadius = 14f, BottomRadius = 18f, Height = pillarHeight },
+                Position = anchor + Vector3.Up * (pillarHeight / 2f),
+                MaterialOverride = pillarMat,
+            });
+            var tankPos = anchor + Vector3.Up * (pillarHeight + 30f);
+            _world.AddChild(new MeshInstance3D
+            {
+                Mesh = new CylinderMesh { TopRadius = 45f, BottomRadius = 45f, Height = 60f },
+                Position = tankPos,
+                MaterialOverride = tankMat,
+            });
+            _world.AddChild(new MeshInstance3D
+            {
+                Mesh = new CylinderMesh { TopRadius = 48f, BottomRadius = 48f, Height = 6f },
+                Position = tankPos + Vector3.Up * 33f,
+                MaterialOverride = tankMat,
+            });
+
+            // Ong dan nghieng huong ve phia ho - dung y "BON NUOC -> ong -> HO NUOC" nguoi choi mo ta.
+            Vector3 toLake = (LakeRegionCenter - anchor); toLake.Y = 0;
+            Vector3 pipeDir = toLake.Normalized();
+            Vector3 pipeStart = anchor + Vector3.Up * 20f + pipeDir * 20f;
+            float pipeLen = toLake.Length() * 0.55f;
+            var pipeMid = pipeStart + pipeDir * (pipeLen / 2f);
+            var pipe = new MeshInstance3D
+            {
+                Mesh = new CylinderMesh { TopRadius = 5f, BottomRadius = 5f, Height = pipeLen },
+                Position = pipeMid + Vector3.Up * 2f,
+                MaterialOverride = pipeMat,
+            };
+            // CylinderMesh mac dinh nam doc theo truc Y cuc bo - dung Basis THANG (khong qua
+            // LookAt+xoay them, de tranh sai huong do ghep nhieu phep xoay) de truc Y trung
+            // THANG voi pipeDir (nam ngang huong ve ho) thay vi huong len troi.
+            Vector3 pipeRight = pipeDir.Cross(Vector3.Up);
+            if (pipeRight.LengthSquared() < 0.0001f) pipeRight = Vector3.Right;
+            pipeRight = pipeRight.Normalized();
+            Vector3 pipeForward = pipeRight.Cross(pipeDir).Normalized();
+            pipe.Basis = new Basis(pipeRight, pipeDir, pipeForward);
+            _world.AddChild(pipe);
+
+            var tower = new WaterTower { Position = anchor };
+            tower.AddChild(new CollisionShape3D { Shape = new CylinderShape3D { Radius = 18f, Height = pillarHeight }, Position = Vector3.Up * (pillarHeight / 2f) });
+            _world.AddChild(tower);
+            AddBuildingLabelZone(anchor, 90f, "Thap Nuoc");
+            WorldStreamer.ExclusionZones.Add((anchor, 90f));
+        }
+
+        // Cum sen/rong ven ho - tai su dung chu ky "chin -> hai -> moc lai" cua FruitTree.cs
+        // nhung visual la LA NOI + HOA NHO thay vi than cay+tan la (hop ly hon cho thuc vat thuy
+        // sinh thap, xem AddFruitTree o tren cho ban goc "cay lau nam").
+        private void AddPondPlant(Vector3 pos, string itemId, Color plantColor, RandomNumberGenerator rng)
+        {
+            var padMat = GetCachedMaterial(new Color(0.22f, 0.42f, 0.2f), 0.8f);
+            for (int i = 0; i < 3; i++)
+            {
+                float a = rng.RandfRange(0f, Mathf.Tau);
+                float r = rng.RandfRange(0f, 10f);
+                _world.AddChild(new MeshInstance3D
+                {
+                    Mesh = new CylinderMesh { TopRadius = 7f, BottomRadius = 7f, Height = 0.6f },
+                    Position = pos + new Vector3(Mathf.Cos(a) * r, 0.3f, Mathf.Sin(a) * r),
+                    MaterialOverride = padMat,
+                });
+            }
+
+            var flowerGroup = new Node3D { Position = pos + Vector3.Up * 3f };
+            _world.AddChild(flowerGroup);
+            var flowerMat = GetCachedMaterial(plantColor, 0.6f);
+            for (int i = 0; i < 2; i++)
+            {
+                float a = rng.RandfRange(0f, Mathf.Tau);
+                flowerGroup.AddChild(new MeshInstance3D
+                {
+                    Mesh = new SphereMesh { Radius = 3f, Height = 5f },
+                    Position = new Vector3(Mathf.Cos(a) * 6f, 0, Mathf.Sin(a) * 6f),
+                    MaterialOverride = flowerMat,
+                });
+            }
+
+            var plant = new FruitTree { Position = pos, RipenDays = 3, FruitItemId = itemId };
+            plant.AddChild(new CollisionShape3D { Shape = new CylinderShape3D { Radius = 10f, Height = 4f } });
+            _world.AddChild(plant);
+            plant.Init(flowerGroup);
+        }
+
+        // Hinh thuyen don gian (khong co model CC0 phu hop) - than hinh hop + 2 dau nhon.
+        private void AddBoatHull(Boat boat)
+        {
+            var hullMat = GetCachedMaterial(new Color(0.42f, 0.28f, 0.16f), 0.7f);
+            boat.AddChild(new MeshInstance3D
+            {
+                Mesh = new BoxMesh { Size = new Vector3(14f, 8f, 30f) },
+                Position = Vector3.Up * 4f,
+                MaterialOverride = hullMat,
+            });
+            boat.AddChild(new MeshInstance3D
+            {
+                Mesh = new PrismMesh { Size = new Vector3(14f, 8f, 10f) },
+                Position = new Vector3(0, 4f, 20f),
+                MaterialOverride = hullMat,
+            });
+        }
+
+        // Cau hinh tung loai dong vat hoang da (giong tinh than EnemyDef data-driven cua Enemy.cs)
+        // - dung CHUNG 1 script WildAnimal.cs, khac nhau qua Role/model/tint/moi.
+        private struct WildSpeciesConfig
+        {
+            public string SpeciesId; public WildRole Role; public string ModelPath; public float ModelScale;
+            public string TintHex; public bool Aquatic; public bool Swims; public float WaterY; public string[] PreyGroups;
+            public int InitialCount; public int MaxVisible;
+        }
+
+        private static readonly WildSpeciesConfig[] LakeWildlifeSpecies =
+        {
+            new WildSpeciesConfig { SpeciesId = "deer", Role = WildRole.Herbivore,
+                ModelPath = "res://assets3d/polypizza/goat/goat.glb", ModelScale = 14.5f, TintHex = "#6b4a2f",
+                InitialCount = 3, MaxVisible = 3 },
+            new WildSpeciesConfig { SpeciesId = "rabbit", Role = WildRole.Herbivore,
+                ModelPath = "res://assets3d/quaternius/animals/cat.glb", ModelScale = 2.2f, TintHex = "#a9895f",
+                InitialCount = 4, MaxVisible = 4 },
+            new WildSpeciesConfig { SpeciesId = "fox", Role = WildRole.Predator,
+                ModelPath = "res://assets3d/quaternius/animals/dog.glb", ModelScale = 3.6f, TintHex = "#c9642a",
+                PreyGroups = new[] { "wild_rabbit" }, InitialCount = 2, MaxVisible = 2 },
+            new WildSpeciesConfig { SpeciesId = "wolf", Role = WildRole.Predator,
+                ModelPath = "res://assets3d/quaternius/animals/wolf.glb", ModelScale = 4f, TintHex = "",
+                PreyGroups = new[] { "wild_deer", "wild_rabbit" }, InitialCount = 1, MaxVisible = 1 },
+            new WildSpeciesConfig { SpeciesId = "duck", Role = WildRole.Waterfowl,
+                ModelPath = "res://assets3d/quaternius/animals/chicken.glb", ModelScale = 7.84f, TintHex = "#5a4a30",
+                Aquatic = true, Swims = true, WaterY = 1.7f, InitialCount = 5, MaxVisible = 5 },
+            new WildSpeciesConfig { SpeciesId = "fish", Role = WildRole.Fish,
+                ModelPath = "", ModelScale = 1.4f, TintHex = "#8fa5b0",
+                Aquatic = true, Swims = true, WaterY = -6f, InitialCount = 6, MaxVisible = 6 },
+        };
+
+        private void SpawnLakeWildlife(RandomNumberGenerator rng)
+        {
+            foreach (var cfg in LakeWildlifeSpecies)
+                for (int i = 0; i < cfg.InitialCount; i++)
+                    SpawnOneWildlife(cfg, rng);
+        }
+
+        private void SpawnOneWildlife(WildSpeciesConfig cfg, RandomNumberGenerator rng)
+        {
+            var scene = cfg.Aquatic ? _wildAquaticScene : _wildAnimalScene;
+            if (scene == null) return;
+            var a = scene.Instantiate<WildAnimal>();
+            a.SpeciesId = cfg.SpeciesId;
+            a.Role = cfg.Role;
+            a.ModelPath = cfg.ModelPath;
+            a.ModelScale = cfg.ModelScale;
+            a.TintHex = cfg.TintHex;
+            a.PreySpeciesGroups = cfg.PreyGroups;
+            a.SwimsOnWater = cfg.Swims;
+            a.WaterSurfaceY = cfg.WaterY;
+            a.HomeCenter = LakeRegionCenter;
+            a.RoamRadius = cfg.Aquatic ? 380f : 700f;
+            a.WaterEdgePos = LakeRegionCenter + new Vector3(rng.RandfRange(-400f, 400f), 1.6f, rng.RandfRange(-400f, 400f));
+
+            float angle = rng.RandfRange(0f, Mathf.Tau);
+            float radius = rng.RandfRange(0f, a.RoamRadius * 0.8f);
+            var pos = LakeRegionCenter + new Vector3(Mathf.Cos(angle) * radius, cfg.Swims ? cfg.WaterY : 0f, Mathf.Sin(angle) * radius);
+            a.Position = pos;
+            _world.AddChild(a);
+        }
+
+        // Giu so ca the HIEN HINH quanh muc "MaxVisible" - CHI spawn lai neu quan the THAT (xem
+        // WaterEcosystem.Population) van con du (>=5), khong hoi sinh vo han neu 1 loai da tuyet
+        // chung cuc bo (dung y "Ecosystem Balance" nguoi choi mo ta: quan the co the that su ve 0).
+        private void RespawnWildlife()
+        {
+            var rng = new RandomNumberGenerator();
+            rng.Randomize();
+            foreach (var cfg in LakeWildlifeSpecies)
+            {
+                int live = GetTree().GetNodesInGroup("wild_" + cfg.SpeciesId).Count;
+                if (live >= cfg.MaxVisible) continue;
+                if (WaterEcosystem.Instance.Get(cfg.SpeciesId) < 5f) continue;
+                SpawnOneWildlife(cfg, rng);
             }
         }
 

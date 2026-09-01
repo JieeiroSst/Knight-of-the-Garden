@@ -49,7 +49,11 @@ namespace HiepSiVeVuon.Entities
         // (khong an di), khac voi ban dau lam nguoc: an nguoi choi va bien ngua thanh nhan vat
         // dieu khien, khien nhin nhu nguoi choi "nhap" vao than ngua thay vi ngoi tren.
         [Export] public float MountRange = 55f;
+        [Export] public float SwimSpeedMult = 0.55f;
         private Horse _mountedHorse;
+        // Thuyen (xem Boat.cs) - dung CHUNG phim [R] voi cuoi ngua (mount_horse), coi nhu "len
+        // phuong tien gan nhat" thay vi rieng cho ngua.
+        private Boat _mountedBoat;
 
         public override void _Ready()
         {
@@ -123,10 +127,27 @@ namespace HiepSiVeVuon.Entities
                 return;
             }
 
+            if (_mountedBoat != null && IsInstanceValid(_mountedBoat))
+            {
+                // Y het logic "ngoi" tren ngua o tren (xoay SeatOffset theo huong thuyen dang
+                // quay mat) - Boat.cs tu doc input va di chuyen (xem Boat._Process).
+                _facing = _mountedBoat.Facing;
+                Vector3 boatRight = _facing.Cross(Vector3.Up).Normalized();
+                Vector3 seatWorldOffset = boatRight * Boat.SeatOffset.X
+                    + Vector3.Up * Boat.SeatOffset.Y
+                    + _facing * Boat.SeatOffset.Z;
+                GlobalPosition = _mountedBoat.GlobalPosition + seatWorldOffset;
+                UpdateVisuals(dt, 0f);
+                return;
+            }
+
             var input2 = Input.GetVector("move_left", "move_right", "move_up", "move_down");
             var dir = new Vector3(input2.X, 0f, input2.Y);
 
-            var targetVelocity = dir * Speed;
+            // Boi qua ho: cham hon di tren dat (khong co animation/trang thai rieng - chi giam
+            // toc do di chuyen khi dang o trong pham vi ho, xem WaterEcosystem.IsNearLake).
+            float moveSpeed = WaterEcosystem.Instance.IsNearLake(GlobalPosition) ? Speed * SwimSpeedMult : Speed;
+            var targetVelocity = dir * moveSpeed;
             float rate = dir != Vector3.Zero ? Acceleration : Friction;
             var horizontal = new Vector3(Velocity.X, 0f, Velocity.Z).MoveToward(targetVelocity, rate * dt);
 
@@ -206,6 +227,11 @@ namespace HiepSiVeVuon.Entities
                 DismountHorse();
                 return;
             }
+            if (_mountedBoat != null)
+            {
+                DismountBoat();
+                return;
+            }
             if (_interactArea == null) return;
             foreach (var body in _interactArea.GetOverlappingBodies())
             {
@@ -214,7 +240,31 @@ namespace HiepSiVeVuon.Entities
                     MountHorse(horse);
                     return;
                 }
+                if (body is Boat boat)
+                {
+                    MountBoat(boat);
+                    return;
+                }
             }
+        }
+
+        private void MountBoat(Boat boat)
+        {
+            _mountedBoat = boat;
+            boat.SetRidden(true);
+            CollisionLayer = 0;
+            CollisionMask = 0;
+            if (_camera != null) _camera.Position = MountedCameraOffset;
+        }
+
+        private void DismountBoat()
+        {
+            if (_mountedBoat == null) return;
+            _mountedBoat.SetRidden(false);
+            _mountedBoat = null;
+            CollisionLayer = 1;
+            CollisionMask = 1;
+            if (_camera != null) _camera.Position = _indoors ? IndoorCameraOffset : OutdoorCameraOffset;
         }
 
         private void MountHorse(Horse horse)
@@ -314,6 +364,8 @@ namespace HiepSiVeVuon.Entities
             {
                 if (body is NPC npc) { npc.Interact(); PlayAction("Interact"); return; }
                 if (body is DroppedItem drop) { drop.PickUp(); return; }
+                if (body is WaterTower tower) { tower.Interact(); return; }
+                if (body is WildAnimal wild && wild.SpeciesId == "duck") { TryFeedDuck(); return; }
             }
             foreach (var area in _interactArea.GetOverlappingAreas())
             {
@@ -403,6 +455,57 @@ namespace HiepSiVeVuon.Entities
             {
                 var tilled = FarmPlot.TryTillFreeform(GlobalPosition + _facing * 42f, GetTree().CurrentScene);
                 GD.Print(tilled != null ? "Da cuoc dat moi." : "Khong the cuoc dat o day.");
+            }
+            else if (Inventory.Instance.EquippedTool == "can_cau")
+            {
+                TryFish();
+            }
+        }
+
+        [Export] public float FishCooldownSec = 1.5f;
+        private ulong _lastFishTime = 0;
+
+        private void TryFish()
+        {
+            if (!WaterEcosystem.Instance.IsNearLake(GlobalPosition, 220f))
+            {
+                GD.Print("Can o gan ho/song de cau ca.");
+                return;
+            }
+            ulong now = Time.GetTicksMsec();
+            if (now - _lastFishTime < (ulong)(FishCooldownSec * 1000)) return;
+            _lastFishTime = now;
+
+            if (WaterEcosystem.Instance.Get("fish") < 5f)
+            {
+                GD.Print("Khu vuc nay khong con ca de cau, cho quan the phuc hoi.");
+                return;
+            }
+            var rng = new RandomNumberGenerator();
+            rng.Randomize();
+            if (rng.Randf() < 0.6f)
+            {
+                Inventory.Instance.AddItem("ca", 1);
+                FarmStorage.Instance.Add("ca", 1);
+                WaterEcosystem.Instance.OnPlayerCatch("fish", 3f);
+                GD.Print("Cau duoc 1 con ca!");
+            }
+            else
+            {
+                GD.Print("Ca chua can, thu lai sau.");
+            }
+        }
+
+        private void TryFeedDuck()
+        {
+            if (Inventory.Instance.RemoveItem("thucan_giasuc", 1))
+            {
+                WaterEcosystem.Instance.OnFeedDucks();
+                GD.Print("Da cho vit an.");
+            }
+            else
+            {
+                GD.Print("Can thuc an gia suc de cho vit an.");
             }
         }
 

@@ -11,9 +11,9 @@ namespace HiepSiVeVuon.UI
         {
             ("WASD", "Di chuyen"),
             ("Chuot / J", "Tan cong"),
-            ("Space", "Dung cong cu (cuoc dat moi/trong/tuoi/thu hoach/cuoc quang...)"),
-            ("E", "Tuong tac / Mo cua / Cau thang"),
-            ("R", "Cuoi / Xuong ngua"),
+            ("Space", "Dung cong cu (cuoc dat moi/trong/tuoi/thu hoach/cuoc quang/cau ca...)"),
+            ("E", "Tuong tac / Mo cua / Cau thang / Sua thap nuoc / Cho vit an"),
+            ("R", "Cuoi / Xuong ngua hoac thuyen"),
             ("I", "Tui do"),
             ("B", "Balo (kho chua them 50 o - chuyen do qua lai voi tui do)"),
             ("M", "Ban do the gioi"),

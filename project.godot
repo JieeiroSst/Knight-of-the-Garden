@@ -33,6 +33,7 @@ FarmStorage="*res://scripts/systems/FarmStorage.cs"
 WarehouseDatabase="*res://scripts/systems/WarehouseDatabase.cs"
 ContractSystem="*res://scripts/systems/ContractSystem.cs"
 BackendClient="*res://scripts/systems/BackendClient.cs"
+WaterEcosystem="*res://scripts/systems/WaterEcosystem.cs"
 
 [display]
 

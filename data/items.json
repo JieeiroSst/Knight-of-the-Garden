@@ -123,6 +123,39 @@
     "IconPath": "res://assets/items/coins.png"
   },
   {
+    "Id": "sen",
+    "Name": "Hoa Sen",
+    "Description": "Hoa sen hai tu ho nuoc.",
+    "Type": "Material",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 12,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "rong",
+    "Name": "Rong Nuoc",
+    "Description": "Rong/tao thu thap quanh ho nuoc.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 4,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "can_cau",
+    "Name": "Can Cau",
+    "Description": "Dung de cau ca gan ho/song - trang bi tu tui do de dung.",
+    "Type": "Tool",
+    "Rarity": "Common",
+    "MaxStack": 1,
+    "SellPrice": 28,
+    "BuyPrice": 70,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
     "Id": "co_vat",
     "Name": "Co Vat",
     "Description": "Vat pham co xua tim thay trong phe tich.",

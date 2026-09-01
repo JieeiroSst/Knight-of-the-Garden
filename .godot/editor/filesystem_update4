@@ -57,3 +57,7 @@ res://scripts/debug/DebugRegisterTest.cs
 res://scripts/ui/SeedSelectUI.cs
 res://scripts/systems/Backpack.cs
 res://scripts/ui/BackpackUI.cs
+res://scripts/entities/WildAnimal.cs
+res://scripts/entities/WaterTower.cs
+res://scripts/systems/WaterEcosystem.cs
+res://scripts/entities/Boat.cs
