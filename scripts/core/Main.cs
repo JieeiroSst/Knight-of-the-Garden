@@ -3330,7 +3330,7 @@ namespace HiepSiVeVuon.Core
 		// len chuong trai/nha cua/vuon nho da co san, du dat luc nao trong _Ready().
 		private void BuildWindmills()
 		{
-			var avoid = KnownOccupiedZones();
+			var avoid = KnownOccupiedZonesExcluding(OutbuildingsAnchor);
 			var rng = new RandomNumberGenerator { Seed = 10300 };
 			const float windmillScale = 25f;
 			const float footprintRadius = 140f; // than + canh quat khi quay + le an toan
@@ -4082,7 +4082,7 @@ namespace HiepSiVeVuon.Core
 		//     yeu cau - xem GuardNpc.cs.
 		private void BuildFarmStaff()
 		{
-			var avoid = KnownOccupiedZones();
+			var avoid = KnownOccupiedZonesExcluding(HousingZoneAnchor);
 			var rng = new RandomNumberGenerator { Seed = 10600 };
 
 			// Quy hoach lai: nha cua Jean/Marcel/Antoine gio thuoc Khu Nha O NPC - tim gan
@@ -4224,7 +4224,7 @@ namespace HiepSiVeVuon.Core
 		{
 			if (_palaceGuardScene == null) return;
 
-			var avoid = KnownOccupiedZones();
+			var avoid = KnownOccupiedZonesExcluding(HousingZoneAnchor);
 			var rng = new RandomNumberGenerator { Seed = 10700 };
 			// Quy hoach lai: doanh trai Cam Ve gio thuoc Khu Nha O NPC (gom TAT CA NPC, ke ca linh
 			// gac) - tim gan HousingZoneAnchor thay vi ngau nhien khap tuong da.
@@ -4713,7 +4713,7 @@ namespace HiepSiVeVuon.Core
 		// truoc (quy hoach lai theo yeu cau "nha o npc quy hoach 1 cho rieng").
 		private Vector3 NextHousingCottagePos(int seed)
 		{
-			var avoid = KnownOccupiedZones();
+			var avoid = KnownOccupiedZonesExcluding(HousingZoneAnchor);
 			var rng = new RandomNumberGenerator { Seed = (ulong)seed };
 			var pos = FindOpenSpot(avoid, 90f, rng, searchCenter: HousingZoneAnchor, searchRadius: 900f);
 			_extraPenZones.Add((pos, 90f));
@@ -4883,16 +4883,9 @@ namespace HiepSiVeVuon.Core
 		// qua - dam bao KHONG BAO GIO mat mot chuong nao ca.
 		private void BuildAnimalPenDistrict()
 		{
-			// KnownOccupiedZones() bao gom CA "(LivestockZoneOrigin, 2100f)" - vung dat rieng cho
-			// CHINH khu chan nuoi nay, dung de CAC HE THONG KHAC (duong mon, cong trinh rieng le...)
-			// biet ma tranh xa. Neu giu nguyen entry do trong avoid[] o day, MOI chuong deu bi coi
-			// la "cham" chinh vung dat rieng cua no (tam chuong luon nam GAN LivestockZoneOrigin,
-			// khong the nao cach xa 2100+ban kinh chuong) - day la nguyen nhan THAT SU khien
-			// FindOpenSpot lien tuc bao "khong tim duoc cho hoan toan" (khong phai do cellSpacing).
-			// Phai LOAI BO entry tu-tham-chieu nay truoc khi dung lam avoid[] cho chinh khu vuc do.
-			var avoid = new List<(Vector3 c, float r)>();
-			foreach (var z in KnownOccupiedZones())
-				if (z.c != LivestockZoneOrigin) avoid.Add(z);
+			// Loai bo tu-tham-chieu (xem KnownOccupiedZonesExcluding) - khu nay dat chuong GAN
+			// LivestockZoneOrigin, khong the tranh chinh vung dat rieng cua no.
+			var avoid = KnownOccupiedZonesExcluding(LivestockZoneOrigin);
 			var rng = new RandomNumberGenerator { Seed = 11000 };
 
 			// (tag, half, cow, sheep, pig, horse, chicken) - gop CHINH XAC so luong/loai vat nuoi
@@ -4925,8 +4918,11 @@ namespace HiepSiVeVuon.Core
 			var districtOrigin = LivestockZoneOrigin;
 			_animalDistrictOrigin = districtOrigin;
 			// Giu truoc 1 vung uoc luong cho CA khu (ban kinh tho, dam bao khu nha o NPC dat sau
-			// nay khong de len tren luoi chuong).
-			avoid.Add((districtOrigin, 2100f));
+			// nay khong de len tren luoi chuong) - CHI them vao _extraPenZones (danh cho CAC HE
+			// THONG KHAC doc qua KnownOccupiedZones() sau nay), TUYET DOI KHONG them vao avoid[]
+			// cuc bo o day: avoid[] con duoc dung de dat CHINH cac chuong BEN TRONG vung nay, neu
+			// them ca vao day se tai lap dung y het loi tu-tham-chieu vua sua o KnownOccupiedZonesExcluding
+			// (moi chuong lai tu coi minh la "cham" chinh vung dat rieng cua minh).
 			_extraPenZones.Add((districtOrigin, 2100f));
 
 			var built = new List<(Vector3 pos, (string tag, float half, int cow, int sheep, int pig, int horse, int chicken) spec)>();
@@ -5117,7 +5113,7 @@ namespace HiepSiVeVuon.Core
 		// LivestockZoneOrigin de chuong De nam GAN Khu Chan Nuoi thay vi ngau nhien khap tuong da.
 		private void BuildGoatPen()
 		{
-			var avoid = KnownOccupiedZones();
+			var avoid = KnownOccupiedZonesExcluding(LivestockZoneOrigin);
 			var rng = new RandomNumberGenerator { Seed = 11500 };
 			const float half = 140f;
 			var pos = FindOpenSpot(avoid, half * 1.5f, rng, searchCenter: LivestockZoneOrigin, searchRadius: 2100f);
@@ -5147,7 +5143,7 @@ namespace HiepSiVeVuon.Core
 			caretaker.TroughPos = pos;
 			// Quy hoach lai: nguoi cham De NGU trong Khu Nha O (tach khoi chuong), chi con di lam
 			// moi ngay toi chuong (WorkPos/TroughPos van tai vi tri chuong nhu cu).
-			var goatHomeAvoid = KnownOccupiedZones();
+			var goatHomeAvoid = KnownOccupiedZonesExcluding(HousingZoneAnchor);
 			var goatHomeRng = new RandomNumberGenerator { Seed = 11600 };
 			var goatHomePos = FindOpenSpot(goatHomeAvoid, 60f, goatHomeRng, searchCenter: HousingZoneAnchor, searchRadius: 900f);
 			_extraPenZones.Add((goatHomePos, 60f));
