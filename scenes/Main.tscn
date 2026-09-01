@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://bmainhsvv01"]
+[gd_scene load_steps=9 format=3 uid="uid://bmainhsvv01"]
 
 [ext_resource type="Script" path="res://scripts/core/Main.cs" id="1"]
 [ext_resource type="Script" path="res://scripts/ui/HUD.cs" id="2"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://scripts/ui/InventoryUI.cs" id="4"]
 [ext_resource type="Script" path="res://scripts/ui/ShopUI.cs" id="5"]
 [ext_resource type="Script" path="res://scripts/ui/MapUI.cs" id="6"]
+[ext_resource type="Script" path="res://scripts/ui/SettingsUI.cs" id="7"]
 
 [sub_resource type="Environment" id="Environment_1"]
 background_mode = 1
@@ -59,3 +60,6 @@ script = ExtResource("5")
 
 [node name="MapUI" type="CanvasLayer" parent="."]
 script = ExtResource("6")
+
+[node name="SettingsUI" type="CanvasLayer" parent="."]
+script = ExtResource("7")

@@ -14,7 +14,6 @@ namespace HiepSiVeVuon.UI
         private Label _dayLabel;
         private Label _timeLabel;
         private Label _questLabel;
-        private Label _hint;
         private Control _compass;
         private static readonly Vector2 CompassCenter = new(900, 40);
 
@@ -92,15 +91,8 @@ namespace HiepSiVeVuon.UI
             _questLabel.CustomMinimumSize = new Vector2(210, 0);
             vb.AddChild(_questLabel);
 
-            _hint = new Label
-            {
-                Text = "[WASD] Di | [J/Chuot] Danh | [Space] Cong cu | [E] Tuong tac/Cua/Cau thang | [R] Cuoi/Xuong ngua | [I] Tui do | [M] Ban do | [F5] Luu"
-            };
-            _hint.AutowrapMode = TextServer.AutowrapMode.Word;
-            _hint.Position = new Vector2(10, 500);
-            _hint.CustomMinimumSize = new Vector2(940, 0);
-            _hint.Scale = new Vector2(0.6f, 0.6f); // thu nho dong huong dan xuong con 60%
-            AddChild(_hint);
+            // Danh sach phim tat CHUYEN sang man hinh Cai Dat/Huong Dan rieng (bam [H], xem
+            // SettingsUI.cs) - khong con hien co dinh tren man hinh choi nua.
 
             // Ten cong trinh khi lai gan (xem BuildingLabelZone.cs) - hien giua man hinh, phia
             // tren, chu to de de doc thoang qua khi di ngang.
