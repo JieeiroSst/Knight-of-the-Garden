@@ -387,12 +387,13 @@ namespace HiepSiVeVuon.Core
 			const float width = 3000f;
 			const float depth = 3000f;
 
+			int groundSubdiv = GroundMaterial.SubdivisionsFor(width);
 			var groundMesh = new MeshInstance3D
 			{
 				Name = "Ground",
-				Mesh = new PlaneMesh { Size = new Vector2(width, depth) }
+				Mesh = new PlaneMesh { Size = new Vector2(width, depth), SubdivideWidth = groundSubdiv, SubdivideDepth = groundSubdiv }
 			};
-			// Texture co that (ambientCG, CC0), lap lai qua Uv1Scale
+			// Texture co that (ambientCG, CC0) + go nhe hinh hoc that (xem ground.gdshader)
 			groundMesh.MaterialOverride = GroundMaterial.CreateGrass(width, depth);
 			_world.AddChild(groundMesh);
 
@@ -441,10 +442,11 @@ namespace HiepSiVeVuon.Core
 		// tat ca deu cach nhau >=180 de khong chong lan du nha da phong to.
 		private void DrawTownGround()
 		{
+			int townSubdiv = GroundMaterial.SubdivisionsFor(TownGroundSize);
 			var groundMesh = new MeshInstance3D
 			{
 				Name = "TownGround",
-				Mesh = new PlaneMesh { Size = new Vector2(TownGroundSize, TownGroundSize) },
+				Mesh = new PlaneMesh { Size = new Vector2(TownGroundSize, TownGroundSize), SubdivideWidth = townSubdiv, SubdivideDepth = townSubdiv },
 				Position = VillageAnchor
 			};
 			groundMesh.MaterialOverride = GroundMaterial.CreateGrass(TownGroundSize, TownGroundSize);
@@ -2746,13 +2748,34 @@ namespace HiepSiVeVuon.Core
 		// Mat nuoc hinh chu nhat (Ho vuong, Song dai/hep, Dam lay) - tai su dung DUNG cong thuc
 		// mau nuoc da co (BuildWaterFeatures: albedo (0.2,0.45,0.65), roughness 0.15) lam mac
 		// dinh, cho phep doi mau rieng (vd Dam lay nuoc duc hon).
+		private static Shader _waterShader;
+
+		// Nuoc CO SONG + phan chieu fresnel (xem assets/shaders/water.gdshader) - thay mau phang
+		// truoc day. Moi vung nuoc tao 1 ShaderMaterial RIENG (khong dung chung _materialCache -
+		// cache do danh cho StandardMaterial3D theo (Color,roughness), khong hop voi ShaderMaterial)
+		// vi moi vung nuoc (ho/song/dam lay) can mau nong/sau RIENG dua tren waterColor truyen vao.
+		private ShaderMaterial MakeWaterMaterial(Color waterColor)
+		{
+			_waterShader ??= GD.Load<Shader>("res://assets/shaders/water.gdshader");
+			var mat = new ShaderMaterial { Shader = _waterShader };
+			mat.SetShaderParameter("shallow_color", new Color(waterColor.Lightened(0.25f), 0.82f));
+			mat.SetShaderParameter("deep_color", new Color(waterColor.Darkened(0.55f), 0.95f));
+			return mat;
+		}
+
 		private void BuildWaterRegion(Vector3 center, float halfX, float halfZ, Color waterColor, string label)
 		{
 			WorldStreamer.ExclusionZones.Add((center, Mathf.Max(halfX, halfZ) + 60f));
-			var waterMat = GetCachedMaterial(waterColor, 0.15f);
 			var bedMat = GetCachedMaterial(new Color(0.32f, 0.3f, 0.22f), 1f);
 			_world.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(halfX * 2f + 16f, 5f, halfZ * 2f + 16f) }, Position = center + Vector3.Down * 1f, MaterialOverride = bedMat });
-			_world.AddChild(new MeshInstance3D { Mesh = new PlaneMesh { Size = new Vector2(halfX * 2f, halfZ * 2f) }, Position = center + Vector3.Up * 1.5f, MaterialOverride = waterMat });
+
+			// Can DU luoi con (Subdivide) de song hien muot - qua thua se lam song nhin "gay khuc".
+			// ~15 don vi/o luoi la muc can bang hop ly giua do muot va so dinh (tranh 1 mat nuoc
+			// rat lon nhu Song 120x900 tao ra hang chuc nghin dinh).
+			int subW = Mathf.Clamp((int)(halfX * 2f / 15f), 4, 80);
+			int subD = Mathf.Clamp((int)(halfZ * 2f / 15f), 4, 80);
+			var waterMesh = new PlaneMesh { Size = new Vector2(halfX * 2f, halfZ * 2f), SubdivideWidth = subW, SubdivideDepth = subD };
+			_world.AddChild(new MeshInstance3D { Mesh = waterMesh, Position = center + Vector3.Up * 1.5f, MaterialOverride = MakeWaterMaterial(waterColor) });
 			AddBuildingLabelZone(center, Mathf.Max(halfX, halfZ) * 0.5f, label);
 		}
 

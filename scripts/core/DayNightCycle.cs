@@ -18,13 +18,24 @@ namespace HiepSiVeVuon.Core
 
         private static readonly Color NightLightColor = new(0.25f, 0.32f, 0.55f);
         private static readonly Color DayLightColor = new(1f, 0.95f, 0.85f);
-        private static readonly Color NightSky = new(0.04f, 0.05f, 0.12f);
-        private static readonly Color DaySky = new(0.55f, 0.75f, 0.95f);
+
+        // Bau troi that (ProceduralSkyMaterial, xem Main.tscn Environment_1.background_mode=Sky)
+        // thay the mau phang truoc day - can 2 mau (dinh troi/chan troi) rieng cho ca ngay LAN
+        // dem, khong chi 1 mau nhu ban goc (bau troi that co gradient, "1 mau" se khong tu nhien).
+        private static readonly Color NightSkyTop = new(0.02f, 0.03f, 0.08f);
+        private static readonly Color NightSkyHorizon = new(0.06f, 0.07f, 0.14f);
+        private static readonly Color NightGroundHorizon = new(0.05f, 0.05f, 0.06f);
+        private static readonly Color DaySkyTop = new(0.32f, 0.55f, 0.92f);
+        private static readonly Color DaySkyHorizon = new(0.75f, 0.82f, 0.88f);
+        private static readonly Color DayGroundHorizon = new(0.75f, 0.82f, 0.88f);
+
+        private ProceduralSkyMaterial _skyMaterial;
 
         public void Setup(DirectionalLight3D light, WorldEnvironment worldEnv)
         {
             _light = light;
             _worldEnv = worldEnv;
+            _skyMaterial = _worldEnv?.Environment?.Sky?.SkyMaterial as ProceduralSkyMaterial;
         }
 
         public override void _Ready()
@@ -76,9 +87,13 @@ namespace HiepSiVeVuon.Core
             }
 
             if (_worldEnv?.Environment != null)
-            {
-                _worldEnv.Environment.BackgroundColor = NightSky.Lerp(DaySky, dayFactor);
                 _worldEnv.Environment.AmbientLightEnergy = Mathf.Lerp(0.25f, 0.6f, dayFactor);
+
+            if (_skyMaterial != null)
+            {
+                _skyMaterial.SkyTopColor = NightSkyTop.Lerp(DaySkyTop, dayFactor);
+                _skyMaterial.SkyHorizonColor = NightSkyHorizon.Lerp(DaySkyHorizon, dayFactor);
+                _skyMaterial.GroundHorizonColor = NightGroundHorizon.Lerp(DayGroundHorizon, dayFactor);
             }
         }
     }

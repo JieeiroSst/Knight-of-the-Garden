@@ -246,7 +246,8 @@ namespace HiepSiVeVuon.Core
             // (truoc day co lam vay va tao duong ranh mau sang giua cac o dat) - dong deu mau
             // moi dung voi dia hinh dong bang that, chi Uv1Scale doi theo kich thuoc de mat co
             // giu dung ty le voi San chinh.
-            var ground = new MeshInstance3D { Mesh = new PlaneMesh { Size = new Vector2(ChunkSize, ChunkSize) } };
+            int chunkSubdiv = GroundMaterial.SubdivisionsFor(ChunkSize);
+            var ground = new MeshInstance3D { Mesh = new PlaneMesh { Size = new Vector2(ChunkSize, ChunkSize), SubdivideWidth = chunkSubdiv, SubdivideDepth = chunkSubdiv } };
             ground.Position = center;
             ground.MaterialOverride = GroundMaterial.CreateGrass(ChunkSize, ChunkSize);
             root.AddChild(ground);

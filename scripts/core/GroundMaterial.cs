@@ -17,32 +17,40 @@ namespace HiepSiVeVuon.Core
 
         private static Texture2D _grassColor, _grassNormal, _grassRoughness;
         private static Texture2D _earthColor, _earthNormal, _earthRoughness;
+        private static Shader _groundShader;
 
         // Do sau khoi dat dac ben duoi lop co (xem CreateEarthMass).
         public const float EarthDepth = 400f;
 
+        // So lan chia luoi (Subdivide) can co tren PlaneMesh de shader GO NHE (ground.gdshader)
+        // co du dinh de tao bum muot - mat KHONG chia (mac dinh) chi co 4 dinh goc, shader se
+        // khong the "uon" gi ca. San chinh va chunk WorldStreamer dung ham nay (khac kich thuoc)
+        // de tinh so o luoi hop ly (~30-50 don vi/o, du muot ma khong qua nhieu dinh).
+        public static int SubdivisionsFor(float sizeUnits) => Mathf.Clamp((int)(sizeUnits / 40f), 8, 80);
+
         // Luu y: khong nhan tham so tint/mau rieng - moi mat dat (San chinh va tat ca chunk)
         // phai dung dung 1 texture giong het nhau, neu khong se tao duong ranh sang giua
         // cac o dat rieng biet (da tung xay ra khi WorldStreamer tung tint ngau nhien tung chunk).
-        public static StandardMaterial3D CreateGrass(float worldWidth, float worldDepth)
+        //
+        // ShaderMaterial (thay StandardMaterial3D truoc day) de them go nhe hinh hoc THAT qua
+        // vertex shader (xem ground.gdshader) - PlaneMesh goi ham nay PHAI co Subdivide du (xem
+        // SubdivisionsFor) de bum hien ra duoc.
+        public static ShaderMaterial CreateGrass(float worldWidth, float worldDepth)
         {
             _grassColor ??= GD.Load<Texture2D>(GrassColorPath);
             _grassNormal ??= GD.Load<Texture2D>(GrassNormalPath);
             _grassRoughness ??= GD.Load<Texture2D>(GrassRoughnessPath);
+            _groundShader ??= GD.Load<Shader>("res://assets/shaders/ground.gdshader");
 
-            return new StandardMaterial3D
-            {
-                AlbedoTexture = _grassColor,
-                NormalEnabled = _grassNormal != null,
-                NormalTexture = _grassNormal,
-                RoughnessTexture = _grassRoughness,
-                RoughnessTextureChannel = BaseMaterial3D.TextureChannel.Grayscale,
-                Uv1Scale = new Vector3(worldWidth / TileSize, worldDepth / TileSize, 1f),
-                Roughness = 1f,
-                // Co that khong bong: giam phan xa Fresnel goc hep, tranh hien tuong ca dam co
-                // "anh len" mau troi thanh mot dai sang xanh o duong chan troi.
-                MetallicSpecular = 0.05f
-            };
+            var mat = new ShaderMaterial { Shader = _groundShader };
+            mat.SetShaderParameter("albedo_texture", _grassColor);
+            mat.SetShaderParameter("normal_texture", _grassNormal);
+            mat.SetShaderParameter("roughness_texture", _grassRoughness);
+            mat.SetShaderParameter("uv_scale", new Vector2(worldWidth / TileSize, worldDepth / TileSize));
+            // Co that khong bong: giam phan xa Fresnel goc hep, tranh hien tuong ca dam co "anh
+            // len" mau troi thanh mot dai sang xanh o duong chan troi.
+            mat.SetShaderParameter("specular_val", 0.05f);
+            return mat;
         }
 
         // Khoi dat dac (texture dat/da that, ambientCG, CC0) nam ngay duoi mat co - de nhin tu
