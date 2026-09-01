@@ -259,9 +259,11 @@ namespace HiepSiVeVuon.Core
             SafeBuildStep(BuildAnimalPenDistrict, nameof(BuildAnimalPenDistrict));
             SafeBuildStep(BuildWindmills, nameof(BuildWindmills));
             SafeBuildStep(BuildOuterWindmills, nameof(BuildOuterWindmills));
+            // PHAI chay SAU BuildAnimalPenDistrict (can vi tri THAT SU cua khu chuong/doanh trai).
+            SafeBuildStep(BuildFarmPaths, nameof(BuildFarmPaths));
             // PHAI la buoc CUOI CUNG - navmesh duoc "nuong" (bake) dua tren TOAN BO va cham tinh
             // (StaticBody3D) da co trong canh luc bake, nen can moi thu (hang rao/nha/thap canh/
-            // coi xay gio/chuong trai) da dat xong het truoc do.
+            // coi xay gio/chuong trai/duong mon) da dat xong het truoc do.
             SafeBuildStep(BuildFarmNavigation, nameof(BuildFarmNavigation));
 
             // Sang ngay thuc moi (GameManager tu phat hien qua dong ho may tinh) -> sinh them quai
@@ -3794,6 +3796,12 @@ namespace HiepSiVeVuon.Core
         // khien nguoi choi dung trong 1 chuong RONG ma tuong nham la chuong da co vat nuoi).
         private readonly List<(Vector3 c, float r)> _extraPenZones = new();
 
+        // Vi tri THAT SU (tinh ngau nhien qua FindOpenSpot luc chay) cua khu chuong trai tap
+        // trung va doanh trai nguoi cham soc - luu lai de BuildFarmPaths (chay SAU) noi duong tu
+        // day toi cac khu vuc khac, vi 2 vi tri nay KHONG PHAI hang so co dinh nhu cac khu cu.
+        private Vector3 _animalDistrictOrigin;
+        private Vector3 _caretakerDormPos;
+
         // Vung da dung san TRONG pham vi tuong da 10 hecta (danh sach tron bao gom moi khu da
         // xay tu truoc den gio) - dung lam "avoid" ban dau cho FindOpenSpot khi them chuong moi.
         // LUON cong them _extraPenZones (cac chuong them da dat o CAC LAN GOI TRUOC).
@@ -3813,6 +3821,38 @@ namespace HiepSiVeVuon.Core
             };
             zones.AddRange(_extraPenZones);
             return zones;
+        }
+
+        // Mang luoi duong mon noi CAC KHU VUC CHINH cua nong trai voi nhau (theo yeu cau "co
+        // duong di cho NPC va player di xung quanh trang trai") - dung AddPath (duong dat mon
+        // don gian, KHONG dung AddRoad vi ham do gan them 1 cai cau go moi doan, hop cho duong
+        // lang chinh nhung sai neu rai khap noi trong nong trai). PHAI chay SAU
+        // BuildAnimalPenDistrict/BuildPenCaretakerDorm (can _animalDistrictOrigin/
+        // _caretakerDormPos da duoc tinh xong - 2 vi tri nay chi xac dinh luc chay, khong phai
+        // hang so co dinh nhu cac khu cu).
+        private void BuildFarmPaths()
+        {
+            const float pathWidth = 55f;
+            var fieldCenter = FarmOrigin + new Vector3((FarmGridW - 1) * FarmSpacing / 2f, 0, (FarmGridH - 1) * FarmSpacing / 2f);
+            var barnPos = BarnPos2Vec();
+
+            // Cum nha chinh <-> cong ruong (truoc day KHONG co duong noi doan nay).
+            AddPath(FarmhousePos, FarmGatePos, pathWidth);
+            AddPath(FarmhousePos, barnPos, pathWidth);
+            AddPath(barnPos, fieldCenter, pathWidth);
+
+            // Barn <-> chuoi 4 chuong goc (bo -> ngua -> ga -> cuu/heo, dung thu tu vi tri that
+            // cua chung tu truoc gio) <-> vuon cay/vuon nho.
+            AddPath(barnPos, CowPastureCenter, pathWidth);
+            AddPath(CowPastureCenter, HorseStableCenter, pathWidth);
+            AddPath(HorseStableCenter, ChickenCoopCenter, pathWidth);
+            AddPath(ChickenCoopCenter, SheepPigPastureCenter, pathWidth);
+            AddPath(SheepPigPastureCenter, OrchardCenter, pathWidth);
+            AddPath(OrchardCenter, VineyardCenter, pathWidth);
+
+            // Barn <-> khu chuong trai tap trung moi (28 chuong) <-> doanh trai nguoi cham soc.
+            AddPath(barnPos, _animalDistrictOrigin, pathWidth);
+            AddPath(_animalDistrictOrigin, _caretakerDormPos, pathWidth);
         }
 
         // Navmesh THAT SU cho toan bo pham vi tuong da (NavigationRegion3D + NavigationMesh cua
@@ -3893,6 +3933,7 @@ namespace HiepSiVeVuon.Core
             const int cols = 7;
             const float cellSpacing = 450f;
             var districtOrigin = FindOpenSpot(avoid, 700f, rng, boundsFraction: 0.55f);
+            _animalDistrictOrigin = districtOrigin;
             // Giu truoc 1 vung uoc luong cho CA khu (ban kinh tho, dam bao khu nha o NPC dat sau
             // nay khong de len tren luoi chuong).
             avoid.Add((districtOrigin, 1900f));
@@ -3976,6 +4017,7 @@ namespace HiepSiVeVuon.Core
             List<(Vector3 pos, (string tag, float half, int cow, int sheep, int pig, int horse, int chicken) spec)> pens)
         {
             var dormPos = FindOpenSpot(avoid, 200f, rng, boundsFraction: 0.6f);
+            _caretakerDormPos = dormPos;
             AddDecor(_farmhouseScene, dormPos, 60f, 90f, FarmhouseFootprint);
             var interior = AddBuildingEntrance(dormPos, 90f, 110f, 80f, RoomKind.Village);
             AddBuildingLabelZone(dormPos, 130f, "Nha O Nguoi Cham Nuoi");
