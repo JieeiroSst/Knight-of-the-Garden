@@ -42,10 +42,17 @@ namespace HiepSiVeVuon.Entities
         private Vector3 _facing = Vector3.Back;
 
         private readonly HiepSiVeVuon.Core.SteeringUtil.StuckDetector _stuckDetector = new();
+        // Navmesh THAT SU (xem Main.BuildFarmNavigation) - dung de di VONG QUA hang rao/nha/vat
+        // can (dong go/khu dung cu/hang rao can sua/kho) thay vi di thang nhu truoc.
+        private NavigationAgent3D _navAgent;
+        private readonly SteeringUtil.NavSteering _nav = new();
 
         public override void _Ready()
         {
             base._Ready();
+
+            _navAgent = new NavigationAgent3D { PathDesiredDistance = 8f, TargetDesiredDistance = 10f, AvoidanceEnabled = false };
+            AddChild(_navAgent);
 
             int hour = GameManager.Instance.Hour;
             _onDuty = hour >= WorkStartHour && hour < WorkEndHour;
@@ -145,15 +152,17 @@ namespace HiepSiVeVuon.Entities
                 case State.WalkToFence:
                 {
                     if (_target == null || !IsInstanceValid(_target)) { _state = State.ReturnHome; return (Vector3.Zero, 0f); }
-                    Vector3 dir = _target.GlobalPosition - GlobalPosition;
-                    dir.Y = 0f;
-                    if (dir.Length() <= ArriveDist)
+                    Vector3 fenceTarget = _target.GlobalPosition;
+                    Vector3 straightDir = fenceTarget - GlobalPosition;
+                    straightDir.Y = 0f;
+                    if (straightDir.Length() <= ArriveDist)
                     {
                         _state = State.Repairing;
                         _pauseLeft = RepairDurationSec;
                         return (Vector3.Zero, 0f);
                     }
-                    return (dir.Normalized(), Speed);
+                    var navDir = _nav.GetDirection(_navAgent, GlobalPosition, fenceTarget);
+                    return (navDir != Vector3.Zero ? navDir : straightDir.Normalized(), Speed);
                 }
 
                 case State.Repairing:
@@ -168,15 +177,16 @@ namespace HiepSiVeVuon.Entities
 
                 case State.ReturnHome:
                 {
-                    Vector3 dir = HomePos - GlobalPosition;
-                    dir.Y = 0f;
-                    if (dir.Length() <= ArriveDist)
+                    Vector3 straightDir = HomePos - GlobalPosition;
+                    straightDir.Y = 0f;
+                    if (straightDir.Length() <= ArriveDist)
                     {
                         _state = State.Idle;
                         _checkCooldown = 0; // kiem tra ngay khi vua ve, khong doi them
                         return (Vector3.Zero, 0f);
                     }
-                    return (dir.Normalized(), Speed);
+                    var navDir = _nav.GetDirection(_navAgent, GlobalPosition, HomePos);
+                    return (navDir != Vector3.Zero ? navDir : straightDir.Normalized(), Speed);
                 }
 
                 default:
@@ -186,15 +196,16 @@ namespace HiepSiVeVuon.Entities
 
         private (Vector3 dir, float speed) GoTo(Vector3 target, State nextState, System.Action onArrive)
         {
-            Vector3 dir = target - GlobalPosition;
-            dir.Y = 0f;
-            if (dir.Length() <= ArriveDist)
+            Vector3 straightDir = target - GlobalPosition;
+            straightDir.Y = 0f;
+            if (straightDir.Length() <= ArriveDist)
             {
                 onArrive();
                 _state = nextState;
                 return (Vector3.Zero, 0f);
             }
-            return (dir.Normalized(), Speed);
+            var navDir = _nav.GetDirection(_navAgent, GlobalPosition, target);
+            return (navDir != Vector3.Zero ? navDir : straightDir.Normalized(), Speed);
         }
     }
 }

@@ -35,10 +35,19 @@ namespace HiepSiVeVuon.Entities
         private Vector3 _wanderTarget;
         private ulong _nextWanderTime = 0;
         private readonly SteeringUtil.StuckDetector _stuckDetector = new();
+        // Navmesh THAT SU (xem Main.BuildFarmNavigation) - DoPatrol() dung day de di VONG QUA
+        // hang rao/nha/vat can thay vi di thang toi muc tieu wander nhu truoc. LUU Y: day la nhom
+        // 100 NPC - neu thay giat/lag ro ret sau khi them navmesh, day la nhom dau tien nen xem
+        // xet bo lai logic wander don gian (khong dung NavigationAgent3D) vi so luong qua lon.
+        private NavigationAgent3D _navAgent;
+        private readonly SteeringUtil.NavSteering _nav = new();
 
         public override void _Ready()
         {
             base._Ready();
+
+            _navAgent = new NavigationAgent3D { PathDesiredDistance = 8f, TargetDesiredDistance = 10f, AvoidanceEnabled = false };
+            AddChild(_navAgent);
 
             int hour = GameManager.Instance.Hour;
             _phase = IsOnDutyHour(hour) ? Phase.Patrol : Phase.Sleep;
@@ -102,10 +111,11 @@ namespace HiepSiVeVuon.Entities
                 _wanderTarget = PatrolCenter + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
                 _nextWanderTime = now + (ulong)rng.RandiRange(6000, 14000);
             }
-            Vector3 dir = _wanderTarget - GlobalPosition;
-            dir.Y = 0f;
-            if (dir.Length() <= 14f) return (Vector3.Zero, 0f);
-            return (dir.Normalized(), Speed * 0.65f);
+            Vector3 straightDir = _wanderTarget - GlobalPosition;
+            straightDir.Y = 0f;
+            if (straightDir.Length() <= 14f) return (Vector3.Zero, 0f);
+            var navDir = _nav.GetDirection(_navAgent, GlobalPosition, _wanderTarget);
+            return (navDir != Vector3.Zero ? navDir : straightDir.Normalized(), Speed * 0.65f);
         }
     }
 }

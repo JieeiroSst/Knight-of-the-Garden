@@ -259,6 +259,10 @@ namespace HiepSiVeVuon.Core
             SafeBuildStep(BuildAnimalPenDistrict, nameof(BuildAnimalPenDistrict));
             SafeBuildStep(BuildWindmills, nameof(BuildWindmills));
             SafeBuildStep(BuildOuterWindmills, nameof(BuildOuterWindmills));
+            // PHAI la buoc CUOI CUNG - navmesh duoc "nuong" (bake) dua tren TOAN BO va cham tinh
+            // (StaticBody3D) da co trong canh luc bake, nen can moi thu (hang rao/nha/thap canh/
+            // coi xay gio/chuong trai) da dat xong het truoc do.
+            SafeBuildStep(BuildFarmNavigation, nameof(BuildFarmNavigation));
 
             // Sang ngay thuc moi (GameManager tu phat hien qua dong ho may tinh) -> sinh them quai
             GameManager.Instance.DayChanged += _ => RespawnSomeEnemies();
@@ -3809,6 +3813,49 @@ namespace HiepSiVeVuon.Core
             };
             zones.AddRange(_extraPenZones);
             return zones;
+        }
+
+        // Navmesh THAT SU cho toan bo pham vi tuong da (NavigationRegion3D + NavigationMesh cua
+        // Godot) - thay vi chi "di thang toi muc tieu roi lach neu bi ket" (SteeringUtil.
+        // StuckDetector, van con giu lam luoi an toan du phong), NPC dung NavigationAgent3D se
+        // TU TINH DUONG DI THAT SU vong qua hang rao/nha/thap canh/coi xay gio (xem
+        // SteeringUtil.NavSteering + cach dung trong FarmhandNpc/StablehandNpc/PoultryKeeperNpc/
+        // GuardNpc/FarmStewardNpc/PalaceGuardNpc).
+        //
+        // GeometryParsedGeometryType=StaticColliders: Godot TU DONG do toan bo StaticBody3D +
+        // CollisionShape3D da co san trong pham vi FilterBakingAabb (khong can danh dau tay tung
+        // vat can) de "khoet" thanh vung khong di duoc.
+        //
+        // AgentRadius=15 (NPC capsule radius that su = 12, chua them 3 don vi du phong) - PHAI
+        // NHO HON nua chieu rong khe ho cong chuong (44 don vi, xem BuildSimplePasture) de NPC
+        // van di qua cong duoc, khong bi ket tai ngay lo vao.
+        //
+        // CellSize=12 (kha nho so voi ty le nay - hang rao/cong chi rong ~44-440 don vi) de
+        // navmesh nhan dung cac khe cong hep, doi lai bake se mat vai giay luc khoi dong (chap
+        // nhan duoc, chi bake 1 LAN duy nhat luc _Ready(), dong bo/blocking de dam bao navmesh da
+        // san sang truoc khi bat ky NPC nao bat dau di chuyen).
+        private void BuildFarmNavigation()
+        {
+            var navMesh = new NavigationMesh
+            {
+                GeometryParsedGeometryType = NavigationMesh.ParsedGeometryType.StaticColliders,
+                AgentRadius = 15f,
+                AgentHeight = 45f,
+                AgentMaxClimb = 20f,
+                AgentMaxSlope = 50f,
+                CellSize = 12f,
+                CellHeight = 8f,
+                FilterBakingAabb = new Aabb(
+                    new Vector3(FarmWallCenter.X - FarmWallHalfSize - 150f, -100f, FarmWallCenter.Z - FarmWallHalfSize - 150f),
+                    new Vector3(FarmWallHalfSize * 2f + 300f, 300f, FarmWallHalfSize * 2f + 300f)),
+            };
+
+            var region = new NavigationRegion3D { NavigationMesh = navMesh };
+            _world.AddChild(region);
+            // onThread:false - bake DONG BO ngay tai day, dam bao navmesh san sang TRUOC KHI
+            // frame dau tien cua bat ky NPC nao chay (moi buoc dung san khac trong _Ready() cung
+            // dang chay dong bo nhu vay, nhat quan voi phan con lai).
+            region.BakeNavigationMesh(false);
         }
 
         // QUY HOACH LAI theo yeu cau: TRUOC DAY 28 chuong ve tinh nam rai rac trong 6 ham rieng

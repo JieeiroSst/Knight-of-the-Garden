@@ -43,10 +43,17 @@ namespace HiepSiVeVuon.Entities
         private ulong _nextWanderTime = 0;
         private double _milkCooldown = 0;
         private readonly SteeringUtil.StuckDetector _stuckDetector = new();
+        // Navmesh THAT SU (xem Main.BuildFarmNavigation) - GoTo() dung day de di VONG QUA hang
+        // rao/nha/vat can thay vi di thang toi muc tieu nhu truoc.
+        private NavigationAgent3D _navAgent;
+        private readonly SteeringUtil.NavSteering _nav = new();
 
         public override void _Ready()
         {
             base._Ready(); // NPC._Ready(): gan group "npcs", gan model + AnimationPlayer
+
+            _navAgent = new NavigationAgent3D { PathDesiredDistance = 8f, TargetDesiredDistance = 10f, AvoidanceEnabled = false };
+            AddChild(_navAgent);
 
             int hour = GameManager.Instance.Hour;
             bool onDuty = hour >= WorkStartHour && hour < WorkEndHour;
@@ -114,9 +121,9 @@ namespace HiepSiVeVuon.Entities
 
         private (Vector3 dir, float speed) GoTo(Vector3 target, float speed, WorkState arrivedState)
         {
-            Vector3 dir = target - GlobalPosition;
-            dir.Y = 0f;
-            if (dir.Length() <= 14f)
+            Vector3 straightDir = target - GlobalPosition;
+            straightDir.Y = 0f;
+            if (straightDir.Length() <= 14f)
             {
                 _workState = arrivedState;
                 if (arrivedState == WorkState.AtHome)
@@ -127,7 +134,8 @@ namespace HiepSiVeVuon.Entities
                 }
                 return (Vector3.Zero, 0f);
             }
-            return (dir.Normalized(), speed);
+            var navDir = _nav.GetDirection(_navAgent, GlobalPosition, target);
+            return (navDir != Vector3.Zero ? navDir : straightDir.Normalized(), speed);
         }
 
         // Trong gio lam: quanh quan gan chuong bo (rai co/cham soc) va dinh ky vat 1 chai sua

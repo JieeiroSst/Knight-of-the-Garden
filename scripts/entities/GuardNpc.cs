@@ -45,10 +45,17 @@ namespace HiepSiVeVuon.Entities
         private ulong _nextRainWanderTime = 0;
 
         private readonly HiepSiVeVuon.Core.SteeringUtil.StuckDetector _stuckDetector = new();
+        // Navmesh THAT SU (xem Main.BuildFarmNavigation) - DoPatrol() dung day de di VONG QUA
+        // hang rao/nha/vat can thay vi di thang toi tung diem tuan tra nhu truoc.
+        private NavigationAgent3D _navAgent;
+        private readonly SteeringUtil.NavSteering _nav = new();
 
         public override void _Ready()
         {
             base._Ready();
+
+            _navAgent = new NavigationAgent3D { PathDesiredDistance = 8f, TargetDesiredDistance = 10f, AvoidanceEnabled = false };
+            AddChild(_navAgent);
 
             _phase = CurrentPhase();
             GlobalPosition = HomePos;
@@ -125,15 +132,16 @@ namespace HiepSiVeVuon.Entities
             }
 
             Vector3 target = points[_pointIndex];
-            Vector3 dir = target - GlobalPosition;
-            dir.Y = 0f;
-            if (dir.Length() <= ArriveDist)
+            Vector3 straightDir = target - GlobalPosition;
+            straightDir.Y = 0f;
+            if (straightDir.Length() <= ArriveDist)
             {
                 _atPoint = true;
                 _pauseLeft = PauseAtPointSec;
                 return (Vector3.Zero, 0f);
             }
-            return (dir.Normalized(), Speed);
+            var navDir = _nav.GetDirection(_navAgent, GlobalPosition, target);
+            return (navDir != Vector3.Zero ? navDir : straightDir.Normalized(), Speed);
         }
 
         private (Vector3 dir, float speed) DoRainWander(float dt)

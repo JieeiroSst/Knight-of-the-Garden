@@ -100,5 +100,46 @@ namespace HiepSiVeVuon.Core
                 return desiredDir;
             }
         }
+
+        // Boc NavigationAgent3D (navmesh THAT SU cua Godot, xem Main.BuildFarmNavigation) thanh
+        // 1 ham dung don gian nhu cac ham steering khac trong file nay: dua vao "muc tieu" (target
+        // toa do THE GIOI), tra ve HUONG DI toi DIEM KE TIEP tren duong di THAT (vong qua hang
+        // rao/nha/vat can that su), khong phai huong thang toi muc tieu nhu truoc. Chi cap nhat
+        // lai TargetPosition cua agent khi muc tieu doi > 10 don vi (tranh yeu cau tinh lai duong
+        // di moi frame mot cach khong can thiet - ton kem va khong can thiet vi muc tieu it khi
+        // doi tung frame).
+        public class NavSteering
+        {
+            private Vector3 _lastTarget = new(float.NaN, 0f, float.NaN);
+
+            public Vector3 GetDirection(NavigationAgent3D agent, Vector3 currentPos, Vector3 target)
+            {
+                if (agent == null) return FallbackDirection(currentPos, target);
+
+                if (float.IsNaN(_lastTarget.X) || target.DistanceSquaredTo(_lastTarget) > 100f)
+                {
+                    agent.TargetPosition = target;
+                    _lastTarget = target;
+                }
+
+                // Navmesh chua san sang (vd frame dau tien ngay sau khi bake) hoac da toi noi -
+                // dung huong thang toi muc tieu lam du phong, khong dung yen mai.
+                if (!agent.IsNavigationFinished())
+                {
+                    Vector3 nextPoint = agent.GetNextPathPosition();
+                    Vector3 dir = nextPoint - currentPos;
+                    dir.Y = 0f;
+                    if (dir.LengthSquared() > 1f) return dir.Normalized();
+                }
+                return FallbackDirection(currentPos, target);
+            }
+
+            private static Vector3 FallbackDirection(Vector3 currentPos, Vector3 target)
+            {
+                Vector3 dir = target - currentPos;
+                dir.Y = 0f;
+                return dir.LengthSquared() > 1f ? dir.Normalized() : Vector3.Zero;
+            }
+        }
     }
 }
