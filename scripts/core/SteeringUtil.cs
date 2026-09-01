@@ -116,6 +116,15 @@ namespace HiepSiVeVuon.Core
             {
                 if (agent == null) return FallbackDirection(currentPos, target);
 
+                // NavigationServer moi DONG BO map lan dau vao dau physics frame KE TIEP sau khi
+                // agent duoc them vao cay canh (khong cung frame) - truy van agent (IsNavigationFinished/
+                // GetNextPathPosition) TRUOC thoi diem do se in loi "map query... before first map
+                // synchronization" ra console (khong crash, nhung on ao + tra ve ket qua sai). Bo
+                // qua truy van agent trong truong hop nay, dung huong thang lam du phong tam thoi -
+                // se tu chuyen sang duong di THAT ngay khi map dong bo xong (thuong chi 1 frame sau).
+                if (NavigationServer3D.MapGetIterationId(agent.GetNavigationMap()) == 0)
+                    return FallbackDirection(currentPos, target);
+
                 if (float.IsNaN(_lastTarget.X) || target.DistanceSquaredTo(_lastTarget) > 100f)
                 {
                     agent.TargetPosition = target;
