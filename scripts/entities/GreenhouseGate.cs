@@ -22,12 +22,12 @@ namespace HiepSiVeVuon.Entities
             if (GameManager.Instance.SpendGold(UnlockCost))
             {
                 GameManager.Instance.GreenhouseUnlocked = true;
-                GD.Print("Da mo khoa Nha Kinh! Gio co the trong cay quanh nam trong do.");
+                GD.Print("Đã mở khóa Nhà Kính! Giờ có thể trồng cây quanh năm trong đó.");
                 Open();
             }
             else
             {
-                GD.Print($"Cong Nha Kinh dang khoa - can {UnlockCost} vang de mo.");
+                GD.Print($"Cổng Nhà Kính đang khóa - cần {UnlockCost} vàng để mở.");
             }
         }
 

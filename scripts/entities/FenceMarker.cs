@@ -10,7 +10,7 @@ namespace HiepSiVeVuon.Entities
     // theo dung y tuong "Fence HP: 100 -> Mua/Dong vat/Thoi gian -> 70 -> Can sua".
     public partial class FenceMarker : Node3D
     {
-        [Export] public string FenceName = "Hang rao";
+        [Export] public string FenceName = "Hàng rào";
         [Export] public int Hp = 100;
         [Export] public int MinHp = 20; // khong bao gio "sup do" hoan toan, luon con it nhat 1 phan de Marcel sua
 

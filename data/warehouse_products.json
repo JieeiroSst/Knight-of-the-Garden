@@ -1,7 +1,7 @@
 [
   {
     "Id": "sack",
-    "Name": "Bao Tai",
+    "Name": "Bao Tải",
     "Category": "Container",
     "ModelPath": "res://assets3d/quaternius/furniture/sack_trench.glb",
     "Scale": 5,
@@ -10,7 +10,7 @@
   },
   {
     "Id": "crate",
-    "Name": "Thung Go",
+    "Name": "Thùng Gỗ",
     "Category": "Container",
     "ModelPath": "res://assets3d/quaternius/furniture/crate.glb",
     "Scale": 100,
@@ -19,7 +19,7 @@
   },
   {
     "Id": "barrel",
-    "Name": "Thung Phi Go",
+    "Name": "Thùng Phi Gỗ",
     "Category": "Container",
     "ModelPath": "res://assets3d/quaternius/furniture/barrel.glb",
     "Scale": 100,
@@ -28,7 +28,7 @@
   },
   {
     "Id": "hay",
-    "Name": "Kien Rom",
+    "Name": "Kiện Rơm",
     "Category": "Feed",
     "ModelPath": "res://assets3d/quaternius/furniture/hay.glb",
     "Scale": 115,
@@ -37,7 +37,7 @@
   },
   {
     "Id": "pumpkin_stock",
-    "Name": "Bi Ngo Thu Hoach",
+    "Name": "Bí Ngô Thu Hoạch",
     "Category": "Crop",
     "ModelPath": "res://assets3d/quaternius/furniture/pumpkin.glb",
     "Scale": 5.3,
@@ -46,7 +46,7 @@
   },
   {
     "Id": "wheat_stock",
-    "Name": "Lua Mi Thu Hoach",
+    "Name": "Lúa Mì Thu Hoạch",
     "Category": "Crop",
     "ModelPath": "res://assets3d/quaternius/furniture/wheat.glb",
     "Scale": 11,
@@ -55,7 +55,7 @@
   },
   {
     "Id": "egg",
-    "Name": "Trung Ga",
+    "Name": "Trứng Gà",
     "Category": "Product",
     "ModelPath": "",
     "Scale": 0,

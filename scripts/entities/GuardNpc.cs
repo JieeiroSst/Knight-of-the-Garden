@@ -25,6 +25,10 @@ namespace HiepSiVeVuon.Entities
         // Loi thoai rieng theo tinh huong. Main.cs gan cac mang nay ngay sau khi tao.
         public string[] DialogueRain = System.Array.Empty<string>();
         public string[] DialogueNight = System.Array.Empty<string>();
+        // Ban dich tieng Anh (tuy chon) cho 2 mang tren - cung co che fallback nhu DialogueLowEn/...
+        // trong NPC.cs (xem PickPool).
+        public string[] DialogueRainEn = System.Array.Empty<string>();
+        public string[] DialogueNightEn = System.Array.Empty<string>();
 
         // Main.cs gan ngay sau khi tao (truoc AddChild). KHONG co InteriorHomePos/gio ngu.
         public Vector3 HomePos;
@@ -154,8 +158,8 @@ namespace HiepSiVeVuon.Entities
         {
             string[] pool = _brain.CurrentActionId switch
             {
-                "RainHelp" when DialogueRain.Length > 0 => DialogueRain,
-                "NightPatrol" when DialogueNight.Length > 0 => DialogueNight,
+                "RainHelp" when DialogueRain.Length > 0 => PickPool(DialogueRain, DialogueRainEn),
+                "NightPatrol" when DialogueNight.Length > 0 => PickPool(DialogueNight, DialogueNightEn),
                 _ => null,
             };
             if (pool != null) return pool[(int)(GD.Randi() % (uint)pool.Length)];

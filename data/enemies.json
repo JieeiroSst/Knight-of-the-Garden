@@ -1,7 +1,7 @@
 [
   {
     "Id": "mud_monster",
-    "Name": "Quai Bun",
+    "Name": "Quái Bùn",
     "MaxHp": 40,
     "Damage": 8,
     "Speed": 55,
@@ -16,7 +16,7 @@
   },
   {
     "Id": "spiky_monster",
-    "Name": "Quai Gai Tim",
+    "Name": "Quái Gai Tím",
     "MaxHp": 75,
     "Damage": 15,
     "Speed": 70,
@@ -32,7 +32,7 @@
   },
   {
     "Id": "forest_wolf",
-    "Name": "Soi Rung",
+    "Name": "Sói Rừng",
     "MaxHp": 50,
     "Damage": 10,
     "Speed": 65,
@@ -48,7 +48,7 @@
   },
   {
     "Id": "mountain_troll",
-    "Name": "Yeu Tinh Nui Da",
+    "Name": "Yêu Tinh Núi Đá",
     "MaxHp": 110,
     "Damage": 20,
     "Speed": 50,
@@ -64,7 +64,7 @@
   },
   {
     "Id": "lake_serpent",
-    "Name": "Ran Ho",
+    "Name": "Rắn Hồ",
     "MaxHp": 90,
     "Damage": 18,
     "Speed": 60,
@@ -80,7 +80,7 @@
   },
   {
     "Id": "swamp_lurker",
-    "Name": "Quai Dam Lay",
+    "Name": "Quái Đầm Lầy",
     "MaxHp": 80,
     "Damage": 16,
     "Speed": 45,
@@ -96,7 +96,7 @@
   },
   {
     "Id": "ruins_wraith",
-    "Name": "Bong Ma Phe Tich",
+    "Name": "Bóng Ma Phế Tích",
     "MaxHp": 100,
     "Damage": 22,
     "Speed": 75,
@@ -112,7 +112,7 @@
   },
   {
     "Id": "cemetery_ghost",
-    "Name": "Ma Nghia Dia",
+    "Name": "Ma Nghĩa Địa",
     "MaxHp": 70,
     "Damage": 25,
     "Speed": 80,
@@ -128,7 +128,7 @@
   },
   {
     "Id": "cave_bat",
-    "Name": "Doi Hang Dong",
+    "Name": "Dơi Hang Động",
     "MaxHp": 45,
     "Damage": 12,
     "Speed": 90,

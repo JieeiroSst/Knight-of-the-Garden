@@ -40,7 +40,7 @@ namespace HiepSiVeVuon.Systems
             const string path = "res://data/warehouse_products.json";
             if (!FileAccess.FileExists(path))
             {
-                GD.PushWarning($"Khong tim thay file: {path}");
+                GD.PushWarning($"Không tìm thấy file: {path}");
                 return;
             }
             using var f = FileAccess.Open(path, FileAccess.ModeFlags.Read);
@@ -50,10 +50,19 @@ namespace HiepSiVeVuon.Systems
                 _all.Add(p);
                 _byId[p.Id] = p;
             }
-            GD.Print($"Da nap {_all.Count} loai hang hoa nha kho.");
+            GD.Print($"Đã nạp {_all.Count} loại hàng hóa nhà kho.");
         }
 
         public WarehouseProductDef GetProduct(string id) => _byId.TryGetValue(id, out var v) ? v : null;
+
+        // Ten hien thi theo ngon ngu dang chon (Loc.Current) - xem ItemDatabase.GetDisplayName,
+        // cung mau: JSON van la tieng Viet goc, DataLoc.cs chua ban dich EN theo Id.
+        public string GetDisplayName(string id)
+        {
+            var def = GetProduct(id);
+            if (def == null) return id;
+            return Loc.Current == Loc.Lang.EN && DataLoc.WarehouseProductNamesEn.TryGetValue(id, out var en) ? en : def.Name;
+        }
 
         private PackedScene LoadScene(WarehouseProductDef def)
         {

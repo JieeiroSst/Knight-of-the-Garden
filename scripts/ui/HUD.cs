@@ -14,6 +14,7 @@ namespace HiepSiVeVuon.UI
         private Label _dayLabel;
         private Label _timeLabel;
         private Label _questLabel;
+        private Label _questHeaderLabel;
         private Control _compass;
         private static readonly Vector2 CompassCenter = new(900, 40);
 
@@ -30,7 +31,15 @@ namespace HiepSiVeVuon.UI
             GameManager.Instance.StatsChanged += Refresh;
             QuestSystem.Instance.QuestUpdated += _ => Refresh();
             QuestSystem.Instance.QuestCompleted += _ => Refresh();
+            Loc.LanguageChanged += Refresh;
+            Loc.LanguageChanged += RefreshBuildingLabel;
             Refresh();
+        }
+
+        public override void _ExitTree()
+        {
+            Loc.LanguageChanged -= Refresh;
+            Loc.LanguageChanged -= RefreshBuildingLabel;
         }
 
         public void ShowBuildingName(string name)
@@ -50,7 +59,7 @@ namespace HiepSiVeVuon.UI
         private void RefreshBuildingLabel()
         {
             if (_nearbyBuildings.Count == 0) { _buildingNameLabel.Visible = false; return; }
-            _buildingNameLabel.Text = _nearbyBuildings[^1];
+            _buildingNameLabel.Text = Loc.T(_nearbyBuildings[^1]);
             _buildingNameLabel.Visible = true;
         }
 
@@ -59,7 +68,7 @@ namespace HiepSiVeVuon.UI
             // Dong ho thuc: cap nhat rieng moi frame de kim phut/giay chay muot,
             // khong phu thuoc cac su kien StatsChanged/Quest o Refresh().
             var now = System.DateTime.Now;
-            string dayNight = GameManager.Instance.IsNight ? "Dem" : "Ngay";
+            string dayNight = GameManager.Instance.IsNight ? Loc.T("hud.night") : Loc.T("hud.day");
             _dayLabel.Text = $"{now:dd/MM/yyyy}";
             _timeLabel.Text = $"{now:HH:mm:ss} ({dayNight})";
 
@@ -85,8 +94,8 @@ namespace HiepSiVeVuon.UI
             _dayLabel = new Label(); vb.AddChild(_dayLabel);
             _timeLabel = new Label(); vb.AddChild(_timeLabel);
 
-            var qTitle = new Label { Text = "-- Nhiem vu --" };
-            vb.AddChild(qTitle);
+            _questHeaderLabel = new Label { Text = Loc.T("hud.quest_header") };
+            vb.AddChild(_questHeaderLabel);
             _questLabel = new Label { AutowrapMode = TextServer.AutowrapMode.Word };
             _questLabel.CustomMinimumSize = new Vector2(210, 0);
             vb.AddChild(_questLabel);
@@ -155,9 +164,10 @@ namespace HiepSiVeVuon.UI
             var gm = GameManager.Instance;
             _hpBar.MaxValue = gm.MaxHp;
             _hpBar.Value = gm.Hp;
-            _hpLabel.Text = $"HP: {gm.Hp}/{gm.MaxHp}";
-            _levelLabel.Text = $"Cap {gm.Level}  (EXP {gm.Exp}/{gm.ExpToNext})";
-            _goldLabel.Text = $"Vang: {gm.Gold}";
+            _hpLabel.Text = string.Format(Loc.T("hud.hp_fmt"), gm.Hp, gm.MaxHp);
+            _levelLabel.Text = string.Format(Loc.T("hud.level_fmt"), gm.Level, gm.Exp, gm.ExpToNext);
+            _goldLabel.Text = string.Format(Loc.T("hud.gold_fmt"), gm.Gold);
+            _questHeaderLabel.Text = Loc.T("hud.quest_header");
 
             // Hien nhiem vu dang lam
             string qtext = "";
@@ -165,9 +175,9 @@ namespace HiepSiVeVuon.UI
             {
                 var def = ItemDatabase.Instance.GetQuest(kv.Key);
                 if (def != null)
-                    qtext += $"- {def.Title} ({kv.Value}/{def.TargetCount})\n";
+                    qtext += $"- {ItemDatabase.Instance.GetQuestDisplayTitle(kv.Key)} ({kv.Value}/{def.TargetCount})\n";
             }
-            _questLabel.Text = qtext == "" ? "(chua co)" : qtext;
+            _questLabel.Text = qtext == "" ? Loc.T("hud.quest_empty") : qtext;
         }
     }
 }

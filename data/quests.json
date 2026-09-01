@@ -1,8 +1,8 @@
 [
   {
     "Id": "q_first_harvest",
-    "Title": "Vu Mua Dau Tien",
-    "Description": "Thu hoach 3 bi ngo dau tien tren manh ruong.",
+    "Title": "Vụ Mùa Đầu Tiên",
+    "Description": "Thu hoạch 3 bí ngô đầu tiên trên mảnh ruộng.",
     "ObjectiveType": "collect",
     "TargetId": "pumpkin",
     "TargetCount": 3,
@@ -12,8 +12,8 @@
   },
   {
     "Id": "q_clear_mud",
-    "Title": "Don Dep Khu Rung",
-    "Description": "Tieu diet 3 con Quai Bun dang pha hoai mua mang.",
+    "Title": "Dọn Dẹp Khu Rừng",
+    "Description": "Tiêu diệt 3 con Quái Bùn đang phá hoại mùa màng.",
     "ObjectiveType": "kill",
     "TargetId": "mud_monster",
     "TargetCount": 3,
@@ -23,8 +23,8 @@
   },
   {
     "Id": "q_spiky_hunt",
-    "Title": "Moi De Doa Tim",
-    "Description": "San mot con Quai Gai Tim trong hang sau.",
+    "Title": "Mối Đe Dọa Tím",
+    "Description": "Săn một con Quái Gai Tím trong hang sâu.",
     "ObjectiveType": "kill",
     "TargetId": "spiky_monster",
     "TargetCount": 1,

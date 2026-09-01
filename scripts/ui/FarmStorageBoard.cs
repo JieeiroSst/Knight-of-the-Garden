@@ -32,13 +32,19 @@ namespace HiepSiVeVuon.UI
             AddChild(_label);
 
             FarmStorage.Instance.StorageChanged += Refresh;
+            Loc.LanguageChanged += Refresh;
             Refresh();
+        }
+
+        public override void _ExitTree()
+        {
+            Loc.LanguageChanged -= Refresh;
         }
 
         private void Refresh()
         {
-            string eggName = WarehouseDatabase.Instance.GetProduct("egg")?.Name ?? "Trung Ga";
-            _label.Text = $"KHO NONG SAN\n{eggName}: {FarmStorage.Instance.GetCount("egg")}";
+            string eggName = WarehouseDatabase.Instance.GetProduct("egg") != null ? WarehouseDatabase.Instance.GetDisplayName("egg") : "Trứng Gà";
+            _label.Text = $"KHO NÔNG SẢN\n{eggName}: {FarmStorage.Instance.GetCount("egg")}";
         }
     }
 }

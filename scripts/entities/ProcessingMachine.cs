@@ -12,7 +12,7 @@ namespace HiepSiVeVuon.Entities
     // than WildAnimal.cs/Enemy.cs) - khac nhau qua [Export].
     public partial class ProcessingMachine : StaticBody3D
     {
-        [Export] public string MachineName = "May Che Bien";
+        [Export] public string MachineName = "Máy Chế Biến";
         // AcceptsAnyCrop=true (Lo Say/May Ep): nhan BAT KY vat pham ItemType.Crop nao, dau ra ghep
         // OutputPrefix+inputId (vd "mut_"+"wheat"="mut_wheat"). false: chi nhan DUNG FixedInputId
         // (vd May Lam Pho Mai chi nhan "milk"), dau ra la FixedOutputId co dinh.
@@ -45,13 +45,13 @@ namespace HiepSiVeVuon.Entities
             {
                 Inventory.Instance.AddItem(_pendingOutputId, 1);
                 var outDef = ItemDatabase.Instance.GetItem(_pendingOutputId);
-                GD.Print($"{MachineName}: lay ra {outDef?.Name}.");
+                GD.Print($"{MachineName}: lấy ra {outDef?.Name}.");
                 _pendingOutputId = null;
                 return;
             }
             if (IsBusy)
             {
-                GD.Print($"{MachineName} dang che bien, con {_daysLeft} ngay.");
+                GD.Print($"{MachineName} đang chế biến, còn {_daysLeft} ngày.");
                 return;
             }
 
@@ -71,23 +71,23 @@ namespace HiepSiVeVuon.Entities
                     _pendingOutputId = OutputPrefix + foundId;
                     _daysLeft = ProcessDays;
                     var def = ItemDatabase.Instance.GetItem(foundId);
-                    GD.Print($"{MachineName}: dang che bien {def?.Name}, {ProcessDays} ngay nua xong.");
+                    GD.Print($"{MachineName}: đang chế biến {def?.Name}, {ProcessDays} ngày nữa xong.");
                 }
                 else
                 {
-                    GD.Print($"{MachineName}: can nong san (crop) de che bien.");
+                    GD.Print($"{MachineName}: cần nông sản (crop) để chế biến.");
                 }
             }
             else if (!string.IsNullOrEmpty(FixedInputId) && Inventory.Instance.RemoveItem(FixedInputId, 1))
             {
                 _pendingOutputId = FixedOutputId;
                 _daysLeft = ProcessDays;
-                GD.Print($"{MachineName}: dang che bien, {ProcessDays} ngay nua xong.");
+                GD.Print($"{MachineName}: đang chế biến, {ProcessDays} ngày nữa xong.");
             }
             else
             {
                 var inDef = ItemDatabase.Instance.GetItem(FixedInputId);
-                GD.Print($"{MachineName}: can {inDef?.Name ?? FixedInputId} de che bien.");
+                GD.Print($"{MachineName}: cần {inDef?.Name ?? FixedInputId} để chế biến.");
             }
         }
     }

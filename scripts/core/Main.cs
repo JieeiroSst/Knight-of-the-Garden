@@ -414,13 +414,13 @@ namespace HiepSiVeVuon.Core
 			// Nha nong dan (nha nguoi choi) - model nha that chi tiet hon, to them 20%, xoay 180 do
 			AddDecor(_farmhouseScene, FarmhousePos, 66f, 180f, FarmhouseFootprint);
 			AddBuildingEntrance(FarmhousePos, 180f, 150f, 120f, RoomKind.Farmhouse);
-			AddBuildingLabelZone(FarmhousePos, 170f, "Nha Nong Dan");
+			AddBuildingLabelZone(FarmhousePos, 170f, "label.farmhouse");
 
 			// Nha kho (barn) - dat canh ruong, cach hang rao ruong dung 5m (100 don vi) ve phia tay
 			var barnPos = new Vector3(-482, 0, 250);
 			AddDecor(_barnScene, barnPos, 24f, 0f, BarnFootprint);
 			AddBuildingEntrance(barnPos, 0f, 150f, 110f, RoomKind.Barn);
-			AddBuildingLabelZone(barnPos, 170f, "Nha Kho");
+			AddBuildingLabelZone(barnPos, 170f, "label.storage");
 
 			// Bu nhin dung giua ruong (khe ho giua cac o dat) & cay that quanh nha
 			AddDecor(_scarecrowScene, new Vector3(70, 0, 330), 13f);
@@ -467,7 +467,7 @@ namespace HiepSiVeVuon.Core
 			var townHallPos = VillageAnchor + new Vector3(0, 0, -180);
 			AddDecor(_bigBarnScene, townHallPos, 18f, 0f, BarnFootprint); // Toa Thi Chinh
 			AddBuildingEntrance(townHallPos, 0f, 120f, 90f, RoomKind.TownHall);
-			AddBuildingLabelZone(townHallPos, 150f, "Toa Thi Chinh");
+			AddBuildingLabelZone(townHallPos, 150f, "label.town_hall");
 
 			// Vong trong
 			AddSmallHouse(VillageAnchor + new Vector3(-170, 0, -60)); // gia lang
@@ -1509,7 +1509,7 @@ namespace HiepSiVeVuon.Core
 					MaterialOverride = postMat
 				});
 				var seedDef = ItemDatabase.Instance?.GetItem(FieldZoneSeeds[zone]);
-				string cropName = seedDef != null ? seedDef.Name : FieldZoneSeeds[zone];
+				string cropName = seedDef != null ? ItemDatabase.Instance.GetDisplayName(FieldZoneSeeds[zone]) : FieldZoneSeeds[zone];
 				var label = new Label3D
 				{
 					Text = cropName,
@@ -1529,18 +1529,21 @@ namespace HiepSiVeVuon.Core
 			// Ong gia lang - giao nhiem vu don rung
 			var elder = _npcScene.Instantiate<NPC>();
 			elder.NpcId = "elder";
-			elder.NpcName = "Ong Gia Lang";
+			elder.NpcName = "Ông Già Làng";
 			elder.QuestToGive = "q_clear_mud";
-			elder.DialogueLow = new[] { "Chao nguoi la. Vung nay dao nay nhieu quai bun lam." };
-			elder.DialogueMid = new[] { "Cau giup lang thi tot qua. Diet lu quai bun giup ta." };
-			elder.DialogueHigh = new[] { "Ta tin cau. Nghe don Hang Gai Tim phia dong co kho bau..." };
+			elder.DialogueLow = new[] { "Chào người lạ. Vùng này dạo này nhiều quái bùn lắm." };
+			elder.DialogueMid = new[] { "Cậu giúp làng thì tốt quá. Diệt lũ quái bùn giúp ta." };
+			elder.DialogueHigh = new[] { "Ta tin cậu. Nghe đồn Hang Gai Tím phía đông có kho báu..." };
+			elder.DialogueLowEn = new[] { "Welcome, stranger. This area's been crawling with mud monsters lately." };
+			elder.DialogueMidEn = new[] { "Good of you to help the village. Go clear out those mud monsters for me." };
+			elder.DialogueHighEn = new[] { "I trust you now. Word is there's treasure in Purple Thorn Cave, to the east..." };
 			elder.Position = VillageAnchor + new Vector3(-110, 0, -20);
 			_world.AddChild(elder);
 
 			// Thuong nhan - cua hang hat giong & do
 			var merchant = _npcScene.Instantiate<NPC>();
 			merchant.NpcId = "merchant";
-			merchant.NpcName = "Thuong Nhan";
+			merchant.NpcName = "Thương Nhân";
 			merchant.QuestToGive = "q_first_harvest";
 			merchant.ShopItems = new[]
 			{
@@ -1548,95 +1551,122 @@ namespace HiepSiVeVuon.Core
 				"pumpkin_seed_premium", "tomato_seed_premium", "wheat_seed_premium", "carrot_seed_premium", "potato_seed_premium", "cabbage_seed_premium",
 				"fertilizer_basic", "pesticide", "potion", "thucan_giasuc", "may_tuoi_tu_dong",
 			};
-			merchant.DialogueLow = new[] { "Mua gi khong? Hat giong tot day!" };
-			merchant.DialogueMid = new[] { "Khach quen roi! Xem hang di." };
-			merchant.DialogueHigh = new[] { "Ban tot, ta se de gia re cho cau." };
+			merchant.DialogueLow = new[] { "Mua gì không? Hạt giống tốt đây!" };
+			merchant.DialogueMid = new[] { "Khách quen rồi! Xem hàng đi." };
+			merchant.DialogueHigh = new[] { "Bạn tốt, ta sẽ để giá rẻ cho cậu." };
+			merchant.DialogueLowEn = new[] { "Buying something? I've got fine seeds right here!" };
+			merchant.DialogueMidEn = new[] { "A regular customer now! Take a look at my wares." };
+			merchant.DialogueHighEn = new[] { "For a good friend like you, I'll drop the price." };
 			merchant.Position = VillageAnchor + new Vector3(110, 0, -20);
 			_world.AddChild(merchant);
 
 			// Tho ren - ban/bo do vu khi & giap
 			var blacksmith = _npcScene.Instantiate<NPC>();
 			blacksmith.NpcId = "blacksmith";
-			blacksmith.NpcName = "Tho Ren";
+			blacksmith.NpcName = "Thợ Rèn";
 			blacksmith.ShopItems = new[] { "sword", "shield", "ring", "pickaxe", "hoe", "can_cau", "cuoc_bac", "cuoc_vang", "pickaxe_bac", "pickaxe_vang" };
-			blacksmith.DialogueLow = new[] { "Muon vu khi tot thi tim dung nguoi roi day. Nhung ta chua quen cau lam." };
-			blacksmith.DialogueMid = new[] { "Thep tot can lua tot. Cau ghe thuong xuyen nhi." };
-			blacksmith.DialogueHigh = new[] { "Vi tinh ban, ta se ren cho cau mon do ngon nhat xuong." };
+			blacksmith.DialogueLow = new[] { "Muốn vũ khí tốt thì tìm đúng người rồi đấy. Nhưng ta chưa quen cậu lắm." };
+			blacksmith.DialogueMid = new[] { "Thép tốt cần lửa tốt. Cậu ghé thường xuyên nhỉ." };
+			blacksmith.DialogueHigh = new[] { "Vì tình bạn, ta sẽ rèn cho cậu món đồ ngon nhất xưởng." };
+			blacksmith.DialogueLowEn = new[] { "Looking for good weapons, you've found the right person. But I don't know you well yet." };
+			blacksmith.DialogueMidEn = new[] { "Good steel needs a good fire. You stop by often, don't you." };
+			blacksmith.DialogueHighEn = new[] { "For our friendship, I'll forge you the finest piece in the whole shop." };
 			blacksmith.Position = VillageAnchor + new Vector3(-110, 0, 100);
 			_world.AddChild(blacksmith);
 
 			// Ba lang thao duoc - ban thuoc hoi mau
 			var herbalist = _npcScene.Instantiate<NPC>();
 			herbalist.NpcId = "herbalist";
-			herbalist.NpcName = "Ba Lang Thao Duoc";
+			herbalist.NpcName = "Bà Lang Thảo Dược";
 			herbalist.ShopItems = new[] { "potion" };
-			herbalist.DialogueLow = new[] { "Thao duoc trong vuon ta co the cuu mang nguoi day, nhung phai biet dung luc." };
-			herbalist.DialogueMid = new[] { "Cau lai ghe mua thuoc a? Ta se bot chut dinh gia." };
-			herbalist.DialogueHigh = new[] { "Ta se day cau vai bai thuoc bi truyen, ban tre." };
+			herbalist.DialogueLow = new[] { "Thảo dược trong vườn ta có thể cứu mạng người đấy, nhưng phải biết dùng lúc." };
+			herbalist.DialogueMid = new[] { "Cậu lại ghé mua thuốc à? Ta sẽ bớt chút đỉnh giá." };
+			herbalist.DialogueHigh = new[] { "Ta sẽ dạy cậu vài bài thuốc bí truyền, bạn trẻ." };
+			herbalist.DialogueLowEn = new[] { "The herbs in my garden can save a life, but only if you know when to use them." };
+			herbalist.DialogueMidEn = new[] { "Back for more medicine? I'll knock a little off the price for you." };
+			herbalist.DialogueHighEn = new[] { "I'll teach you a few secret remedies, young one." };
 			herbalist.Position = VillageAnchor + new Vector3(110, 0, 100);
 			_world.AddChild(herbalist);
 
 			// Nguoi gac rung - giao nhiem vu san quai Gai Tim ngoai hoang da
 			var ranger = _npcScene.Instantiate<NPC>();
 			ranger.NpcId = "ranger";
-			ranger.NpcName = "Nguoi Gac Rung";
+			ranger.NpcName = "Người Gác Rừng";
 			ranger.QuestToGive = "q_spiky_hunt";
-			ranger.DialogueLow = new[] { "Vung hoang da phia bac day quai vat lam. Coi chung day." };
-			ranger.DialogueMid = new[] { "Cau da chung to ban linh roi. Rung sau con nhieu bi mat." };
-			ranger.DialogueHigh = new[] { "Ta tin cau du suc doi mat voi bay quai Gai Tim. Di san di." };
+			ranger.DialogueLow = new[] { "Vùng hoang dã phía bắc đầy quái vật lắm. Coi chừng đấy." };
+			ranger.DialogueMid = new[] { "Cậu đã chứng tỏ bản lĩnh rồi. Rừng sâu còn nhiều bí mật." };
+			ranger.DialogueHigh = new[] { "Ta tin cậu đủ sức đối mặt với bầy quái Gai Tím. Đi săn đi." };
+			ranger.DialogueLowEn = new[] { "The wilds to the north are crawling with monsters. Be careful out there." };
+			ranger.DialogueMidEn = new[] { "You've proven your mettle. The deep forest still holds plenty of secrets." };
+			ranger.DialogueHighEn = new[] { "I trust you can handle the Purple Thorn pack now. Go hunt them down." };
 			ranger.Position = VillageAnchor + new Vector3(0, 0, 150);
 			_world.AddChild(ranger);
 
 			// Chu quan tro - ban thuoc/do uong, tro chuyen phiem
 			var innkeeper = _npcScene.Instantiate<NPC>();
 			innkeeper.NpcId = "innkeeper";
-			innkeeper.NpcName = "Chu Quan Tro";
+			innkeeper.NpcName = "Chủ Quán Trọ";
 			innkeeper.ShopItems = new[] { "potion" };
-			innkeeper.DialogueLow = new[] { "Chao mung den quan tro. Nguoi la it khi ghe qua day." };
-			innkeeper.DialogueMid = new[] { "Uong chut gi cho khoe di, khach quen!" };
-			innkeeper.DialogueHigh = new[] { "Chuyen phiem voi cau vui that. Lan sau ta moi ruou ngon." };
+			innkeeper.DialogueLow = new[] { "Chào mừng đến quán trọ. Người lạ ít khi ghé qua đây." };
+			innkeeper.DialogueMid = new[] { "Uống chút gì cho khỏe đi, khách quen!" };
+			innkeeper.DialogueHigh = new[] { "Chuyện phiếm với cậu vui thật. Lần sau ta mời rượu ngon." };
+			innkeeper.DialogueLowEn = new[] { "Welcome to the inn. We don't get many strangers passing through." };
+			innkeeper.DialogueMidEn = new[] { "Have a drink, on the house for a regular!" };
+			innkeeper.DialogueHighEn = new[] { "I do enjoy our little chats. Next round's on me, good wine and all." };
 			innkeeper.Position = VillageAnchor + new Vector3(-270, 0, 60);
 			_world.AddChild(innkeeper);
 
 			// Tho moc - sua chua/ban do go, mua go nguoi choi chat duoc (he thong ban do da co san)
 			var carpenter = _npcScene.Instantiate<NPC>();
 			carpenter.NpcId = "carpenter";
-			carpenter.NpcName = "Tho Moc";
+			carpenter.NpcName = "Thợ Mộc";
 			carpenter.ShopItems = new[] { "shield", "da", "wood" };
-			carpenter.DialogueLow = new[] { "Co go tot thi mang den day, ta mua het." };
-			carpenter.DialogueMid = new[] { "Go cau chat chat luong day. Con bao nhieu mang toi nhe." };
-			carpenter.DialogueHigh = new[] { "Ta se dong cho cau mot mon do go dep nhat xuong lang." };
+			carpenter.DialogueLow = new[] { "Có gỗ tốt thì mang đến đây, ta mua hết." };
+			carpenter.DialogueMid = new[] { "Gỗ cậu chắc chất lượng đấy. Còn bao nhiêu mang tới nhé." };
+			carpenter.DialogueHigh = new[] { "Ta sẽ đóng cho cậu một món đồ gỗ đẹp nhất xưởng làng." };
+			carpenter.DialogueLowEn = new[] { "Got good timber? Bring it here, I'll buy it all." };
+			carpenter.DialogueMidEn = new[] { "Your wood's solid quality. Bring me whatever else you've got." };
+			carpenter.DialogueHighEn = new[] { "I'll craft you the finest piece of woodwork in the whole village." };
 			carpenter.Position = VillageAnchor + new Vector3(270, 0, 60);
 			_world.AddChild(carpenter);
 
 			// Hoc gia - nhan vat ke chuyen/lore, khong ban hang, khong nhiem vu
 			var scholar = _npcScene.Instantiate<NPC>();
 			scholar.NpcId = "scholar";
-			scholar.NpcName = "Hoc Gia";
-			scholar.DialogueLow = new[] { "Ta danh ca doi nghien cuu vung dat nay. Co gi thac mac cu hoi ta." };
-			scholar.DialogueMid = new[] { "Cau ngay cang gan gui voi vung dat nay roi day." };
-			scholar.DialogueHigh = new[] { "Trong sach co ke ve mot hiep si bao ve khu vuon huyen thoai... co le la cau." };
+			scholar.NpcName = "Học Giả";
+			scholar.DialogueLow = new[] { "Ta dành cả đời nghiên cứu vùng đất này. Có gì thắc mắc cứ hỏi ta." };
+			scholar.DialogueMid = new[] { "Cậu ngày càng gắn gũi với vùng đất này rồi đấy." };
+			scholar.DialogueHigh = new[] { "Trong sách có kể về một hiệp sĩ bảo vệ khu vườn huyền thoại... có lẽ là cậu." };
+			scholar.DialogueLowEn = new[] { "I've spent my whole life studying this land. Ask me anything." };
+			scholar.DialogueMidEn = new[] { "You're growing more connected to this land every day." };
+			scholar.DialogueHighEn = new[] { "The old books speak of a legendary knight who guards a garden... perhaps it's you." };
 			scholar.Position = VillageAnchor + new Vector3(0, 0, 320);
 			_world.AddChild(scholar);
 
 			// Tho may - ban trang phuc/phu kien (dung lai vat pham giap co san)
 			var tailor = _npcScene.Instantiate<NPC>();
 			tailor.NpcId = "tailor";
-			tailor.NpcName = "Tho May";
+			tailor.NpcName = "Thợ May";
 			tailor.ShopItems = new[] { "ring", "shield" };
-			tailor.DialogueLow = new[] { "Vai vor toi cung co the may cho cau mot bo dep." };
-			tailor.DialogueMid = new[] { "Do cau mac cung kha day, nhung de ta chinh lai chut." };
-			tailor.DialogueHigh = new[] { "Rieng cho cau, ta se may mon do dac biet nhat tiem." };
+			tailor.DialogueLow = new[] { "Vải vóc tồi cũng có thể may cho cậu một bộ đẹp." };
+			tailor.DialogueMid = new[] { "Đồ cậu mặc cũng khá đấy, nhưng để ta chỉnh lại chút." };
+			tailor.DialogueHigh = new[] { "Riêng cho cậu, ta sẽ may món đồ đặc biệt nhất tiệm." };
+			tailor.DialogueLowEn = new[] { "Even plain cloth can be sewn into something fine for you." };
+			tailor.DialogueMidEn = new[] { "That outfit of yours isn't bad, but let me take it in a little." };
+			tailor.DialogueHighEn = new[] { "Just for you, I'll sew the finest piece in the whole shop." };
 			tailor.Position = VillageAnchor + new Vector3(-420, 0, 210);
 			_world.AddChild(tailor);
 
 			// Nguoi chan cuu - flavor, khong ban hang/nhiem vu
 			var shepherd = _npcScene.Instantiate<NPC>();
 			shepherd.NpcId = "shepherd";
-			shepherd.NpcName = "Nguoi Chan Cuu";
-			shepherd.DialogueLow = new[] { "Dan cuu cua ta thich gam co ngoai dong lam." };
-			shepherd.DialogueMid = new[] { "Cau co ve hop voi cuoc song dong que roi day." };
-			shepherd.DialogueHigh = new[] { "Bao gio ranh, ghe tham dan cuu cua ta nhe." };
+			shepherd.NpcName = "Người Chăn Cừu";
+			shepherd.DialogueLow = new[] { "Đàn cừu của ta thích gặm cỏ ngoài đồng lắm." };
+			shepherd.DialogueMid = new[] { "Cậu có vẻ hợp với cuộc sống đồng quê rồi đấy." };
+			shepherd.DialogueHigh = new[] { "Bao giờ rảnh, ghé thăm đàn cừu của ta nhé." };
+			shepherd.DialogueLowEn = new[] { "My sheep love grazing out in the fields." };
+			shepherd.DialogueMidEn = new[] { "Seems like you're taking to country life just fine." };
+			shepherd.DialogueHighEn = new[] { "Come visit my flock whenever you're free." };
 			shepherd.Position = VillageAnchor + new Vector3(420, 0, 210);
 			_world.AddChild(shepherd);
 		}
@@ -1678,7 +1708,7 @@ namespace HiepSiVeVuon.Core
 			var policePos = VillageAnchor + new Vector3(policePlot.X, 0, policePlot.Y);
 			AddDecor(_farmhouseScene, policePos, 66f, 90f, FarmhouseFootprint);
 			var policeInterior = AddBuildingEntrance(policePos, 90f, 130f, 100f, RoomKind.TownHall);
-			AddBuildingLabelZone(policePos, 160f, "Tru Canh Sat");
+			AddBuildingLabelZone(policePos, 160f, "label.police_post");
 			_cityHousePositions.Add(policePos + new Vector3(0, 0, 55));
 			_cityHouseInteriors.Add(policeInterior);
 
@@ -1707,32 +1737,50 @@ namespace HiepSiVeVuon.Core
 		{
 			if (_cityHousePositions.Count == 0) return;
 
-			(string name, string[] low, string[] mid, string[] high)[] flavors =
+			(string name, string[] low, string[] mid, string[] high, string[] lowEn, string[] midEn, string[] highEn)[] flavors =
 			{
-				("Nguoi Ban Hang Rong",
-					new[] { "Mua di, mua di! Hang tuoi moi ve sang nay!" },
-					new[] { "Chao khach quen! Hom nay troi dep nhi." },
-					new[] { "Cau ma ghe la ta vui ca ngay." }),
-				("Chu Tiem Banh",
-					new[] { "Banh moi ra lo, thom lam!" },
-					new[] { "Lai ghe tiem banh ta a? Vao di!" },
-					new[] { "De ta bieu cau o banh ngon nhat." }),
-				("Em Hoc Sinh",
-					new[] { "Chao anh/chi! Em dang tren duong den truong." },
-					new[] { "Em thay anh/chi hoai, quen mat roi!" },
-					new[] { "Anh/chi ke chuyen phieu luu cho em nghe di!" }),
-				("Cu Gia Trong Xom",
-					new[] { "Thi tran nay ta song ca doi roi day." },
-					new[] { "Gap cau ta thay vui, nho hoi con chau." },
-					new[] { "Ta se ke cau nghe chuyen xua cua thi tran..." }),
-				("Nguoi Lao Dong",
-					new[] { "Ngay nao cung phai lam viec cham chi thoi." },
-					new[] { "Cau cung sieng nang nhi, phuc cho cau." },
-					new[] { "Nghi ngoi chut di, ban voi cau vui that." }),
-				("Ba Noi Tro",
-					new[] { "Ta dang di cho mua do nau com day." },
-					new[] { "Hom nao ghe nha ta an com nhe!" },
-					new[] { "Cau nhu nguoi trong nha ta roi day." }),
+				("Người Bán Hàng Rong",
+					new[] { "Mua đi, mua đi! Hàng tươi mới về sáng nay!" },
+					new[] { "Chào khách quen! Hôm nay trời đẹp nhỉ." },
+					new[] { "Cậu mà ghé là ta vui cả ngày." },
+					new[] { "Come buy, come buy! Fresh stock just came in this morning!" },
+					new[] { "Hello again, regular! Lovely weather today, isn't it." },
+					new[] { "Seeing you stop by makes my whole day." }),
+				("Chủ Tiệm Bánh",
+					new[] { "Bánh mới ra lò, thơm lắm!" },
+					new[] { "Lại ghé tiệm bánh ta à? Vào đi!" },
+					new[] { "Để ta biếu cậu ổ bánh ngon nhất." },
+					new[] { "Fresh out of the oven, smells wonderful!" },
+					new[] { "Back at my bakery again? Come on in!" },
+					new[] { "Let me give you our finest loaf, on the house." }),
+				("Em Học Sinh",
+					new[] { "Chào anh/chị! Em đang trên đường đến trường." },
+					new[] { "Em thấy anh/chị hoài, quen mặt rồi!" },
+					new[] { "Anh/chị kể chuyện phiêu lưu cho em nghe đi!" },
+					new[] { "Hi there! I'm just on my way to school." },
+					new[] { "I see you all the time now, we're practically friends!" },
+					new[] { "Tell me about your adventures, please!" }),
+				("Cụ Già Trong Xóm",
+					new[] { "Thị trấn này ta sống cả đời rồi đấy." },
+					new[] { "Gặp cậu ta thấy vui, nhớ hồi con cháu." },
+					new[] { "Ta sẽ kể cậu nghe chuyện xưa của thị trấn..." },
+					new[] { "I've lived in this town my whole life." },
+					new[] { "Seeing you reminds me of my own grandchildren, back in the day." },
+					new[] { "Let me tell you an old tale about this town..." }),
+				("Người Lao Động",
+					new[] { "Ngày nào cũng phải làm việc chăm chỉ thôi." },
+					new[] { "Cậu cũng siêng năng nhỉ, phục cho cậu." },
+					new[] { "Nghỉ ngơi chút đi, bạn với cậu vui thật." },
+					new[] { "Every day means hard work, that's just how it is." },
+					new[] { "You're quite the hard worker yourself, I admire that." },
+					new[] { "Take a rest for a bit. I really enjoy your company." }),
+				("Bà Nội Trợ",
+					new[] { "Ta đang đi chợ mua đồ nấu cơm đây." },
+					new[] { "Hôm nào ghé nhà ta ăn cơm nhé!" },
+					new[] { "Cậu như người trong nhà ta rồi đấy." },
+					new[] { "I'm off to the market to get supper ingredients." },
+					new[] { "Come by for dinner sometime, won't you!" },
+					new[] { "You feel like family to me now." }),
 			};
 
 			var homeRng = new RandomNumberGenerator { Seed = 7003 };
@@ -1752,6 +1800,9 @@ namespace HiepSiVeVuon.Core
 				citizen.DialogueLow = flavor.low;
 				citizen.DialogueMid = flavor.mid;
 				citizen.DialogueHigh = flavor.high;
+				citizen.DialogueLowEn = flavor.lowEn;
+				citizen.DialogueMidEn = flavor.midEn;
+				citizen.DialogueHighEn = flavor.highEn;
 				citizen.WanderCenter = VillageAnchor;
 				citizen.HomePos = _cityHousePositions[homeIdx] + new Vector3(0, 0, 55);
 				citizen.InteriorHomePos = _cityHouseInteriors[homeIdx];
@@ -1762,10 +1813,13 @@ namespace HiepSiVeVuon.Core
 			// index 0 trong danh sach), di lai (tuan tra) quanh khu vuc tru thay vi ca thi tran.
 			var guard = _citizenScene.Instantiate<TownCitizenNpc>();
 			guard.NpcId = "town_guard";
-			guard.NpcName = "Chu Cong An";
-			guard.DialogueLow = new[] { "Giu gin trat tu thi tran la trach nhiem cua ta." };
-			guard.DialogueMid = new[] { "Cau la nguoi tot, ta yen tam roi." };
-			guard.DialogueHigh = new[] { "Co chuyen gi can giup, cu tim ta o Tru Canh Sat nhe." };
+			guard.NpcName = "Chú Công An";
+			guard.DialogueLow = new[] { "Giữ gìn trật tự thị trấn là trách nhiệm của ta." };
+			guard.DialogueMid = new[] { "Cậu là người tốt, ta yên tâm rồi." };
+			guard.DialogueHigh = new[] { "Có chuyện gì cần giúp, cứ tìm ta ở Trụ Cảnh Sát nhé." };
+			guard.DialogueLowEn = new[] { "Keeping order in this town is my responsibility." };
+			guard.DialogueMidEn = new[] { "You're a good sort, I can rest easy now." };
+			guard.DialogueHighEn = new[] { "Need help with anything, find me at the police post." };
 			guard.WanderRadius = 220f;
 			guard.WanderCenter = _cityHousePositions[0];
 			guard.HomePos = _cityHousePositions[0];
@@ -1829,7 +1883,7 @@ namespace HiepSiVeVuon.Core
 			AddStreetLamp(new Vector3(gateX - 35, 0, maxZ), 90f);
 			AddStreetLamp(new Vector3(gateX + 35, 0, maxZ), -90f);
 			AddPenCenterLight(CowPastureCenter, CowPastureHalf);
-			AddBuildingLabelZone(CowPastureCenter, CowPastureHalf + 20f, "Chuong Bo");
+			AddBuildingLabelZone(CowPastureCenter, CowPastureHalf + 20f, "label.cow_pasture");
 
 			// 12 con (tang tu 4 theo yeu cau) - rai deu theo vong tron trong hang rao, ban kinh
 			// nho hon PastureHalfExtent de khong dung sat hang rao.
@@ -1870,14 +1924,17 @@ namespace HiepSiVeVuon.Core
 			CowherdHousePos = NextHousingCottagePos(10801);
 			AddDecor(_smallBarnScene, CowherdHousePos, 12f, 90f, SmallBarnFootprint);
 			var interiorHomePos = AddBuildingEntrance(CowherdHousePos, 90f, 80f, 50f, RoomKind.Village);
-			AddBuildingLabelZone(CowherdHousePos, 100f, "Nha Nguoi Cham Bo");
+			AddBuildingLabelZone(CowherdHousePos, 100f, "label.cowherd_house");
 
 			var npc = _farmhandScene.Instantiate<FarmhandNpc>();
 			npc.NpcId = "cowherd";
 			npc.NpcName = "Etienne";
-			npc.DialogueLow = new[] { "Chao, ta la nguoi duoc thue cham dan bo o day. Gio hanh chinh 6 gio sang toi 6 gio toi." };
-			npc.DialogueMid = new[] { "Dan bo dao nay khoe re, an uong day du ca." };
-			npc.DialogueHigh = new[] { "Cau hay ghe qua chuong bo xem, thinh thoang ta de lai chut sua tuoi day." };
+			npc.DialogueLow = new[] { "Chào, ta là người được thuê chăm đàn bò ở đây. Giờ hành chính 6 giờ sáng tới 6 giờ tối." };
+			npc.DialogueMid = new[] { "Đàn bò dạo này khỏe re, ăn uống đầy đủ cả." };
+			npc.DialogueHigh = new[] { "Cậu hãy ghé qua chuồng bò xem, thỉnh thoảng ta để lại chút sữa tươi đấy." };
+			npc.DialogueLowEn = new[] { "Hello, I'm hired to look after the cows here. Working hours are 6 AM to 6 PM." };
+			npc.DialogueMidEn = new[] { "The herd's doing great lately, well fed and healthy." };
+			npc.DialogueHighEn = new[] { "Stop by the cow barn sometime, I sometimes leave a bit of fresh milk for you." };
 			npc.HomePos = CowherdHousePos + new Vector3(0, 0, 55);
 			// Ngoai gio lam (sau 18h), NPC di vao HAN BEN TRONG nha (dung phong noi that that
 			// da xay qua AddBuildingEntrance) de ngu, khong dung ngoai san.
@@ -1920,7 +1977,7 @@ namespace HiepSiVeVuon.Core
 			AddStreetLamp(new Vector3(gateX - 35, 0, maxZ), 90f);
 			AddStreetLamp(new Vector3(gateX + 35, 0, maxZ), -90f);
 			AddPenCenterLight(HorseStableCenter, HorseStableHalf);
-			AddBuildingLabelZone(HorseStableCenter, HorseStableHalf + 20f, "Chuong Ngua");
+			AddBuildingLabelZone(HorseStableCenter, HorseStableHalf + 20f, "label.horse_stable");
 
 			Vector3[] horseStarts =
 			{
@@ -1949,14 +2006,17 @@ namespace HiepSiVeVuon.Core
 			StablehandHousePos = NextHousingCottagePos(10802);
 			AddDecor(_smallBarnScene, StablehandHousePos, 12f, 90f, SmallBarnFootprint);
 			var interiorHomePos = AddBuildingEntrance(StablehandHousePos, 90f, 80f, 50f, RoomKind.Village);
-			AddBuildingLabelZone(StablehandHousePos, 100f, "Nha Nguoi Cham Ngua");
+			AddBuildingLabelZone(StablehandHousePos, 100f, "label.stablehand_house");
 
 			var npc = _stablehandScene.Instantiate<StablehandNpc>();
 			npc.NpcId = "stablehand";
 			npc.NpcName = "Baptiste";
-			npc.DialogueLow = new[] { "Chao, ta la nguoi duoc thue cham dan ngua o day. Gio hanh chinh 6 gio sang toi 6 gio toi." };
-			npc.DialogueMid = new[] { "Dan ngua dao nay khoe re, chay nhanh lam." };
-			npc.DialogueHigh = new[] { "Cau muon cuoi ngua thi cu ghe chuong hoi ta nhe." };
+			npc.DialogueLow = new[] { "Chào, ta là người được thuê chăm đàn ngựa ở đây. Giờ hành chính 6 giờ sáng tới 6 giờ tối." };
+			npc.DialogueMid = new[] { "Đàn ngựa dạo này khỏe re, chạy nhanh lắm." };
+			npc.DialogueHigh = new[] { "Cậu muốn cưỡi ngựa thì cứ ghé chuồng hỏi ta nhé." };
+			npc.DialogueLowEn = new[] { "Hello, I'm hired to look after the horses here. Working hours are 6 AM to 6 PM." };
+			npc.DialogueMidEn = new[] { "The horses are doing great lately, fast as ever." };
+			npc.DialogueHighEn = new[] { "Fancy a ride? Just come by the stable and ask me." };
 			npc.HomePos = StablehandHousePos + new Vector3(0, 0, 55);
 			npc.InteriorHomePos = interiorHomePos;
 			npc.WorkPos = HorseStableCenter + new Vector3(0, 0, -40);
@@ -2005,7 +2065,7 @@ namespace HiepSiVeVuon.Core
 			AddStreetLamp(new Vector3(gateX - 35, 0, maxZ), 90f);
 			AddStreetLamp(new Vector3(gateX + 35, 0, maxZ), -90f);
 			AddPenCenterLight(ChickenCoopCenter, ChickenCoopHalf);
-			AddBuildingLabelZone(ChickenCoopCenter, ChickenCoopHalf + 20f, "Chuong Ga");
+			AddBuildingLabelZone(ChickenCoopCenter, ChickenCoopHalf + 20f, "label.chicken_coop");
 
 			// 30 con (tang tu 10 theo yeu cau).
 			var rng = new RandomNumberGenerator();
@@ -2072,15 +2132,18 @@ namespace HiepSiVeVuon.Core
 			PoultryKeeperHousePos = NextHousingCottagePos(10803);
 			AddDecor(_smallBarnScene, PoultryKeeperHousePos, 12f, 90f, SmallBarnFootprint);
 			var interiorHomePos = AddBuildingEntrance(PoultryKeeperHousePos, 90f, 80f, 50f, RoomKind.Village);
-			AddBuildingLabelZone(PoultryKeeperHousePos, 100f, "Nha Nguoi Cham Ga");
+			AddBuildingLabelZone(PoultryKeeperHousePos, 100f, "label.poultry_keeper_house");
 
 			if (_poultryKeeperScene == null) { GD.PushError("Khong tai duoc PoultryKeeperNpc.tscn"); return; }
 			var npc = _poultryKeeperScene.Instantiate<PoultryKeeperNpc>();
 			npc.NpcId = "poultrykeeper";
 			npc.NpcName = "Severin";
-			npc.DialogueLow = new[] { "Chao, ta la nguoi duoc thue cham dan ga o day. Gio hanh chinh 6 gio sang toi 6 gio toi." };
-			npc.DialogueMid = new[] { "Dan ga dao nay de trung deu lam." };
-			npc.DialogueHigh = new[] { "Cau hay ghe qua chuong ga xem, thinh thoang ta de lai vai qua trung tuoi day." };
+			npc.DialogueLow = new[] { "Chào, ta là người được thuê chăm đàn gà ở đây. Giờ hành chính 6 giờ sáng tới 6 giờ tối." };
+			npc.DialogueMid = new[] { "Đàn gà dạo này đẻ trứng đều lắm." };
+			npc.DialogueHigh = new[] { "Cậu hãy ghé qua chuồng gà xem, thỉnh thoảng ta để lại vài quả trứng tươi đấy." };
+			npc.DialogueLowEn = new[] { "Hello, I'm hired to look after the chickens here. Working hours are 6 AM to 6 PM." };
+			npc.DialogueMidEn = new[] { "The hens are laying eggs steadily lately." };
+			npc.DialogueHighEn = new[] { "Stop by the chicken coop sometime, I sometimes leave a few fresh eggs for you." };
 			npc.HomePos = PoultryKeeperHousePos + new Vector3(0, 0, 55);
 			npc.InteriorHomePos = interiorHomePos;
 			npc.WorkPos = ChickenCoopCenter + new Vector3(0, 0, 25);
@@ -2137,7 +2200,7 @@ namespace HiepSiVeVuon.Core
 		{
 			WorldStreamer.Regions.Add(new WorldStreamer.RegionProfile
 			{
-				Name = "Nui", Center = MountainRegionCenter, HalfSize = 1500f,
+				Name = "Núi", Center = MountainRegionCenter, HalfSize = 1500f,
 				DecorOptions = new[]
 				{
 					MakeDecor("res://assets3d/quaternius/nature/rock_1.glb", 20f, 30f),
@@ -2157,7 +2220,7 @@ namespace HiepSiVeVuon.Core
 				var pos = MountainRegionCenter + new Vector3(Mathf.Cos(angle) * 500f, 0, Mathf.Sin(angle) * 500f);
 				AddOreNode(pos, "quang_nui", hp: 25, dropAmount: 2, regrowDays: 3, new Color(0.5f, 0.48f, 0.45f));
 			}
-			AddBuildingLabelZone(MountainRegionCenter, 400f, "Nui");
+			AddBuildingLabelZone(MountainRegionCenter, 400f, "label.mountain");
 		}
 
 		// Rung - cay day dac (mat do cao hon vung hoang da mac dinh), quai Soi Rung, tai nguyen
@@ -2167,7 +2230,7 @@ namespace HiepSiVeVuon.Core
 		{
 			WorldStreamer.Regions.Add(new WorldStreamer.RegionProfile
 			{
-				Name = "Rung", Center = ForestRegionCenter, HalfSize = 1500f,
+				Name = "Rừng", Center = ForestRegionCenter, HalfSize = 1500f,
 				DecorOptions = new[]
 				{
 					MakeDecor("res://assets3d/quaternius/nature/tree_normal_1.glb", 34f, 44f, true),
@@ -2190,7 +2253,7 @@ namespace HiepSiVeVuon.Core
 				var pos = ForestRegionCenter + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
 				AddFruitTree(pos, "thao_duoc_rung", new Color(0.4f, 0.7f, 0.3f), rng);
 			}
-			AddBuildingLabelZone(ForestRegionCenter, 260f, "Rung Sau");
+			AddBuildingLabelZone(ForestRegionCenter, 260f, "label.deep_forest");
 		}
 
 		// Dong ruong - co/hoa dai thua thot, mo, AN TOAN (khong co quai rieng) - diem den la 1 bu
@@ -2199,7 +2262,7 @@ namespace HiepSiVeVuon.Core
 		{
 			WorldStreamer.Regions.Add(new WorldStreamer.RegionProfile
 			{
-				Name = "Dong Ruong", Center = FieldRegionCenter, HalfSize = 1300f,
+				Name = "Đồng Ruộng", Center = FieldRegionCenter, HalfSize = 1300f,
 				DecorOptions = new[]
 				{
 					MakeDecor("res://assets3d/kenney/nature/flower_yellowA.glb", 7f, 11f),
@@ -2217,7 +2280,7 @@ namespace HiepSiVeVuon.Core
 				scarecrow.Scale = Vector3.One * 20f;
 				_world.AddChild(scarecrow);
 			}
-			AddBuildingLabelZone(FieldRegionCenter, 260f, "Dong Ruong");
+			AddBuildingLabelZone(FieldRegionCenter, 260f, "label.fields");
 		}
 
 		// Ho - mat nuoc vuong lon (tai su dung BuildWaterRegion) + 1 he sinh thai THAT (xem
@@ -2229,7 +2292,7 @@ namespace HiepSiVeVuon.Core
 		{
 			WorldStreamer.Regions.Add(new WorldStreamer.RegionProfile
 			{
-				Name = "Ho", Center = LakeRegionCenter, HalfSize = 1300f,
+				Name = "Hồ", Center = LakeRegionCenter, HalfSize = 1300f,
 				DecorOptions = new[]
 				{
 					MakeDecor("res://assets3d/quaternius/nature/tree_birch_1.glb", 30f, 40f, true),
@@ -2241,7 +2304,7 @@ namespace HiepSiVeVuon.Core
 				EnemyChance = 0.4f, EnemyStatMultiplier = 1.15f,
 			});
 
-			BuildWaterRegion(LakeRegionCenter, 480f, 480f, new Color(0.2f, 0.45f, 0.65f), "Ho Nuoc");
+			BuildWaterRegion(LakeRegionCenter, 480f, 480f, new Color(0.2f, 0.45f, 0.65f), "label.lake");
 			WaterEcosystem.Instance.LakeCenter = LakeRegionCenter;
 			WaterEcosystem.Instance.LakeRadius = 460f;
 
@@ -2331,7 +2394,7 @@ namespace HiepSiVeVuon.Core
 			var tower = new WaterTower { Position = anchor };
 			tower.AddChild(new CollisionShape3D { Shape = new CylinderShape3D { Radius = 18f, Height = pillarHeight }, Position = Vector3.Up * (pillarHeight / 2f) });
 			_world.AddChild(tower);
-			AddBuildingLabelZone(anchor, 90f, "Thap Nuoc");
+			AddBuildingLabelZone(anchor, 90f, "label.water_tower");
 			WorldStreamer.ExclusionZones.Add((anchor, 90f));
 		}
 
@@ -2475,7 +2538,7 @@ namespace HiepSiVeVuon.Core
 		{
 			WorldStreamer.Regions.Add(new WorldStreamer.RegionProfile
 			{
-				Name = "Song", Center = RiverRegionCenter, HalfSize = 1300f,
+				Name = "Sông", Center = RiverRegionCenter, HalfSize = 1300f,
 				DecorOptions = new[]
 				{
 					MakeDecor("res://assets3d/quaternius/nature/tree_birch_2.glb", 30f, 40f, true),
@@ -2484,7 +2547,7 @@ namespace HiepSiVeVuon.Core
 				MinDecor = 4, MaxDecor = 8,
 			});
 
-			BuildWaterRegion(RiverRegionCenter, 120f, 900f, new Color(0.22f, 0.48f, 0.62f), "Song");
+			BuildWaterRegion(RiverRegionCenter, 120f, 900f, new Color(0.22f, 0.48f, 0.62f), "label.river");
 			if (_stoneBridgeScene != null)
 			{
 				var bridge = _stoneBridgeScene.Instantiate<Node3D>();
@@ -2506,7 +2569,7 @@ namespace HiepSiVeVuon.Core
 		{
 			WorldStreamer.Regions.Add(new WorldStreamer.RegionProfile
 			{
-				Name = "Lang", Center = VillageRegionCenter, HalfSize = 900f,
+				Name = "Làng", Center = VillageRegionCenter, HalfSize = 900f,
 				DecorOptions = new[]
 				{
 					MakeDecor("res://assets3d/kenney/nature/plant_bush.glb", 12f, 18f),
@@ -2515,7 +2578,7 @@ namespace HiepSiVeVuon.Core
 				MinDecor = 3, MaxDecor = 6,
 			});
 
-			BuildLightSettlement(VillageRegionCenter, houseCount: 10, footprint: 700f, "Lang", "village_npc");
+			BuildLightSettlement(VillageRegionCenter, houseCount: 10, footprint: 700f, "label.village", "village_npc");
 		}
 
 		// Thanh Pho - khu dan cu NHE quy mo lon hon Lang (xem BuildLightSettlement) - van NHE hon
@@ -2524,7 +2587,7 @@ namespace HiepSiVeVuon.Core
 		{
 			WorldStreamer.Regions.Add(new WorldStreamer.RegionProfile
 			{
-				Name = "Thanh Pho", Center = BigCityRegionCenter, HalfSize = 1600f,
+				Name = "Thành Phố", Center = BigCityRegionCenter, HalfSize = 1600f,
 				DecorOptions = new[]
 				{
 					MakeDecor("res://assets3d/kenney/nature/plant_bush.glb", 10f, 14f),
@@ -2532,7 +2595,7 @@ namespace HiepSiVeVuon.Core
 				MinDecor = 2, MaxDecor = 4,
 			});
 
-			BuildLightSettlement(BigCityRegionCenter, houseCount: 28, footprint: 1400f, "Thanh Pho", "city_npc");
+			BuildLightSettlement(BigCityRegionCenter, houseCount: 28, footprint: 1400f, "label.city", "city_npc");
 		}
 
 		// Ruins - cum phe tich (xem BuildRuinsCluster), quai Bong Ma Phe Tich.
@@ -2540,7 +2603,7 @@ namespace HiepSiVeVuon.Core
 		{
 			WorldStreamer.Regions.Add(new WorldStreamer.RegionProfile
 			{
-				Name = "Phe Tich", Center = RuinsRegionCenter, HalfSize = 1200f,
+				Name = "Phế Tích", Center = RuinsRegionCenter, HalfSize = 1200f,
 				DecorOptions = new[]
 				{
 					MakeDecor("res://assets3d/quaternius/nature/rock_2.glb", 14f, 20f),
@@ -2559,7 +2622,7 @@ namespace HiepSiVeVuon.Core
 		{
 			WorldStreamer.Regions.Add(new WorldStreamer.RegionProfile
 			{
-				Name = "Nghia Dia", Center = CemeteryRegionCenter, HalfSize = 1000f,
+				Name = "Nghĩa Địa", Center = CemeteryRegionCenter, HalfSize = 1000f,
 				DecorOptions = new[]
 				{
 					MakeDecor("res://assets3d/quaternius/nature/tree_birch_2.glb", 26f, 34f, true),
@@ -2580,7 +2643,7 @@ namespace HiepSiVeVuon.Core
 				AddGravestone(pos, rng.RandfRange(0f, 360f), rng);
 			}
 			AddDecor(_smallBarnScene, CemeteryRegionCenter, 12f, 0f, SmallBarnFootprint);
-			AddBuildingLabelZone(CemeteryRegionCenter, 300f, "Nghia Dia");
+			AddBuildingLabelZone(CemeteryRegionCenter, 300f, "label.cemetery");
 		}
 
 		// Dam lay - nuoc duc xanh xam (tai su dung BuildWaterRegion, mau rieng), quai Quai Dam
@@ -2589,7 +2652,7 @@ namespace HiepSiVeVuon.Core
 		{
 			WorldStreamer.Regions.Add(new WorldStreamer.RegionProfile
 			{
-				Name = "Dam Lay", Center = SwampRegionCenter, HalfSize = 1300f,
+				Name = "Đầm Lầy", Center = SwampRegionCenter, HalfSize = 1300f,
 				DecorOptions = new[]
 				{
 					MakeDecor("res://assets3d/quaternius/nature/tree_birch_1.glb", 24f, 32f, true),
@@ -2600,7 +2663,7 @@ namespace HiepSiVeVuon.Core
 				EnemyChance = 0.5f, EnemyStatMultiplier = 1.2f,
 			});
 
-			BuildWaterRegion(SwampRegionCenter, 380f, 380f, new Color(0.22f, 0.28f, 0.2f), "Dam Lay");
+			BuildWaterRegion(SwampRegionCenter, 380f, 380f, new Color(0.22f, 0.28f, 0.2f), "label.swamp");
 			var rng = new RandomNumberGenerator { Seed = 6901 };
 			for (int i = 0; i < 5; i++)
 			{
@@ -2617,7 +2680,7 @@ namespace HiepSiVeVuon.Core
 		{
 			WorldStreamer.Regions.Add(new WorldStreamer.RegionProfile
 			{
-				Name = "Hang Dong", Center = CaveRegionCenter, HalfSize = 1200f,
+				Name = "Hang Động", Center = CaveRegionCenter, HalfSize = 1200f,
 				DecorOptions = new[]
 				{
 					MakeDecor("res://assets3d/quaternius/nature/rock_1.glb", 16f, 22f),
@@ -2635,7 +2698,7 @@ namespace HiepSiVeVuon.Core
 			var caveBody = new StaticBody3D { Position = CaveRegionCenter };
 			caveBody.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(150f, 80f, 55f) }, Position = Vector3.Up * 40f });
 			_world.AddChild(caveBody);
-			AddBuildingLabelZone(CaveRegionCenter, 220f, "Hang Dong");
+			AddBuildingLabelZone(CaveRegionCenter, 220f, "label.cave");
 
 			var floorAnchor = new Vector3(CaveRegionCenter.X, 500f + _nextInteriorIndex * 900f, CaveRegionCenter.Z);
 			_nextInteriorIndex++;
@@ -2668,7 +2731,7 @@ namespace HiepSiVeVuon.Core
 			var mineBody = new StaticBody3D { Position = MineEntrancePos };
 			mineBody.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(180f, 90f, 60f) }, Position = Vector3.Up * 45f });
 			_world.AddChild(mineBody);
-			AddBuildingLabelZone(MineEntrancePos, 110f, "Ham Mo");
+			AddBuildingLabelZone(MineEntrancePos, 110f, "label.mine_shaft");
 
 			// 3 tang, moi tang 1 do cao (Y) RIENG qua bo dem CHUNG _nextInteriorIndex (giong het
 			// AddBuildingEntrance) - dam bao KHONG BAO GIO chong lan voi bat ky noi that nao khac
@@ -2782,24 +2845,36 @@ namespace HiepSiVeVuon.Core
 		// 1 khu dan cu NHE (nha CHI la model trang tri, KHONG co noi that that su - dung Y NGUYEN
 		// mau BuildFrenchCountryside/SpawnFrenchVillagers da chung minh giu chi phi node o muc
 		// thap) - dung cho ca Lang (it nha) va Thanh Pho (nhieu nha hon).
-		private static readonly (string name, string[] low, string[] mid, string[] high)[] SettlementFlavors =
+		private static readonly (string name, string[] low, string[] mid, string[] high, string[] lowEn, string[] midEn, string[] highEn)[] SettlementFlavors =
 		{
-			("Nguoi Ban Hang Rong",
-				new[] { "Mua ban gi khong, khach quy?" },
-				new[] { "Hang hoa toi deu tu tay lam ra ca." },
-				new[] { "Lan sau ghe toi se bot gia cho." }),
-			("Bac Tho San",
-				new[] { "Vung nay thinh thoang co quai xuat hien, can than nhe." },
-				new[] { "Toi hay di san quanh day, quen thuoc lam." },
-				new[] { "Can gi cu hoi toi, toi biet ro vung nay." }),
-			("Co Giao Lang",
-				new[] { "Chao anh, moi den day lan dau a?" },
-				new[] { "Tre con trong lang deu ngoan ca." },
-				new[] { "Toi rat vui khi co nguoi ghe tham." }),
-			("Ong Lao",
-				new[] { "Toi song o day lau lam roi." },
-				new[] { "Ngay xua noi nay khac lam, gio doi thay nhieu." },
-				new[] { "De toi ke anh nghe vai chuyen xua." }),
+			("Người Bán Hàng Rong",
+				new[] { "Mua bán gì không, khách quý?" },
+				new[] { "Hàng hóa tôi đều tự tay làm ra cả." },
+				new[] { "Lần sau ghé tôi sẽ bớt giá cho." },
+				new[] { "Buying or selling, honored guest?" },
+				new[] { "Everything I sell, I made with my own two hands." },
+				new[] { "Come back next time, I'll give you a discount." }),
+			("Bác Thợ Săn",
+				new[] { "Vùng này thỉnh thoảng có quái xuất hiện, cẩn thận nhé." },
+				new[] { "Tôi hay đi săn quanh đây, quen thuộc lắm." },
+				new[] { "Cần gì cứ hỏi tôi, tôi biết rõ vùng này." },
+				new[] { "Monsters show up around here now and then, so be careful." },
+				new[] { "I hunt around these parts often, know it like the back of my hand." },
+				new[] { "Need anything, just ask. I know this land well." }),
+			("Cô Giáo Làng",
+				new[] { "Chào anh, mới đến đây lần đầu à?" },
+				new[] { "Trẻ con trong làng đều ngoan cả." },
+				new[] { "Tôi rất vui khi có người ghé thăm." },
+				new[] { "Hello there, is this your first time here?" },
+				new[] { "The children in the village are all well-behaved." },
+				new[] { "I'm always glad to have visitors." }),
+			("Ông Lão",
+				new[] { "Tôi sống ở đây lâu lắm rồi." },
+				new[] { "Ngày xưa nơi này khác lắm, giờ đổi thay nhiều." },
+				new[] { "Để tôi kể anh nghe vài chuyện xưa." },
+				new[] { "I've lived here for a very long time." },
+				new[] { "This place used to look quite different, so much has changed." },
+				new[] { "Let me tell you a few stories from the old days." }),
 		};
 
 		private void BuildLightSettlement(Vector3 anchor, int houseCount, float footprint, string label, string idPrefix)
@@ -2850,6 +2925,9 @@ namespace HiepSiVeVuon.Core
 				villager.DialogueLow = flavor.low;
 				villager.DialogueMid = flavor.mid;
 				villager.DialogueHigh = flavor.high;
+				villager.DialogueLowEn = flavor.lowEn;
+				villager.DialogueMidEn = flavor.midEn;
+				villager.DialogueHighEn = flavor.highEn;
 				villager.WanderCenter = anchor;
 				villager.WanderRadius = footprint * 0.75f;
 				villager.HomePos = housePositions[i] + new Vector3(0, 0, 45);
@@ -2882,7 +2960,7 @@ namespace HiepSiVeVuon.Core
 				_world.AddChild(inst);
 			}
 			AddOreNode(center, "co_vat", hp: 40, dropAmount: 1, regrowDays: 30, new Color(0.55f, 0.5f, 0.35f));
-			AddBuildingLabelZone(center, 260f, "Phe Tich");
+			AddBuildingLabelZone(center, 260f, "label.ruins");
 		}
 
 		// 1 bia mo primitive (khong co model CC0 phu hop, dung nguyen tac da lam voi cac cong
@@ -2972,7 +3050,7 @@ namespace HiepSiVeVuon.Core
 			float maxZ = SunflowerFieldCenter.Z + SunflowerFieldHalfZ;
 
 			WorldStreamer.ExclusionZones.Add((SunflowerFieldCenter, 395f));
-			AddBuildingLabelZone(SunflowerFieldCenter, 350f, "Canh Dong Huong Duong");
+			AddBuildingLabelZone(SunflowerFieldCenter, 350f, "label.sunflower_field");
 
 			// Nen dat mau nau sam trai dai duoi ca canh dong - phan biet ro voi co xanh xung
 			// quanh, giong 1 canh dong that su duoc canh tac chu khong phai hoa moc hoang.
@@ -3162,32 +3240,50 @@ namespace HiepSiVeVuon.Core
 		{
 			if (_frenchHousePositions.Count == 0) return;
 
-			(string name, string[] low, string[] mid, string[] high)[] flavors =
+			(string name, string[] low, string[] mid, string[] high, string[] lowEn, string[] midEn, string[] highEn)[] flavors =
 			{
-				("Nguoi Nong Dan",
-					new[] { "Vu mua nam nay chac se duoc lam." },
-					new[] { "Chao anh ban! Ghe tham vung que chung toi a?" },
-					new[] { "Toi se moi anh mot bua an dong que that su." }),
-				("Nguoi Xay Xay Bot",
-					new[] { "Coi xay cua toi quay tu doi nay sang doi khac roi." },
-					new[] { "Bot mi moi xay thom lam, anh co muon thu khong?" },
-					new[] { "Gia dinh toi se luon chao don anh." }),
-				("Nguoi Lam Vuon Nho",
-					new[] { "Vuon nho tren doi kia la cua gia dinh toi." },
-					new[] { "Ruou vang nam nay ngon lam, anh nen thu." },
-					new[] { "Toi se de danh cho anh chai ruou ngon nhat ham." }),
-				("Nguoi Chan Cuu Vung Que",
-					new[] { "Dan cuu cua toi gam co tren nhung ngon doi thap quanh day." },
-					new[] { "Anh di dao vung que nay cung quen mat roi." },
-					new[] { "Ghe tham dan cuu cua toi bat cu luc nao." }),
-				("Ba Cu Lang Que",
-					new[] { "Toi song o vung que nay tu thuo be." },
-					new[] { "Gap anh toi vui lam, nho con chau qua." },
-					new[] { "De toi ke anh nghe chuyen xua cua vung dat nay..." }),
-				("Tho Ren Vung Que",
-					new[] { "Vung que thanh binh nhung van can tho ren gioi." },
-					new[] { "Anh ghe tham xuong ren cua toi thuong xuyen nhi." },
-					new[] { "Vi qui anh, toi se ren mon do dac biet nhat." }),
+				("Người Nông Dân",
+					new[] { "Vụ mùa năm nay chắc sẽ được lắm." },
+					new[] { "Chào anh bạn! Ghé thăm vùng quê chúng tôi à?" },
+					new[] { "Tôi sẽ mời anh một bữa ăn đồng quê thật sự." },
+					new[] { "This year's harvest looks like it'll be a good one." },
+					new[] { "Hello, friend! Come to visit our countryside?" },
+					new[] { "I'll treat you to a real country meal." }),
+				("Người Xay Xay Bột",
+					new[] { "Cối xay của tôi quay từ đời này sang đời khác rồi." },
+					new[] { "Bột mì mới xay thơm lắm, anh có muốn thử không?" },
+					new[] { "Gia đình tôi sẽ luôn chào đón anh." },
+					new[] { "My mill has been turning for generation after generation." },
+					new[] { "The flour's fresh ground and fragrant, care to try some?" },
+					new[] { "My family will always welcome you." }),
+				("Người Làm Vườn Nho",
+					new[] { "Vườn nho trên đồi kia là của gia đình tôi." },
+					new[] { "Rượu vang năm nay ngon lắm, anh nên thử." },
+					new[] { "Tôi sẽ để dành cho anh chai rượu ngon nhất hầm." },
+					new[] { "That vineyard on the hill belongs to my family." },
+					new[] { "This year's wine is excellent, you should try it." },
+					new[] { "I'll set aside the finest bottle in my cellar for you." }),
+				("Người Chăn Cừu Vùng Quê",
+					new[] { "Đàn cừu của tôi gặm cỏ trên những ngọn đồi thấp quanh đây." },
+					new[] { "Anh đi dạo vùng quê này cũng quen mặt rồi." },
+					new[] { "Ghé thăm đàn cừu của tôi bất cứ lúc nào." },
+					new[] { "My flock grazes on the low hills around here." },
+					new[] { "You've become a familiar face wandering this countryside." },
+					new[] { "Come visit my sheep anytime." }),
+				("Bà Cụ Làng Quê",
+					new[] { "Tôi sống ở vùng quê này từ thuở bé." },
+					new[] { "Gặp anh tôi vui lắm, nhớ con cháu quá." },
+					new[] { "Để tôi kể anh nghe chuyện xưa của vùng đất này..." },
+					new[] { "I've lived in this countryside since I was a child." },
+					new[] { "Seeing you makes me happy, reminds me of my own grandchildren." },
+					new[] { "Let me tell you an old tale of this land..." }),
+				("Thợ Rèn Vùng Quê",
+					new[] { "Vùng quê thanh bình nhưng vẫn cần thợ rèn giỏi." },
+					new[] { "Anh ghé thăm xưởng rèn của tôi thường xuyên nhỉ." },
+					new[] { "Vì quý anh, tôi sẽ rèn món đồ đặc biệt nhất." },
+					new[] { "Peaceful as the countryside is, it still needs a good blacksmith." },
+					new[] { "You stop by my forge quite often, don't you." },
+					new[] { "Because I think highly of you, I'll forge something truly special." }),
 			};
 
 			int count = Mathf.Min(50, _frenchHousePositions.Count);
@@ -3202,6 +3298,9 @@ namespace HiepSiVeVuon.Core
 				villager.DialogueLow = flavor.low;
 				villager.DialogueMid = flavor.mid;
 				villager.DialogueHigh = flavor.high;
+				villager.DialogueLowEn = flavor.lowEn;
+				villager.DialogueMidEn = flavor.midEn;
+				villager.DialogueHighEn = flavor.highEn;
 				villager.WanderRadius = 1500f;
 				villager.WanderCenter = FrenchRegionCenter;
 				villager.HomePos = housePos + new Vector3(0, 0, 45);
@@ -3302,11 +3401,11 @@ namespace HiepSiVeVuon.Core
 			// Cong chao 3D bang da tai CA 4 cong (theo yeu cau) - xem AddStoneGateArch. outwardDir
 			// la huong "ra ngoai" tuong (vuong goc voi huong doc tuong) - dung de tinh canh cua go
 			// mo VE PHIA NAO (ap sat mat ngoai tuong khi mo het, giong cua that).
-			AddStoneGateArch(new Vector3(midX, 0, minZ), Vector3.Right, Vector3.Forward, gateHalfWidth, "CONG BAC");
-			AddStoneGateArch(new Vector3(minX, 0, midZ), Vector3.Back, Vector3.Left, gateHalfWidth, "CONG TAY");
-			AddStoneGateArch(new Vector3(midX, 0, maxZ), Vector3.Right, Vector3.Back, gateHalfWidth, "CONG NAM");
+			AddStoneGateArch(new Vector3(midX, 0, minZ), Vector3.Right, Vector3.Forward, gateHalfWidth, "label.gate_north");
+			AddStoneGateArch(new Vector3(minX, 0, midZ), Vector3.Back, Vector3.Left, gateHalfWidth, "label.gate_west");
+			AddStoneGateArch(new Vector3(midX, 0, maxZ), Vector3.Right, Vector3.Back, gateHalfWidth, "label.gate_south");
 			// Dong: cong chinh (noi con duong that di vao lang) - bang ten rieng, "chao mung".
-			AddStoneGateArch(new Vector3(maxX, 0, eastGateZ), Vector3.Back, Vector3.Right, gateHalfWidth, "NONG TRAI - CHAO MUNG");
+			AddStoneGateArch(new Vector3(maxX, 0, eastGateZ), Vector3.Back, Vector3.Right, gateHalfWidth, "label.farm_welcome_sign");
 		}
 
 		// Cong chao 3D bang da, phong cach chau Au trung co (kham khao Gatehouse/vong thanh
@@ -3389,7 +3488,7 @@ namespace HiepSiVeVuon.Core
 			// Bang ten khac chu tren da ngang, de doc tu ca 2 huong tiep can.
 			_world.AddChild(new Label3D
 			{
-				Text = signText,
+				Text = Loc.T(signText),
 				Position = gateCenter + Vector3.Up * (pillarHeight - 6f),
 				Billboard = BaseMaterial3D.BillboardModeEnum.Enabled,
 				FontSize = 40,
@@ -3488,7 +3587,7 @@ namespace HiepSiVeVuon.Core
 				_extraPenZones.Add((pos, footprintRadius));
 				float rotY = rng.RandfRange(0f, 360f);
 				AddWindmill(pos, rotY, windmillScale);
-				AddBuildingLabelZone(pos, footprintRadius, "Coi Xay Gio");
+				AddBuildingLabelZone(pos, footprintRadius, "label.windmill");
 			}
 		}
 
@@ -3536,7 +3635,7 @@ namespace HiepSiVeVuon.Core
 				avoid.Add((pos, footprintRadius));
 				_extraPenZones.Add((pos, footprintRadius));
 				AddWindmill(pos, rng.RandfRange(0f, 360f), windmillScale);
-				AddBuildingLabelZone(pos, footprintRadius, "Coi Xay Gio");
+				AddBuildingLabelZone(pos, footprintRadius, "label.windmill");
 			}
 		}
 
@@ -3622,7 +3721,7 @@ namespace HiepSiVeVuon.Core
 				_world.AddChild(body);
 
 				AddBeaconFire(corner + Vector3.Up * (towerHeight - 8f));
-				AddBuildingLabelZone(corner, 120f, "Thap Canh");
+				AddBuildingLabelZone(corner, 120f, "label.watchtower");
 			}
 		}
 
@@ -3720,14 +3819,17 @@ namespace HiepSiVeVuon.Core
 			FarmWorkerHousePos = NextHousingCottagePos(10804);
 			AddDecor(_smallBarnScene, FarmWorkerHousePos, 12f, 0f, SmallBarnFootprint);
 			var interiorHomePos = AddBuildingEntrance(FarmWorkerHousePos, 0f, 80f, 50f, RoomKind.Village);
-			AddBuildingLabelZone(FarmWorkerHousePos, 100f, "Nha Nguoi Lam Ruong");
+			AddBuildingLabelZone(FarmWorkerHousePos, 100f, "label.farm_worker_house");
 
 			var npc = _farmWorkerScene.Instantiate<FarmWorkerNpc>();
 			npc.NpcId = "farmworker";
 			npc.NpcName = "Theodore";
-			npc.DialogueLow = new[] { "Chao, ta duoc thue lam ruong cho anh. Gio hanh chinh 6 gio sang toi 6 gio toi." };
-			npc.DialogueMid = new[] { "Canh dong dao nay tot tuoi lam, ta cham soc ky ca." };
-			npc.DialogueHigh = new[] { "Thu hoach duoc gi ta deu mang ve giao cho anh day du." };
+			npc.DialogueLow = new[] { "Chào, ta được thuê làm ruộng cho anh. Giờ hành chính 6 giờ sáng tới 6 giờ tối." };
+			npc.DialogueMid = new[] { "Cánh đồng dạo này tốt tươi lắm, ta chăm sóc kỹ cả." };
+			npc.DialogueHigh = new[] { "Thu hoạch được gì ta đều mang về giao cho anh đầy đủ." };
+			npc.DialogueLowEn = new[] { "Hello, I'm hired to work the fields for you. Working hours are 6 AM to 6 PM." };
+			npc.DialogueMidEn = new[] { "The fields are looking lush lately, I tend to them carefully." };
+			npc.DialogueHighEn = new[] { "Whatever we harvest, I bring it all back to you in full." };
 			npc.HomePos = FarmWorkerHousePos + new Vector3(0, 0, 55);
 			npc.InteriorHomePos = interiorHomePos;
 			npc.WorkPos = FarmOrigin + new Vector3((FarmGridW - 1) * FarmSpacing / 2f, 0, (FarmGridH - 1) * FarmSpacing / 2f);
@@ -3765,7 +3867,7 @@ namespace HiepSiVeVuon.Core
 			AddStreetLamp(new Vector3(gateX - 35, 0, maxZ), 90f);
 			AddStreetLamp(new Vector3(gateX + 35, 0, maxZ), -90f);
 			AddPenCenterLight(SheepPigPastureCenter, SheepPigPastureHalf);
-			AddBuildingLabelZone(SheepPigPastureCenter, SheepPigPastureHalf + 20f, "Chuong Cuu/Heo");
+			AddBuildingLabelZone(SheepPigPastureCenter, SheepPigPastureHalf + 20f, "label.sheep_pig_pen");
 
 			// 20 cuu + 10 heo (tang tu 2+2 theo yeu cau) - rai deu vong tron trong hang rao.
 			var spRng = new RandomNumberGenerator { Seed = 9701 };
@@ -3803,16 +3905,16 @@ namespace HiepSiVeVuon.Core
 		private static readonly Vector3 OrchardCenter = CropsExtensionAnchor;
 		private static readonly (string name, string itemId, Color fruitColor)[] FruitKinds =
 		{
-			("Tao", "apple", new Color(0.75f, 0.12f, 0.1f)),
-			("Le", "pear", new Color(0.75f, 0.78f, 0.25f)),
-			("Anh dao", "cherry", new Color(0.55f, 0.05f, 0.15f)),
-			("Dao", "peach", new Color(0.9f, 0.55f, 0.25f)),
-			("Hat de", "chestnut", new Color(0.4f, 0.24f, 0.12f)),
+			("Táo", "apple", new Color(0.75f, 0.12f, 0.1f)),
+			("Lê", "pear", new Color(0.75f, 0.78f, 0.25f)),
+			("Anh đào", "cherry", new Color(0.55f, 0.05f, 0.15f)),
+			("Đào", "peach", new Color(0.9f, 0.55f, 0.25f)),
+			("Hạt dẻ", "chestnut", new Color(0.4f, 0.24f, 0.12f)),
 		};
 
 		private void BuildOrchard()
 		{
-			AddBuildingLabelZone(OrchardCenter, 160f, "Vuon Cay An Qua");
+			AddBuildingLabelZone(OrchardCenter, 160f, "label.orchard");
 			var rng = new RandomNumberGenerator { Seed = 9001 };
 			int idx = 0;
 			for (int row = -1; row <= 1; row++)
@@ -3878,7 +3980,7 @@ namespace HiepSiVeVuon.Core
 
 		private void BuildVineyard()
 		{
-			AddBuildingLabelZone(VineyardCenter, 130f, "Vuon Nho");
+			AddBuildingLabelZone(VineyardCenter, 130f, "label.vineyard");
 			var postMat = GetCachedMaterial(new Color(0.3f, 0.2f, 0.1f), 1f);
 			var rng = new RandomNumberGenerator { Seed = 9002 };
 			for (int row = -1; row <= 1; row++)
@@ -3973,7 +4075,7 @@ namespace HiepSiVeVuon.Core
 			EstateWorkerHousePos = NextHousingCottagePos(10805);
 			AddDecor(_smallBarnScene, EstateWorkerHousePos, 12f, 90f, SmallBarnFootprint);
 			var interiorHomePos = AddBuildingEntrance(EstateWorkerHousePos, 90f, 80f, 50f, RoomKind.Village);
-			AddBuildingLabelZone(EstateWorkerHousePos, 100f, "Nha Nguoi Lam Vuon");
+			AddBuildingLabelZone(EstateWorkerHousePos, 100f, "label.estate_worker_house");
 
 			var npc = _estateWorkerScene.Instantiate<EstateWorkerNpc>();
 			npc.NpcId = "estateworker";
@@ -3981,9 +4083,12 @@ namespace HiepSiVeVuon.Core
 			// Quy hoach lai: chuong cuu/heo gio co nguoi cham rieng trong Khu Chan Nuoi (xem
 			// BuildAnimalPenDistrict) nen vai tro cua Augustin thu hep lai CHI con Khu Trong Trot
 			// (vuon cay/vuon nho/to ong), bo giam sat cuu/heo (trung lap, khong con can thiet).
-			npc.DialogueLow = new[] { "Chao, ta phu trach vuon cay, vuon nho va to ong o day." };
-			npc.DialogueMid = new[] { "Vuon cay va vuon nho dao nay sai qua that." };
-			npc.DialogueHigh = new[] { "Thinh thoang ta de lai chut tao, mat ong hay ruou vang cho anh." };
+			npc.DialogueLow = new[] { "Chào, ta phụ trách vườn cây, vườn nho và tổ ong ở đây." };
+			npc.DialogueMid = new[] { "Vườn cây và vườn nho dạo này sai quả thật." };
+			npc.DialogueHigh = new[] { "Thỉnh thoảng ta để lại chút táo, mật ong hay rượu vang cho anh." };
+			npc.DialogueLowEn = new[] { "Hello, I look after the orchard, vineyard, and beehives here." };
+			npc.DialogueMidEn = new[] { "The orchard and vineyard are really bearing fruit lately." };
+			npc.DialogueHighEn = new[] { "I sometimes leave a bit of apple, honey, or wine for you." };
 			npc.HomePos = EstateWorkerHousePos + new Vector3(0, 0, 55);
 			npc.InteriorHomePos = interiorHomePos;
 			npc.WorkPos = CropsExtensionAnchor;
@@ -4104,32 +4209,47 @@ namespace HiepSiVeVuon.Core
 
 			var fieldWorkPos = FarmOrigin + new Vector3((FarmGridW - 1) * FarmSpacing / 2f, 0, (FarmGridH - 1) * FarmSpacing / 2f);
 
-			(string role, string name, string[] low, string[] mid, string[] high, bool fieldWork, Vector3 workPos, Vector3 feedPos)[] roles =
+			(string role, string name, string[] low, string[] mid, string[] high, string[] lowEn, string[] midEn, string[] highEn, bool fieldWork, Vector3 workPos, Vector3 feedPos)[] roles =
 			{
-				("farmer", "Nong Dan",
-					new[] { "Toi la nong dan, moi ngay gieo hat va cham soc ruong." },
-					new[] { "Ruong dao nay len tot lam, anh ghe xem thu." },
-					new[] { "Nong san thu hoach duoc toi giao het cho anh." },
+				("farmer", "Nông Dân",
+					new[] { "Tôi là nông dân, mỗi ngày gieo hạt và chăm sóc ruộng." },
+					new[] { "Ruộng dạo này lên tốt lắm, anh ghé xem thử." },
+					new[] { "Nông sản thu hoạch được tôi giao hết cho anh." },
+					new[] { "I'm a farmer, sowing seeds and tending the fields every day." },
+					new[] { "The fields are coming along great lately, come take a look." },
+					new[] { "Whatever crops we harvest, I hand them all over to you." },
 					true, fieldWorkPos, CowPastureCenter),
-				("farmhand", "Nguoi Lam Ruong",
-					new[] { "Toi phu giup tuoi nuoc, cham soc them cho ruong." },
-					new[] { "Cung anh cham ruong that vui." },
-					new[] { "Co gi can toi giup cu goi nhe." },
+				("farmhand", "Người Làm Ruộng",
+					new[] { "Tôi phụ giúp tưới nước, chăm sóc thêm cho ruộng." },
+					new[] { "Cùng anh chăm ruộng thật vui." },
+					new[] { "Có gì cần tôi giúp cứ gọi nhé." },
+					new[] { "I help out with watering and extra care for the fields." },
+					new[] { "Working the fields alongside you is a real joy." },
+					new[] { "Need a hand with anything, just call me." },
 					true, fieldWorkPos, CowPastureCenter),
-				("stablemaster", "Nguoi Chan Ngua Phu",
-					new[] { "Toi phu giup cham soc dan ngua trong chuong." },
-					new[] { "Dan ngua dao nay khoe re nho co them nguoi cham." },
-					new[] { "Anh muon cuoi ngua thi ke chuong hoi toi." },
+				("stablemaster", "Người Chăn Ngựa Phụ",
+					new[] { "Tôi phụ giúp chăm sóc đàn ngựa trong chuồng." },
+					new[] { "Đàn ngựa dạo này khỏe re nhờ có thêm người chăm." },
+					new[] { "Anh muốn cưỡi ngựa thì ké chuồng hỏi tôi." },
+					new[] { "I help take care of the horses in the stable." },
+					new[] { "The horses are in great shape now that there's extra help." },
+					new[] { "Fancy a ride? Come find me at the stable." },
 					false, HorseStableCenter, HorseStableCenter),
-				("shepherd_farm", "Nguoi Chan Cuu Trang Trai",
-					new[] { "Toi cham dan cuu va heo trong chuong phia nam." },
-					new[] { "Dan cuu dao nay len long day du lam." },
-					new[] { "Ghe chuong cuu choi, toi chi cho anh xem." },
+				("shepherd_farm", "Người Chăn Cừu Trang Trại",
+					new[] { "Tôi chăm đàn cừu và heo trong chuồng phía nam." },
+					new[] { "Đàn cừu dạo này lông dày đủ lắm." },
+					new[] { "Ghé chuồng cừu chơi, tôi chỉ cho anh xem." },
+					new[] { "I tend the sheep and pigs in the pen to the south." },
+					new[] { "The sheep's wool is coming in nice and thick lately." },
+					new[] { "Come by the sheep pen, I'll show you around." },
 					false, SheepPigPastureCenter, SheepPigPastureCenter),
-				("gardener_farm", "Nguoi Lam Vuon Phu",
-					new[] { "Toi phu cham soc vuon cay va vuon nho." },
-					new[] { "Vuon dao nay sai qua, ghe hai thu di." },
-					new[] { "Trai chin toi de danh phan anh day." },
+				("gardener_farm", "Người Làm Vườn Phụ",
+					new[] { "Tôi phụ chăm sóc vườn cây và vườn nho." },
+					new[] { "Vườn dạo này sai quả, ghé hái thử đi." },
+					new[] { "Trái chín tôi để dành phần anh đấy." },
+					new[] { "I help tend the orchard and the vineyard." },
+					new[] { "The trees are heavy with fruit lately, come pick some." },
+					new[] { "I've been saving the ripe fruit for you." },
 					false, OrchardCenter, OrchardCenter),
 			};
 
@@ -4148,6 +4268,9 @@ namespace HiepSiVeVuon.Core
 				npc.DialogueLow = r.low;
 				npc.DialogueMid = r.mid;
 				npc.DialogueHigh = r.high;
+				npc.DialogueLowEn = r.lowEn;
+				npc.DialogueMidEn = r.midEn;
+				npc.DialogueHighEn = r.highEn;
 				npc.DoesFieldWork = r.fieldWork;
 				npc.WorkPos = r.workPos;
 				npc.FeedPos = r.feedPos;
@@ -4250,28 +4373,46 @@ namespace HiepSiVeVuon.Core
 				var housePos = NextHousePos();
 				AddDecor(_smallBarnScene, housePos, 12f, 0f, SmallBarnFootprint);
 				var interior = AddBuildingEntrance(housePos, 0f, 80f, 50f, RoomKind.Village);
-				AddBuildingLabelZone(housePos, 100f, "Nha Quan Gia");
+				AddBuildingLabelZone(housePos, 100f, "label.steward_house");
 
 				var jean = _farmStewardScene.Instantiate<FarmStewardNpc>();
 				jean.NpcId = "jean_steward";
 				jean.NpcName = "Jean";
 				jean.DialogueLow = new[]
 				{
-					"Ta la Jean, quan gia trang trai nay. Moi thu o day deu can co trat tu.",
-					"Cu tu tin lam viec, ta se de mat toi moi ngoc ngach cua trang trai.",
+					"Ta là Jean, quản gia trang trại này. Mọi thứ ở đây đều cần có trật tự.",
+					"Cứ tự tin làm việc, ta sẽ để mắt tới mọi ngóc ngách của trang trại.",
 				};
 				jean.DialogueMid = new[]
 				{
-					"Trang trai dao nay on dinh, cu giu dung nhip la duoc.",
-					"Ta khong thich lang phi - do dung, cong suc, hay thoi gian deu vay.",
-					"Anh lam vic kha day, nhung nho don dep gon gang sau khi xong nhe.",
+					"Trang trại dạo này ổn định, cứ giữ đúng nhịp là được.",
+					"Ta không thích lãng phí - đồ dùng, công sức, hay thời gian đều vậy.",
+					"Anh làm việc khá đấy, nhưng nhớ dọn dẹp gọn gàng sau khi xong nhé.",
 				};
 				jean.DialogueHigh = new[]
 				{
-					"Ta co kinh nghiem quan ly trang trai lau nam roi, cu yen tam.",
-					"Thuc ra... anh hay bo do lai linh tinh lam. Lan sau nho de dung cho.",
-					"Neu anh bot lang phi hat giong mot chut, vu sau se loi nhieu hon day.",
-					"Trang trai nay la tam huyet ca doi ta - ta se khong de no xuong cap dau.",
+					"Ta có kinh nghiệm quản lý trang trại lâu năm rồi, cứ yên tâm.",
+					"Thực ra... anh hay bỏ đồ lại linh tinh lắm. Lần sau nhớ để đúng chỗ.",
+					"Nếu anh bớt lãng phí hạt giống một chút, vụ sau sẽ lời nhiều hơn đấy.",
+					"Trang trại này là tâm huyết cả đời ta - ta sẽ không để nó xuống cấp đâu.",
+				};
+				jean.DialogueLowEn = new[]
+				{
+					"I'm Jean, steward of this farm. Everything here needs to be kept in order.",
+					"Work with confidence, I'll keep an eye on every corner of the farm.",
+				};
+				jean.DialogueMidEn = new[]
+				{
+					"The farm's been steady lately, just keep up the good rhythm.",
+					"I dislike waste - of supplies, effort, or time, all the same.",
+					"You're doing well, but remember to tidy up properly once you're done.",
+				};
+				jean.DialogueHighEn = new[]
+				{
+					"I've managed farms for many years now, so rest easy.",
+					"Truth be told... you do leave things lying about. Put them back where they belong next time.",
+					"If you waste fewer seeds, next season's profit will be much better.",
+					"This farm is my life's work - I won't let it fall into disrepair.",
 				};
 				jean.HomePos = housePos + new Vector3(0, 0, 55);
 				jean.InteriorHomePos = interior;
@@ -4285,14 +4426,17 @@ namespace HiepSiVeVuon.Core
 				var housePos = NextHousePos();
 				AddDecor(_smallBarnScene, housePos, 12f, 0f, SmallBarnFootprint);
 				var interior = AddBuildingEntrance(housePos, 0f, 80f, 50f, RoomKind.Village);
-				AddBuildingLabelZone(housePos, 100f, "Nha Tho Sua Chua");
+				AddBuildingLabelZone(housePos, 100f, "label.repairman_house");
 
 				var marcel = _repairmanScene.Instantiate<RepairmanNpc>();
 				marcel.NpcId = "marcel_repairman";
 				marcel.NpcName = "Marcel";
-				marcel.DialogueLow = new[] { "Ta la Marcel, tho sua chua o day. Hang rao hu la ta biet ngay." };
-				marcel.DialogueMid = new[] { "Vua sua xong 1 doan hang rao, gio moi chac chan hon nhieu." };
-				marcel.DialogueHigh = new[] { "Cu de y hang rao cho ta, anh lo may vu khac di." };
+				marcel.DialogueLow = new[] { "Ta là Marcel, thợ sửa chữa ở đây. Hàng rào hư là ta biết ngay." };
+				marcel.DialogueMid = new[] { "Vừa sửa xong 1 đoạn hàng rào, giờ mới chắc chắn hơn nhiều." };
+				marcel.DialogueHigh = new[] { "Cứ để ý hàng rào cho ta, anh lo mấy vụ khác đi." };
+				marcel.DialogueLowEn = new[] { "I'm Marcel, the repairman here. A broken fence, I spot it right away." };
+				marcel.DialogueMidEn = new[] { "Just finished fixing a stretch of fence, much sturdier now." };
+				marcel.DialogueHighEn = new[] { "Leave the fences to me, you focus on the other work." };
 				marcel.HomePos = BarnPos2Vec() + new Vector3(0, 0, 60);
 				marcel.InteriorHomePos = interior;
 				marcel.WoodpilePos = woodpilePos;
@@ -4306,7 +4450,7 @@ namespace HiepSiVeVuon.Core
 				var housePos = NextHousePos();
 				AddDecor(_smallBarnScene, housePos, 12f, 0f, SmallBarnFootprint);
 				var interior = AddBuildingEntrance(housePos, 0f, 80f, 50f, RoomKind.Village);
-				AddBuildingLabelZone(housePos, 100f, "Nha Quan Ly Kho");
+				AddBuildingLabelZone(housePos, 100f, "label.warehouse_manager_house");
 
 				var antoine = _warehouseManagerScene.Instantiate<WarehouseManagerNpc>();
 				antoine.NpcId = "antoine_warehouse";
@@ -4322,18 +4466,31 @@ namespace HiepSiVeVuon.Core
 				var henri = _guardNpcScene.Instantiate<GuardNpc>();
 				henri.NpcId = "henri_guard";
 				henri.NpcName = "Henri";
-				henri.DialogueLow = new[] { "Ta la Henri, bao ve trang trai nay. Cu yen tam ma lam viec." };
-				henri.DialogueMid = new[] { "Cong va hang rao ta kiem tra deu dan, chua thay gi bat thuong." };
-				henri.DialogueHigh = new[] { "Co gi kha nghi ta se bao anh ngay, cu tin ta." };
+				henri.DialogueLow = new[] { "Ta là Henri, bảo vệ trang trại này. Cứ yên tâm mà làm việc." };
+				henri.DialogueMid = new[] { "Cổng và hàng rào ta kiểm tra đều đặn, chưa thấy gì bất thường." };
+				henri.DialogueHigh = new[] { "Có gì khả nghi ta sẽ báo anh ngay, cứ tin ta." };
 				henri.DialogueRain = new[]
 				{
-					"Troi mua thi khong tuoi cay duoc, ta tranh thu sua sang cong cu, chuong trai.",
-					"Mua the nay ta o quanh day don kho, doi tanh roi tuan tra tiep.",
+					"Trời mưa thì không tưới cây được, ta tranh thủ sửa sang công cụ, chuồng trại.",
+					"Mưa thế này ta ở quanh đây dồn kho, đợi tạnh rồi tuần tra tiếp.",
 				};
 				henri.DialogueNight = new[]
 				{
-					"Dem hom ta di tuan dung 1 vong: cong - kho - dong - bia rung - nha chinh.",
-					"Ban dem phai canh ky hon, thu du gi cung co the tho tham.",
+					"Đêm hôm ta đi tuần đúng 1 vòng: cổng - kho - đồng - bìa rừng - nhà chính.",
+					"Ban đêm phải canh kỹ hơn, thú dữ gì cũng có thể thơ thẩn.",
+				};
+				henri.DialogueLowEn = new[] { "I'm Henri, guard of this farm. Work easy, I've got things covered." };
+				henri.DialogueMidEn = new[] { "I check the gate and fences regularly, nothing out of the ordinary so far." };
+				henri.DialogueHighEn = new[] { "Anything suspicious, I'll report it to you right away, trust me on that." };
+				henri.DialogueRainEn = new[]
+				{
+					"Can't water the crops in this rain, so I'm using the time to fix up tools and pens.",
+					"With weather like this I stay close by and tidy the storehouse, patrol again once it clears.",
+				};
+				henri.DialogueNightEn = new[]
+				{
+					"At night I make one full round: gate - storehouse - fields - forest edge - main house.",
+					"Gotta keep a sharper watch at night, who knows what wild beast might be prowling about.",
 				};
 				henri.HomePos = FarmGatePos;
 				henri.DayCheckpoints = new[] { FarmGatePos, forestEdgePos };
@@ -4343,11 +4500,11 @@ namespace HiepSiVeVuon.Core
 			}, "BuildFarmStaff[Henri]");
 
 			// ---- 5 FenceMarker: "cam bien" de Marcel biet cho nao can sua ----
-			AddFenceMarker("Hang rao ruong", FarmGatePos);
-			AddFenceMarker("Chuong bo", CowPastureCenter);
-			AddFenceMarker("Chuong ngua", HorseStableCenter);
-			AddFenceMarker("Chuong ga", ChickenCoopCenter);
-			AddFenceMarker("Chuong cuu heo", SheepPigPastureCenter);
+			AddFenceMarker("Hàng rào ruộng", FarmGatePos);
+			AddFenceMarker("Chuồng bò", CowPastureCenter);
+			AddFenceMarker("Chuồng ngựa", HorseStableCenter);
+			AddFenceMarker("Chuồng gà", ChickenCoopCenter);
+			AddFenceMarker("Chuồng cừu heo", SheepPigPastureCenter);
 		}
 
 		private void AddFenceMarker(string name, Vector3 pos)
@@ -4377,11 +4534,14 @@ namespace HiepSiVeVuon.Core
 
 			AddDecor(_farmhouseScene, barracksPos, 60f, 90f, FarmhouseFootprint);
 			var interior = AddBuildingEntrance(barracksPos, 90f, 110f, 80f, RoomKind.Village);
-			AddBuildingLabelZone(barracksPos, 130f, "Doanh Trai Cam Ve");
+			AddBuildingLabelZone(barracksPos, 130f, "label.palace_guard_barracks");
 
-			string[] dialogueLow = { "Cam Ve Quan xin chao. Chung toi tuan tra khap trang trai ngay dem." };
-			string[] dialogueMid = { "Trang trai duoc canh gac can than, anh cu yen tam lam viec." };
-			string[] dialogueHigh = { "Co chuyen gi bat thuong, anh cu bao chung toi ngay." };
+			string[] dialogueLow = { "Cấm Vệ Quân xin chào. Chúng tôi tuần tra khắp trang trại ngày đêm." };
+			string[] dialogueMid = { "Trang trại được canh gác cẩn thận, anh cứ yên tâm làm việc." };
+			string[] dialogueHigh = { "Có chuyện gì bất thường, anh cứ báo chúng tôi ngay." };
+			string[] dialogueLowEn = { "Greetings, we're the Royal Guard. We patrol the whole farm, day and night." };
+			string[] dialogueMidEn = { "The farm is being watched over carefully, work easy." };
+			string[] dialogueHighEn = { "If anything's out of the ordinary, report it to us right away." };
 
 			const int totalGuards = 100;
 			const int dayShift = 50;
@@ -4394,10 +4554,13 @@ namespace HiepSiVeVuon.Core
 				{
 					var guard = _palaceGuardScene.Instantiate<PalaceGuardNpc>();
 					guard.NpcId = $"palace_guard_{idx}";
-					guard.NpcName = $"{PickStaffName(idx)} (Cam Ve #{idx + 1})";
+					guard.NpcName = $"{PickStaffName(idx)} (Cấm Vệ #{idx + 1})";
 					guard.DialogueLow = dialogueLow;
 					guard.DialogueMid = dialogueMid;
 					guard.DialogueHigh = dialogueHigh;
+					guard.DialogueLowEn = dialogueLowEn;
+					guard.DialogueMidEn = dialogueMidEn;
+					guard.DialogueHighEn = dialogueHighEn;
 					bool isDayShift = idx < dayShift;
 					guard.WorkStartHour = isDayShift ? 6 : 18;
 					guard.WorkEndHour = isDayShift ? 18 : 6;
@@ -4427,7 +4590,7 @@ namespace HiepSiVeVuon.Core
 
 		private void BuildBigVineyard()
 		{
-			AddBuildingLabelZone(BigVineyardCenter, 700f, "Vuon Nho Lon");
+			AddBuildingLabelZone(BigVineyardCenter, 700f, "label.great_vineyard");
 			var vineMesh = ExtractMesh(_grapesScene);
 			var postMesh = new CylinderMesh { TopRadius = 2f, BottomRadius = 2.4f, Height = 26f };
 			var postMat = GetCachedMaterial(new Color(0.3f, 0.2f, 0.1f), 1f);
@@ -4589,12 +4752,12 @@ namespace HiepSiVeVuon.Core
 			AddDecor(_smallBarnScene, s + new Vector3(-20, 0, 100), 10f, 90f, SmallBarnFootprint);   // kho dung cu
 			AddDecor(_smallBarnScene, s + new Vector3(160, 0, 80), 9f, 90f, SmallBarnFootprint);     // nha kho nho 1
 			AddDecor(_smallBarnScene, s + new Vector3(-180, 0, -100), 9f, 90f, SmallBarnFootprint);  // nha kho nho 2
-			AddBuildingLabelZone(s, 260f, "Khu Nha Kho");
+			AddBuildingLabelZone(s, 260f, "label.warehouse_district");
 
 			// ---- Khu San Xuat (che bien): xuong nho + lo ren + nha kinh (Forge/greenhouse ben
 			// duoi) - workshop giu tai day (khac Kho, day la noi GIA CONG chu khong phai CHUA DO).
 			AddDecor(_smallBarnScene, a + new Vector3(60, 0, 90), 11f, 0f, SmallBarnFootprint);     // workshop
-			AddBuildingLabelZone(a, 400f, "Khu San Xuat");
+			AddBuildingLabelZone(a, 400f, "label.production_district");
 
 			// Lo ren nho - khoi da/gach + ong khoi, dung primitive.
 			AddForgePrimitive(a + new Vector3(140, 0, 130));
@@ -5198,7 +5361,7 @@ namespace HiepSiVeVuon.Core
 			_caretakerDormPos = dormPos;
 			AddDecor(_farmhouseScene, dormPos, 60f, 90f, FarmhouseFootprint);
 			var interior = AddBuildingEntrance(dormPos, 90f, 110f, 80f, RoomKind.Village);
-			AddBuildingLabelZone(dormPos, 130f, "Nha O Nguoi Cham Nuoi");
+			AddBuildingLabelZone(dormPos, 130f, "label.caretaker_dormitory");
 
 			var homeFront = dormPos + new Vector3(0, 0, 90);
 			const int cols = 10;
@@ -5216,9 +5379,12 @@ namespace HiepSiVeVuon.Core
 						var stablehand = _stablehandScene.Instantiate<StablehandNpc>();
 						stablehand.NpcId = $"district_stablehand_{idx}";
 						stablehand.NpcName = PickStaffName(idx + 5); // +5: tranh trung ten voi 5 vai tro co dinh (Etienne...Augustin)
-						stablehand.DialogueLow = new[] { "Toi phu trach mot chuong ngua trong khu chan nuoi." };
-						stablehand.DialogueMid = new[] { "Moi ngay toi di tu day den chuong de cham ngua." };
-						stablehand.DialogueHigh = new[] { "Dan ngua toi cham deu khoe manh ca." };
+						stablehand.DialogueLow = new[] { "Tôi phụ trách một chuồng ngựa trong khu chăn nuôi." };
+						stablehand.DialogueMid = new[] { "Mỗi ngày tôi đi từ đây đến chuồng để chăm ngựa." };
+						stablehand.DialogueHigh = new[] { "Đàn ngựa tôi chăm đều khỏe mạnh cả." };
+						stablehand.DialogueLowEn = new[] { "I look after a horse stable in the livestock district." };
+						stablehand.DialogueMidEn = new[] { "Every day I come from here to the stable to tend the horses." };
+						stablehand.DialogueHighEn = new[] { "Every horse I care for is healthy and strong." };
 						stablehand.WorkPos = penPos + new Vector3(0, 0, -40);
 						stablehand.HomePos = homeFront;
 						stablehand.InteriorHomePos = interiorSlot;
@@ -5229,9 +5395,12 @@ namespace HiepSiVeVuon.Core
 						var keeper = _poultryKeeperScene.Instantiate<PoultryKeeperNpc>();
 						keeper.NpcId = $"district_poultrykeeper_{idx}";
 						keeper.NpcName = PickStaffName(idx + 5); // +5: tranh trung ten voi 5 vai tro co dinh (Etienne...Augustin)
-						keeper.DialogueLow = new[] { "Toi phu trach mot chuong ga trong khu chan nuoi." };
-						keeper.DialogueMid = new[] { "Moi ngay toi di tu day den chuong de nhat trung." };
-						keeper.DialogueHigh = new[] { "Trung moi de con am, anh lay ngay di." };
+						keeper.DialogueLow = new[] { "Tôi phụ trách một chuồng gà trong khu chăn nuôi." };
+						keeper.DialogueMid = new[] { "Mỗi ngày tôi đi từ đây đến chuồng để nhặt trứng." };
+						keeper.DialogueHigh = new[] { "Trứng mới đẻ còn ấm, anh lấy ngay đi." };
+						keeper.DialogueLowEn = new[] { "I look after a chicken coop in the livestock district." };
+						keeper.DialogueMidEn = new[] { "Every day I come from here to the coop to collect eggs." };
+						keeper.DialogueHighEn = new[] { "Fresh eggs, still warm - go on and take them." };
 						keeper.WorkPos = penPos + new Vector3(0, 0, -30);
 						keeper.HomePos = homeFront;
 						keeper.InteriorHomePos = interiorSlot;
@@ -5242,9 +5411,12 @@ namespace HiepSiVeVuon.Core
 						var caretaker = _farmhandScene.Instantiate<FarmhandNpc>();
 						caretaker.NpcId = $"district_caretaker_{idx}";
 						caretaker.NpcName = PickStaffName(idx + 5); // +5: tranh trung ten voi 5 vai tro co dinh (Etienne...Augustin)
-						caretaker.DialogueLow = new[] { "Toi phu trach mot chuong trong khu chan nuoi." };
-						caretaker.DialogueMid = new[] { "Moi ngay toi di tu day den chuong de cham soc." };
-						caretaker.DialogueHigh = new[] { "Vat nuoi toi cham deu khoe manh ca." };
+						caretaker.DialogueLow = new[] { "Tôi phụ trách một chuồng trong khu chăn nuôi." };
+						caretaker.DialogueMid = new[] { "Mỗi ngày tôi đi từ đây đến chuồng để chăm sóc." };
+						caretaker.DialogueHigh = new[] { "Vật nuôi tôi chăm đều khỏe mạnh cả." };
+						caretaker.DialogueLowEn = new[] { "I look after a pen in the livestock district." };
+						caretaker.DialogueMidEn = new[] { "Every day I come from here to the pen to take care of the animals." };
+						caretaker.DialogueHighEn = new[] { "Every animal I care for is healthy and strong." };
 						if (spec.sheep > 0 || spec.pig > 0) caretaker.ProduceItemId = "wool";
 						caretaker.WorkPos = penPos + new Vector3(0, 0, -40);
 						caretaker.TroughPos = penPos;
@@ -5286,9 +5458,12 @@ namespace HiepSiVeVuon.Core
 			// 34: doanh trai cham chuong gio co 29 nguoi (28 cu + "cuuheo_cu" moi gop vao, xem
 			// BuildAnimalPenDistrict), chiem het chi so 5-33 (idx+5) - De dung 34 de khong trung.
 			caretaker.NpcName = PickStaffName(34);
-			caretaker.DialogueLow = new[] { "Toi phu trach chuong De cua trang trai." };
-			caretaker.DialogueMid = new[] { "De can an co tuoi moi ngay, khong duoc lo la." };
-			caretaker.DialogueHigh = new[] { "Dan De toi cham cho sua rat tot." };
+			caretaker.DialogueLow = new[] { "Tôi phụ trách chuồng Dê của trang trại." };
+			caretaker.DialogueMid = new[] { "Dê cần ăn cỏ tươi mỗi ngày, không được lơ là." };
+			caretaker.DialogueHigh = new[] { "Đàn Dê tôi chăm cho sữa rất tốt." };
+			caretaker.DialogueLowEn = new[] { "I look after the farm's goat pen." };
+			caretaker.DialogueMidEn = new[] { "Goats need fresh grass every day, can't slack on that." };
+			caretaker.DialogueHighEn = new[] { "The goats I raise give excellent milk." };
 			caretaker.ProduceItemId = "wool";
 			caretaker.WorkPos = pos + new Vector3(0, 0, -40);
 			caretaker.TroughPos = pos;
@@ -5352,7 +5527,7 @@ namespace HiepSiVeVuon.Core
 				}
 			}
 
-			AddBuildingLabelZone(GreenhouseAnchor, half, "Nha Kinh");
+			AddBuildingLabelZone(GreenhouseAnchor, half, "label.greenhouse");
 		}
 
 		// May che bien nong san (xem ProcessingMachine.cs) - 5 may CANH NHAU gan Khu Nha Kho:
@@ -5367,12 +5542,16 @@ namespace HiepSiVeVuon.Core
 
 			(string name, bool anyCrop, string fixedIn, string prefix, string fixedOut, int days)[] machines =
 			{
-				("Lo Say", true, "", "mut_", "", 2),
-				("May Ep", true, "", "ruou_", "", 3),
-				("May Lam Pho Mai", false, "milk", "", "pho_mai", 1),
-				("May Mayonnaise", false, "egg", "", "mayonnaise", 1),
-				("May Det", false, "wool", "", "vai", 1),
+				("Lò Sấy", true, "", "mut_", "", 2),
+				("Máy Ép", true, "", "ruou_", "", 3),
+				("Máy Làm Phô Mai", false, "milk", "", "pho_mai", 1),
+				("Máy Mayonnaise", false, "egg", "", "mayonnaise", 1),
+				("Máy Dệt", false, "wool", "", "vai", 1),
 			};
+			// Khoa Loc.cs tuong ung tung may, CUNG THU TU voi mang machines o tren (dung de hien
+			// bang ten cong trinh - xem HUD.RefreshBuildingLabel - KHONG dung cho MachineName vi
+			// MachineName van giu tieng Viet cho cac GD.Print debug o ProcessingMachine.cs).
+			string[] machineLabelKeys = { "label.dryer", "label.press", "label.cheese_machine", "label.mayo_machine", "label.loom" };
 
 			for (int i = 0; i < machines.Length; i++)
 			{
@@ -5386,7 +5565,7 @@ namespace HiepSiVeVuon.Core
 				machine.ProcessDays = days;
 				machine.Position = ProcessingAnchor + new Vector3((i - (machines.Length - 1) / 2f) * 70f, 0, 0);
 				_world.AddChild(machine);
-				AddBuildingLabelZone(machine.Position, 30f, name);
+				AddBuildingLabelZone(machine.Position, 30f, machineLabelKeys[i]);
 			}
 		}
 
@@ -5397,7 +5576,7 @@ namespace HiepSiVeVuon.Core
 			var station = _cookingStationScene.Instantiate<CookingStation>();
 			station.Position = ProcessingAnchor + new Vector3(0, 0, -150);
 			_world.AddChild(station);
-			AddBuildingLabelZone(station.Position, 30f, "Bep");
+			AddBuildingLabelZone(station.Position, 30f, "label.kitchen");
 		}
 
 		// Chuong ong (xem AddBeehive) - san xuat mat ong THU DONG (khong can cham soc hang ngay,

@@ -20,6 +20,7 @@ namespace HiepSiVeVuon.UI
         private Button _primaryBtn;
         private Button _toggleModeBtn;
         private bool _isRegisterMode = false;
+        private readonly LocalizedLabelSet _loc = new();
 
         private static readonly Color GoldAccent = new(0.78f, 0.62f, 0.32f);
         private static readonly Color CreamText = new(0.95f, 0.92f, 0.85f);
@@ -58,37 +59,41 @@ namespace HiepSiVeVuon.UI
             // de "nong trai" va "hiep si" trong ten game ngay tren man hinh dang nhap.
             vb.AddChild(BuildHeroPortrait());
 
-            var title = new Label { Text = "HIEP SI VE VUON", HorizontalAlignment = HorizontalAlignment.Center };
+            var title = new Label { HorizontalAlignment = HorizontalAlignment.Center };
+            _loc.Track(title, "login.title");
             title.AddThemeColorOverride("font_color", GoldAccent);
             title.AddThemeFontSizeOverride("font_size", 26);
             vb.AddChild(title);
 
-            var sub = new Label { Text = "Nong Trai  *  Phieu Luu  *  Chien Dau", HorizontalAlignment = HorizontalAlignment.Center };
+            var sub = new Label { HorizontalAlignment = HorizontalAlignment.Center };
+            _loc.Track(sub, "login.subtitle");
             sub.AddThemeColorOverride("font_color", new Color(CreamText, 0.65f));
             sub.AddThemeFontSizeOverride("font_size", 13);
             vb.AddChild(sub);
 
             vb.AddChild(new HSeparator());
 
-            vb.AddChild(MakeFieldLabel("Ten dang nhap"));
-            _username = MakeStyledLineEdit("vd: nongdan01");
+            vb.AddChild(_loc.Track(MakeFieldLabel(), "login.username_label"));
+            _username = MakeStyledLineEdit();
+            _loc.Track(_username, "login.username_placeholder");
             vb.AddChild(_username);
 
-            vb.AddChild(MakeFieldLabel("Mat khau"));
-            _password = MakeStyledLineEdit("it nhat 6 ky tu", secret: true);
+            vb.AddChild(_loc.Track(MakeFieldLabel(), "login.password_label"));
+            _password = MakeStyledLineEdit(secret: true);
+            _loc.Track(_password, "login.password_placeholder");
             _password.TextSubmitted += _ => Submit(_isRegisterMode);
             vb.AddChild(_password);
 
             vb.AddChild(new Control { CustomMinimumSize = new Vector2(0, 4) }); // dem nho truoc nut
 
-            _primaryBtn = new Button { Text = "Dang Nhap", CustomMinimumSize = new Vector2(0, 42) };
+            _primaryBtn = new Button { Text = Loc.T("login.btn_login"), CustomMinimumSize = new Vector2(0, 42) };
             StylePrimaryButton(_primaryBtn);
             _primaryBtn.Pressed += () => Submit(_isRegisterMode);
             vb.AddChild(_primaryBtn);
 
             _toggleModeBtn = new Button
             {
-                Text = "Chua co tai khoan? Bam de dang ky",
+                Text = Loc.T("login.toggle_to_register"),
                 Flat = true,
                 CustomMinimumSize = new Vector2(0, 28),
             };
@@ -109,14 +114,28 @@ namespace HiepSiVeVuon.UI
 
             var footer = new Label
             {
-                Text = "Gieo hat, nuoi trong, phieu luu - hanh trinh cua ban bat dau tu day.",
                 AutowrapMode = TextServer.AutowrapMode.Word,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 CustomMinimumSize = new Vector2(332, 0),
             };
+            _loc.Track(footer, "login.footer");
             footer.AddThemeColorOverride("font_color", new Color(CreamText, 0.4f));
             footer.AddThemeFontSizeOverride("font_size", 11);
             vb.AddChild(footer);
+
+            Loc.LanguageChanged += OnLanguageChanged;
+        }
+
+        public override void _ExitTree()
+        {
+            Loc.LanguageChanged -= OnLanguageChanged;
+        }
+
+        private void OnLanguageChanged()
+        {
+            _loc.Refresh();
+            _primaryBtn.Text = Loc.T(_isRegisterMode ? "login.btn_register" : "login.btn_login");
+            _toggleModeBtn.Text = Loc.T(_isRegisterMode ? "login.toggle_to_login" : "login.toggle_to_register");
         }
 
         // Nen gradient am (thay ColorRect 1 mau phang) - lay cam hung tu man hinh dang nhap cac
@@ -195,15 +214,15 @@ namespace HiepSiVeVuon.UI
             return row;
         }
 
-        private static Label MakeFieldLabel(string text)
+        private static Label MakeFieldLabel()
         {
-            var l = new Label { Text = text };
+            var l = new Label();
             l.AddThemeColorOverride("font_color", new Color(CreamText, 0.75f));
             l.AddThemeFontSizeOverride("font_size", 13);
             return l;
         }
 
-        private static LineEdit MakeStyledLineEdit(string placeholder, bool secret = false)
+        private static LineEdit MakeStyledLineEdit(bool secret = false)
         {
             var box = new StyleBoxFlat
             {
@@ -217,7 +236,7 @@ namespace HiepSiVeVuon.UI
             focusBox.BorderColor = GoldAccent;
             focusBox.BorderWidthTop = 2; focusBox.BorderWidthBottom = 2; focusBox.BorderWidthLeft = 2; focusBox.BorderWidthRight = 2;
 
-            var le = new LineEdit { PlaceholderText = placeholder, Secret = secret, CustomMinimumSize = new Vector2(332, 0) };
+            var le = new LineEdit { Secret = secret, CustomMinimumSize = new Vector2(332, 0) };
             le.AddThemeStyleboxOverride("normal", box);
             le.AddThemeStyleboxOverride("focus", focusBox);
             le.AddThemeColorOverride("font_color", CreamText);
@@ -254,10 +273,8 @@ namespace HiepSiVeVuon.UI
         private void ToggleMode()
         {
             _isRegisterMode = !_isRegisterMode;
-            _primaryBtn.Text = _isRegisterMode ? "Dang Ky Tai Khoan Moi" : "Dang Nhap";
-            _toggleModeBtn.Text = _isRegisterMode
-                ? "Da co tai khoan? Bam de dang nhap"
-                : "Chua co tai khoan? Bam de dang ky";
+            _primaryBtn.Text = Loc.T(_isRegisterMode ? "login.btn_register" : "login.btn_login");
+            _toggleModeBtn.Text = Loc.T(_isRegisterMode ? "login.toggle_to_login" : "login.toggle_to_register");
             _status.Text = "";
         }
 
@@ -267,12 +284,12 @@ namespace HiepSiVeVuon.UI
             string pass = _password.Text;
             if (user.Length < 3 || pass.Length < 6)
             {
-                _status.Text = "Ten dang nhap >= 3 ky tu, mat khau >= 6 ky tu.";
+                _status.Text = Loc.T("login.validation_error");
                 return;
             }
 
             SetBusy(true);
-            _status.Text = "Dang ket noi server...";
+            _status.Text = Loc.T("login.connecting");
 
             void OnDone(bool ok, string tokenOrError)
             {
@@ -284,7 +301,7 @@ namespace HiepSiVeVuon.UI
                 }
                 else
                 {
-                    _status.Text = tokenOrError ?? "Loi khong ro.";
+                    _status.Text = tokenOrError ?? Loc.T("login.unknown_error");
                 }
             }
 

@@ -497,7 +497,7 @@ namespace HiepSiVeVuon.Entities
                         if (FarmPlot.TryTillFreeform(spot, GetTree().CurrentScene) != null) tilled++;
                     }
                 }
-                GD.Print(tilled > 0 ? $"Da cuoc {tilled} o dat moi." : "Khong the cuoc dat o day.");
+                GD.Print(tilled > 0 ? $"Đã cuốc {tilled} ô đất mới." : "Không thể cuốc đất ở đây.");
             }
             else if (tool == "can_cau")
             {
@@ -516,7 +516,7 @@ namespace HiepSiVeVuon.Entities
         {
             if (!WaterEcosystem.Instance.IsNearLake(GlobalPosition, 220f))
             {
-                GD.Print("Can o gan ho/song de cau ca.");
+                GD.Print("Cần ở gần hồ/sông để câu cá.");
                 return;
             }
             ulong now = Time.GetTicksMsec();
@@ -525,7 +525,7 @@ namespace HiepSiVeVuon.Entities
 
             if (WaterEcosystem.Instance.Get("fish") < 5f)
             {
-                GD.Print("Khu vuc nay khong con ca de cau, cho quan the phuc hoi.");
+                GD.Print("Khu vực này không còn cá để câu, chờ quần thể phục hồi.");
                 return;
             }
             var rng = new RandomNumberGenerator();
@@ -535,11 +535,11 @@ namespace HiepSiVeVuon.Entities
                 Inventory.Instance.AddItem("ca", 1);
                 FarmStorage.Instance.Add("ca", 1);
                 WaterEcosystem.Instance.OnPlayerCatch("fish", 3f);
-                GD.Print("Cau duoc 1 con ca!");
+                GD.Print("Câu được 1 con cá!");
             }
             else
             {
-                GD.Print("Ca chua can, thu lai sau.");
+                GD.Print("Cá chưa cắn, thử lại sau.");
             }
         }
 
@@ -549,14 +549,14 @@ namespace HiepSiVeVuon.Entities
         {
             if (!Inventory.Instance.RemoveItem("may_tuoi_tu_dong", 1))
             {
-                GD.Print("Khong co May Tuoi Tu Dong trong tui do.");
+                GD.Print("Không có Máy Tưới Tự Động trong túi đồ.");
                 return;
             }
             _sprinklerScene ??= GD.Load<PackedScene>("res://scenes/AutoSprinkler.tscn");
             var sprinkler = _sprinklerScene.Instantiate<AutoSprinkler>();
             sprinkler.Position = GlobalPosition + _facing * 50f;
             GetTree().CurrentScene.AddChild(sprinkler);
-            GD.Print("Da dat May Tuoi Tu Dong - se tu tuoi ruong quanh day moi ngay.");
+            GD.Print("Đã đặt Máy Tưới Tự Động - sẽ tự tưới ruộng quanh đây mỗi ngày.");
         }
 
         private void TryFeedDuck()
@@ -564,17 +564,17 @@ namespace HiepSiVeVuon.Entities
             if (Inventory.Instance.RemoveItem("thucan_giasuc", 1))
             {
                 WaterEcosystem.Instance.OnFeedDucks();
-                GD.Print("Da cho vit an.");
+                GD.Print("Đã cho vịt ăn.");
             }
             else
             {
-                GD.Print("Can thuc an gia suc de cho vit an.");
+                GD.Print("Cần thức ăn gia súc để cho vịt ăn.");
             }
         }
 
         private void OnDied()
         {
-            GD.Print("Nguoi choi da guc nga! Hoi sinh tai nha.");
+            GD.Print("Người chơi đã gục ngã! Hồi sinh tại nhà.");
             GameManager.Instance.Hp = GameManager.Instance.MaxHp / 2;
             GlobalPosition = Vector3.Zero;
             GameManager.Instance.EmitSignal(GameManager.SignalName.StatsChanged);

@@ -176,7 +176,7 @@ namespace HiepSiVeVuon.Entities
                 Inventory.Instance.RemoveItem(DefaultPesticideId, 1);
                 _pestAfflicted = false;
                 _pestDays = 0;
-                GD.Print("Da diet sau benh.");
+                GD.Print("Đã diệt sâu bệnh.");
                 UpdateVisual();
             }
             else if (!_fertilized && Inventory.Instance.CountOf(DefaultFertilizerId) > 0)
@@ -188,7 +188,7 @@ namespace HiepSiVeVuon.Entities
                     _growDays = Mathf.Max(1, _growDays - fert.FertilizerGrowDaysBonus);
                     _qualityScore += fert.FertilizerQualityBonus;
                     _fertilized = true;
-                    GD.Print("Da bon phan.");
+                    GD.Print("Đã bón phân.");
                     UpdateVisual();
                 }
             }
@@ -196,12 +196,12 @@ namespace HiepSiVeVuon.Entities
             {
                 _watered = true;
                 _daysUnwatered = 0;
-                GD.Print("Da tuoi nuoc.");
+                GD.Print("Đã tưới nước.");
                 UpdateVisual();
             }
             else
             {
-                GD.Print("Cay dang lon, cho them ngay.");
+                GD.Print("Cây đang lớn, chờ thêm ngày.");
             }
             SyncToSave();
         }
@@ -222,7 +222,7 @@ namespace HiepSiVeVuon.Entities
             var seed = ItemDatabase.Instance.GetItem(seedId);
             if (seed == null || seed.Type != ItemType.Seed)
             {
-                GD.Print("Khong co hat giong hop le.");
+                GD.Print("Không có hạt giống hợp lệ.");
                 return;
             }
             // Han che theo mua (xem GameManager.Season) - null/rong = trong duoc quanh nam. O dat
@@ -231,12 +231,12 @@ namespace HiepSiVeVuon.Entities
             if (!IsGreenhouse && seed.ValidSeasons != null && seed.ValidSeasons.Length > 0
                 && System.Array.IndexOf(seed.ValidSeasons, GameManager.Instance.CurrentSeason.ToString()) < 0)
             {
-                GD.Print($"Mua nay khong trong duoc {seed.Name}.");
+                GD.Print($"Mùa này không trồng được {seed.Name}.");
                 return;
             }
             if (Inventory.Instance.CountOf(seedId) <= 0)
             {
-                GD.Print($"Ban khong co {seed.Name}. Mua o cua hang!");
+                GD.Print($"Bạn không có {seed.Name}. Mua ở cửa hàng!");
                 return;
             }
             Inventory.Instance.RemoveItem(seedId, 1);
@@ -285,7 +285,7 @@ namespace HiepSiVeVuon.Entities
             _pestAfflicted = false;
             _pestDays = 0;
             _wasPestDamaged = false;
-            GD.Print($"Da trong {seed.Name}.");
+            GD.Print($"Đã trồng {seed.Name}.");
             UpdateVisual();
             // Goi rieng o day (KHONG dua vao SyncToSave() cuoi UseOn()) vi RequestPlant() mo UI
             // BAT DONG BO - luc UseOn() ket thuc, Plant() CHUA chay, phai tu luu ngay khi PLANT
@@ -305,7 +305,7 @@ namespace HiepSiVeVuon.Entities
                 FarmStorage.Instance.Add(finalId, 1);
                 QuestSystem.Instance.OnItemCollected(finalId);
                 var def = ItemDatabase.Instance.GetItem(finalId);
-                GD.Print($"Thu hoach: {def?.Name}!");
+                GD.Print($"Thu hoạch: {def?.Name}!");
                 _lastCropId = _growsInto;
             }
             _cropId = null;
@@ -395,7 +395,7 @@ namespace HiepSiVeVuon.Entities
         // KHONG cap nhat _lastCropId: cay chet thi khong tinh la "da thu hoach" cho luan canh.
         private void Wither()
         {
-            GD.Print("Cay da chet vi qua lau khong duoc tuoi nuoc.");
+            GD.Print("Cây đã chết vì quá lâu không được tưới nước.");
             _cropId = null;
             _growsInto = null;
             _growStage = 0;

@@ -1,4 +1,5 @@
 using Godot;
+using HiepSiVeVuon.Systems;
 
 namespace HiepSiVeVuon.UI
 {
@@ -20,6 +21,7 @@ namespace HiepSiVeVuon.UI
         private Node3D _player;
         private Tween _toggleTween;
         private Texture2D _vignetteTex;
+        private readonly LocalizedLabelSet _loc = new();
 
         // Diem den nguoi choi tu danh dau bang cach bam vao ban do - HUD doc gia tri nay (qua
         // group "map_ui") de ve mui ten chi huong (xem HUD.DrawCompass).
@@ -47,31 +49,31 @@ namespace HiepSiVeVuon.UI
         private static readonly Landmark[] Landmarks =
         {
             // ---- Loi trang trai (gom lai o quy mo ban do the gioi, xem ghi chu tren) ----
-            new(new Vector2(-300, -60), new Color(0.85f, 0.6f, 0.3f), "Nong Trai", Icon.House, false),
-            new(new Vector2(-482, 250), new Color(0.6f, 0.35f, 0.15f), "Nha Kho", Icon.House, false),
+            new(new Vector2(-300, -60), new Color(0.85f, 0.6f, 0.3f), "map.landmark.farm", Icon.House, false),
+            new(new Vector2(-482, 250), new Color(0.6f, 0.35f, 0.15f), "map.landmark.storage", Icon.House, false),
 
             // ---- Thi tran (khu do thi cu, VillageAnchor) ----
-            new(new Vector2(9250, 3750), new Color(0.95f, 0.85f, 0.4f), "Thi Tran", Icon.House, false),
+            new(new Vector2(9250, 3750), new Color(0.95f, 0.85f, 0.4f), "map.landmark.town", Icon.House, false),
 
             // ---- Dia hinh/cong trinh phu gan nong trai (da co truoc) ----
-            new(new Vector2(1600, -350), new Color(0.55f, 0.42f, 0.32f), "Cao Nguyen", Icon.Triangle, false),
+            new(new Vector2(1600, -350), new Color(0.55f, 0.42f, 0.32f), "map.landmark.plateau", Icon.Triangle, false),
             new(new Vector2(2650, 750), new Color(0.55f, 0.42f, 0.32f), "", Icon.Triangle, false),
             new(new Vector2(1750, 1950), new Color(0.55f, 0.42f, 0.32f), "", Icon.Triangle, false),
-            new(new Vector2(-2552, 390), new Color(0.95f, 0.78f, 0.1f), "Dong Hoa Huong Duong", Icon.Flower, false),
+            new(new Vector2(-2552, 390), new Color(0.95f, 0.78f, 0.1f), "map.landmark.sunflower_field", Icon.Flower, false),
 
             // ---- 11 khu vuc "the gioi mo" (xem Main.cs cac hang so *RegionCenter/MineEntrancePos) ----
-            new(new Vector2(2500, -400), new Color(0.65f, 0.5f, 0.25f), "Mo", Icon.Diamond, true),
-            new(new Vector2(200, -6800), new Color(0.6f, 0.6f, 0.62f), "Nui", Icon.Triangle, true),
-            new(new Vector2(-3600, -5700), new Color(0.25f, 0.5f, 0.22f), "Rung", Icon.Tree, true),
-            new(new Vector2(-5200, 5100), new Color(0.75f, 0.78f, 0.35f), "Dong Ruong", Icon.Dot, false),
-            new(new Vector2(-6300, -2650), new Color(0.25f, 0.5f, 0.7f), "Ho", Icon.Water, true),
-            new(new Vector2(2300, 7000), new Color(0.3f, 0.55f, 0.68f), "Song", Icon.Water, false),
-            new(new Vector2(5700, 5000), new Color(0.8f, 0.68f, 0.45f), "Lang", Icon.House, false),
-            new(new Vector2(-1800, 7300), new Color(0.7f, 0.68f, 0.62f), "Thanh Pho", Icon.House, false),
-            new(new Vector2(6700, -2650), new Color(0.55f, 0.4f, 0.6f), "Phe Tich", Icon.Diamond, true),
-            new(new Vector2(7000, 1400), new Color(0.75f, 0.75f, 0.72f), "Nghia Dia", Icon.Cross, true),
-            new(new Vector2(-6900, 1400), new Color(0.3f, 0.42f, 0.28f), "Dam Lay", Icon.Water, true),
-            new(new Vector2(4100, -5650), new Color(0.4f, 0.4f, 0.42f), "Hang Dong", Icon.Diamond, true),
+            new(new Vector2(2500, -400), new Color(0.65f, 0.5f, 0.25f), "map.landmark.mine", Icon.Diamond, true),
+            new(new Vector2(200, -6800), new Color(0.6f, 0.6f, 0.62f), "map.landmark.mountain", Icon.Triangle, true),
+            new(new Vector2(-3600, -5700), new Color(0.25f, 0.5f, 0.22f), "map.landmark.forest", Icon.Tree, true),
+            new(new Vector2(-5200, 5100), new Color(0.75f, 0.78f, 0.35f), "map.landmark.fields", Icon.Dot, false),
+            new(new Vector2(-6300, -2650), new Color(0.25f, 0.5f, 0.7f), "map.landmark.lake", Icon.Water, true),
+            new(new Vector2(2300, 7000), new Color(0.3f, 0.55f, 0.68f), "map.landmark.river", Icon.Water, false),
+            new(new Vector2(5700, 5000), new Color(0.8f, 0.68f, 0.45f), "map.landmark.village", Icon.House, false),
+            new(new Vector2(-1800, 7300), new Color(0.7f, 0.68f, 0.62f), "map.landmark.city", Icon.House, false),
+            new(new Vector2(6700, -2650), new Color(0.55f, 0.4f, 0.6f), "map.landmark.ruins", Icon.Diamond, true),
+            new(new Vector2(7000, 1400), new Color(0.75f, 0.75f, 0.72f), "map.landmark.cemetery", Icon.Cross, true),
+            new(new Vector2(-6900, 1400), new Color(0.3f, 0.42f, 0.28f), "map.landmark.swamp", Icon.Water, true),
+            new(new Vector2(4100, -5650), new Color(0.4f, 0.4f, 0.42f), "map.landmark.cave", Icon.Diamond, true),
         };
 
         // Vung toa do THE GIOI hien thi tren ban do - MO RONG de bao het 11 khu vuc moi (truoc
@@ -110,19 +112,13 @@ namespace HiepSiVeVuon.UI
             _panel.PivotOffset = (MapSize + new Vector2(40, 70)) / 2f;
             AddChild(_panel);
 
-            var title = new Label
-            {
-                Text = "B A N   D O   T H E   G I O I",
-                Position = new Vector2(20, 8),
-            };
+            var title = new Label { Position = new Vector2(20, 8) };
+            _loc.Track(title, "map.title");
             title.AddThemeColorOverride("font_color", FrameGold);
             _panel.AddChild(title);
 
-            var hint = new Label
-            {
-                Text = "[M] dong  -  bam de danh dau diem den  -  vong do = khu co quai",
-                Position = new Vector2(20, 28),
-            };
+            var hint = new Label { Position = new Vector2(20, 28) };
+            _loc.Track(hint, "map.hint");
             hint.AddThemeColorOverride("font_color", new Color(TextCream, 0.6f));
             hint.AddThemeFontSizeOverride("font_size", 12);
             _panel.AddChild(hint);
@@ -136,7 +132,14 @@ namespace HiepSiVeVuon.UI
             _mapArea.GuiInput += OnMapInput;
             _panel.AddChild(_mapArea);
 
+            Loc.LanguageChanged += _loc.Refresh;
+
             Visible = false;
+        }
+
+        public override void _ExitTree()
+        {
+            Loc.LanguageChanged -= _loc.Refresh;
         }
 
         // Bam chuot trai vao ban do -> quy doi vi tri (nguoc lai voi WorldToMap) thanh toa do
@@ -238,7 +241,7 @@ namespace HiepSiVeVuon.UI
             _mapArea.DrawLine(arrowTip, arrowTip + new Vector2(9, -7), FrameGold, 3f);
             _mapArea.DrawLine(arrowTip, arrowTip + new Vector2(9, 7), FrameGold, 3f);
             _mapArea.DrawString(ThemeDB.FallbackFont, arrowTip + new Vector2(2, -12),
-                "Vung que Phap (~10km)", HorizontalAlignment.Left, -1, 12, TextCream);
+                Loc.T("map.france_hint"), HorizontalAlignment.Left, -1, 12, TextCream);
 
             DrawCompassRose(new Vector2(MapSize.X - 34, MapSize.Y - 34), 16f);
 
@@ -259,7 +262,7 @@ namespace HiepSiVeVuon.UI
                 _mapArea.DrawCircle(p, 8f + pulse * 3f, new Color(0.2f, 0.85f, 1f, 0.22f - pulse * 0.1f));
                 _mapArea.DrawCircle(p, 5f, new Color(0.2f, 0.85f, 1f));
                 _mapArea.DrawCircle(p, 5f, Colors.White, false, 1.5f);
-                DrawLabelPlate(p + new Vector2(9, -4), "Ban");
+                DrawLabelPlate(p + new Vector2(9, -4), Loc.T("map.player_label"));
             }
 
             DrawVignette();
@@ -312,10 +315,10 @@ namespace HiepSiVeVuon.UI
             _mapArea.DrawLine(center + new Vector2(0, -radius), center + new Vector2(0, radius), FrameGold, 1.2f);
             _mapArea.DrawLine(center + new Vector2(-radius, 0), center + new Vector2(radius, 0), FrameGold, 1.2f);
             var font = ThemeDB.FallbackFont;
-            _mapArea.DrawString(font, center + new Vector2(-4, -radius - 5), "B", HorizontalAlignment.Left, -1, 12, TextCream);
-            _mapArea.DrawString(font, center + new Vector2(-4, radius + 15), "N", HorizontalAlignment.Left, -1, 12, TextCream);
-            _mapArea.DrawString(font, center + new Vector2(radius + 5, 4), "D", HorizontalAlignment.Left, -1, 12, TextCream);
-            _mapArea.DrawString(font, center + new Vector2(-radius - 15, 4), "T", HorizontalAlignment.Left, -1, 12, TextCream);
+            _mapArea.DrawString(font, center + new Vector2(-4, -radius - 5), Loc.T("map.compass_n"), HorizontalAlignment.Left, -1, 12, TextCream);
+            _mapArea.DrawString(font, center + new Vector2(-4, radius + 15), Loc.T("map.compass_s"), HorizontalAlignment.Left, -1, 12, TextCream);
+            _mapArea.DrawString(font, center + new Vector2(radius + 5, 4), Loc.T("map.compass_e"), HorizontalAlignment.Left, -1, 12, TextCream);
+            _mapArea.DrawString(font, center + new Vector2(-radius - 15, 4), Loc.T("map.compass_w"), HorizontalAlignment.Left, -1, 12, TextCream);
         }
 
         private void DrawLandmark(Landmark lm)
@@ -346,7 +349,7 @@ namespace HiepSiVeVuon.UI
             }
 
             if (!string.IsNullOrEmpty(lm.Label))
-                DrawLabelPlate(p + new Vector2(9, 4), lm.Label);
+                DrawLabelPlate(p + new Vector2(9, 4), Loc.T(lm.Label));
         }
 
         // Nhan co nen mo phia sau (thay vi chu trang tho tren nen ban do da mau, de doc duoc du

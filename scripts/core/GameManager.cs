@@ -132,7 +132,7 @@ namespace HiepSiVeVuon.Core
                 ExpToNext = (int)(ExpToNext * 1.4f);
                 MaxHp += 20;
                 Hp = MaxHp; // hoi day khi len cap
-                GD.Print($"Len cap! Level {Level}");
+                GD.Print($"Lên cấp! Level {Level}");
             }
             EmitSignal(SignalName.StatsChanged);
         }
@@ -160,8 +160,8 @@ namespace HiepSiVeVuon.Core
                 int cost = WeeklyTax + WeeklyLaborCost;
                 bool paid = SpendGold(cost);
                 GD.Print(paid
-                    ? $"Da tru {cost} vang chi phi van hanh (thue {WeeklyTax} + nhan cong {WeeklyLaborCost})."
-                    : $"Khong du vang de tra chi phi van hanh tuan nay ({cost} vang).");
+                    ? $"Đã trừ {cost} vàng chi phí vận hành (thuế {WeeklyTax} + nhân công {WeeklyLaborCost})."
+                    : $"Không đủ vàng để trả chi phí vận hành tuần này ({cost} vàng).");
             }
             EmitSignal(SignalName.StatsChanged);
         }

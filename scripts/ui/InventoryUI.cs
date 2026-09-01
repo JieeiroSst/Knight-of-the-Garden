@@ -9,13 +9,21 @@ namespace HiepSiVeVuon.UI
     {
         private PanelContainer _panel;
         private GridContainer _grid;
+        private Label _title;
         private Label _info;
+        private ItemDef _hoveredDef;
 
         public override void _Ready()
         {
             Build();
             Inventory.Instance.InventoryChanged += Refresh;
+            Loc.LanguageChanged += OnLanguageChanged;
             Visible = false;
+        }
+
+        public override void _ExitTree()
+        {
+            Loc.LanguageChanged -= OnLanguageChanged;
         }
 
         private void Build()
@@ -27,8 +35,8 @@ namespace HiepSiVeVuon.UI
 
             var vb = new VBoxContainer();
             _panel.AddChild(vb);
-            var title = new Label { Text = "== TUI DO ==  (bam de trang bi / dung)" };
-            vb.AddChild(title);
+            _title = new Label { Text = Loc.T("inventory.title") };
+            vb.AddChild(_title);
             _grid = new GridContainer { Columns = 6 };
             vb.AddChild(_grid);
             _info = new Label { AutowrapMode = TextServer.AutowrapMode.Word };
@@ -72,30 +80,45 @@ namespace HiepSiVeVuon.UI
         private void ShowInfo(ItemDef def)
         {
             if (def == null) return;
-            _info.Text = $"{def.Name} [{def.Rarity}]\n{def.Description}";
-            if (def.Damage > 0) _info.Text += $"\nSat thuong: {def.Damage}";
-            if (def.Defense > 0) _info.Text += $"\nPhong thu: {def.Defense}";
-            if (def.HealAmount > 0) _info.Text += $"\nHoi mau: {def.HealAmount}";
+            _hoveredDef = def;
+            RenderInfo();
+        }
+
+        private void RenderInfo()
+        {
+            if (_hoveredDef == null) return;
+            var def = _hoveredDef;
+            _info.Text = $"{ItemDatabase.Instance.GetDisplayName(def.Id)} [{def.Rarity}]\n{ItemDatabase.Instance.GetDisplayDescription(def.Id)}";
+            if (def.Damage > 0) _info.Text += "\n" + string.Format(Loc.T("inventory.damage_fmt"), def.Damage);
+            if (def.Defense > 0) _info.Text += "\n" + string.Format(Loc.T("inventory.defense_fmt"), def.Defense);
+            if (def.HealAmount > 0) _info.Text += "\n" + string.Format(Loc.T("inventory.heal_fmt"), def.HealAmount);
         }
 
         private void OnSlotClicked(string itemId)
         {
             var def = ItemDatabase.Instance.GetItem(itemId);
             if (def == null) return;
+            _hoveredDef = def;
             if (def.Type == ItemType.Weapon || def.Type == ItemType.Armor || def.Type == ItemType.Tool)
             {
                 Inventory.Instance.Equip(itemId);
-                _info.Text = $"Da trang bi: {def.Name}";
+                _info.Text = string.Format(Loc.T("inventory.equipped_fmt"), ItemDatabase.Instance.GetDisplayName(def.Id));
             }
             else if (def.Type == ItemType.Consumable)
             {
                 Inventory.Instance.UseConsumable(itemId);
-                _info.Text = $"Da dung: {def.Name}";
+                _info.Text = string.Format(Loc.T("inventory.used_fmt"), ItemDatabase.Instance.GetDisplayName(def.Id));
             }
             else
             {
-                _info.Text = $"{def.Name}: khong the dung truc tiep.";
+                _info.Text = string.Format(Loc.T("inventory.cannot_use_fmt"), ItemDatabase.Instance.GetDisplayName(def.Id));
             }
+        }
+
+        private void OnLanguageChanged()
+        {
+            _title.Text = Loc.T("inventory.title");
+            RenderInfo();
         }
     }
 }

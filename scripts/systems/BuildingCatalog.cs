@@ -23,37 +23,37 @@ namespace HiepSiVeVuon.Systems
         {
             new BuildingDef
             {
-                Id = "hang_rao", Name = "Hang Rao", ScenePath = "res://scenes/FenceMarker.tscn",
+                Id = "hang_rao", Name = "Hàng Rào", ScenePath = "res://scenes/FenceMarker.tscn",
                 ModelScale = 1f, FootprintRadius = 15f,
                 Cost = new Dictionary<string, int> { { "wood", 5 } },
             },
             new BuildingDef
             {
-                Id = "kho_nho", Name = "Nha Kho Nho", ScenePath = "res://assets3d/quaternius/farm/SmallBarn.fbx",
+                Id = "kho_nho", Name = "Nhà Kho Nhỏ", ScenePath = "res://assets3d/quaternius/farm/SmallBarn.fbx",
                 ModelScale = 11f, FootprintRadius = 55f,
                 Cost = new Dictionary<string, int> { { "wood", 30 }, { "da", 15 } },
             },
             new BuildingDef
             {
-                Id = "nha_go", Name = "Nha Go", ScenePath = "res://assets3d/quaternius/french_countryside/cottage.glb",
+                Id = "nha_go", Name = "Nhà Gỗ", ScenePath = "res://assets3d/quaternius/french_countryside/cottage.glb",
                 ModelScale = 31f, FootprintRadius = 65f,
                 Cost = new Dictionary<string, int> { { "wood", 50 }, { "da", 20 } },
             },
             new BuildingDef
             {
-                Id = "nha_lang", Name = "Nha Kieu Lang", ScenePath = "res://assets3d/quaternius/french_countryside/village_house.glb",
+                Id = "nha_lang", Name = "Nhà Kiểu Làng", ScenePath = "res://assets3d/quaternius/french_countryside/village_house.glb",
                 ModelScale = 40f, FootprintRadius = 70f,
                 Cost = new Dictionary<string, int> { { "wood", 40 }, { "da", 25 }, { "sat_tho", 10 } },
             },
             new BuildingDef
             {
-                Id = "nha_lon", Name = "Nha Lon", ScenePath = "res://assets3d/quaternius/buildings/house_v2.glb",
+                Id = "nha_lon", Name = "Nhà Lớn", ScenePath = "res://assets3d/quaternius/buildings/house_v2.glb",
                 ModelScale = 54f, FootprintRadius = 90f,
                 Cost = new Dictionary<string, int> { { "wood", 80 }, { "da", 50 }, { "sat_tho", 20 }, { "dong_tho", 10 } },
             },
             new BuildingDef
             {
-                Id = "thap_canh", Name = "Thap Canh", ScenePath = "res://assets3d/quaternius/watchtower/watch_tower.glb",
+                Id = "thap_canh", Name = "Tháp Canh", ScenePath = "res://assets3d/quaternius/watchtower/watch_tower.glb",
                 ModelScale = 20f, FootprintRadius = 55f,
                 Cost = new Dictionary<string, int> { { "wood", 60 }, { "da", 40 }, { "sat_tho", 15 } },
             },

@@ -20,11 +20,7 @@ namespace HiepSiVeVuon.Entities
         [Export] public float WanderRadius = 90f;
         [Export] public int SellSuggestThreshold = 150;
 
-        private static readonly (string id, string label)[] TrackedItems =
-        {
-            ("wheat", "Lua mi"), ("potato", "Khoai tay"), ("carrot", "Ca rot"),
-            ("milk", "Sua bo"), ("egg", "Trung ga"), ("wool", "Len cuu"),
-        };
+        private static readonly string[] TrackedItems = { "wheat", "potato", "carrot", "milk", "egg", "wool" };
 
         public Vector3 HomePos;
         public Vector3 InteriorHomePos;
@@ -78,27 +74,27 @@ namespace HiepSiVeVuon.Entities
         protected override string PickDialogue()
         {
             var report = TrackedItems
-                .Select(t => (t.label, count: FarmStorage.Instance.GetCount(t.id), full: FarmStorage.Instance.GetFullness(t.id),
-                    price: Mathf.RoundToInt((ItemDatabase.Instance.GetItem(t.id)?.SellPrice ?? 0) * Market.GetSupplyMultiplier(t.id))))
+                .Select(id => (id, label: ItemDatabase.Instance.GetDisplayName(id), count: FarmStorage.Instance.GetCount(id), full: FarmStorage.Instance.GetFullness(id),
+                    price: Mathf.RoundToInt((ItemDatabase.Instance.GetItem(id)?.SellPrice ?? 0) * Market.GetSupplyMultiplier(id))))
                 .ToArray();
 
-            string header = "Toi quan ly kho nong san chung cua trang trai. Gia cho hien tai:\n"
-                + string.Join(", ", report.Select(r => $"{r.label} {r.count} ({r.price}v)"));
+            string header = Loc.T("warehouse.report_header")
+                + string.Join(", ", report.Select(r => string.Format(Loc.T("warehouse.report_item_fmt"), r.label, r.count, r.price)));
 
             var fullest = report.OrderByDescending(r => r.full).First();
             string warning = fullest.full >= 0.9f
-                ? $"\nKho gan day roi: {fullest.label} chi con {Mathf.RoundToInt((1f - fullest.full) * 100)}% cho trong."
+                ? "\n" + string.Format(Loc.T("warehouse.almost_full_fmt"), fullest.label, Mathf.RoundToInt((1f - fullest.full) * 100))
                 : "";
 
             var oversupplied = report.Where(r => r.count >= SellSuggestThreshold).OrderByDescending(r => r.count).FirstOrDefault();
             string suggestion = oversupplied.label != null
-                ? $"\nNen dua bot {oversupplied.label.ToLower()} ra cho ban, de trong kho lam gi cho chat."
+                ? "\n" + string.Format(Loc.T("warehouse.suggestion_fmt"), oversupplied.label)
                 : "";
 
             // Gia tri dat trang trai - CHI la chi so hien thi (khong mua ban duoc), uoc tinh don
             // gian tu tong san luong nong san hien co.
             int landValue = report.Sum(r => r.count) * 50;
-            string land = $"\nGia tri dat trang trai uoc tinh: {landValue} vang.";
+            string land = "\n" + string.Format(Loc.T("warehouse.land_value_fmt"), landValue);
 
             return header + warning + suggestion + land;
         }

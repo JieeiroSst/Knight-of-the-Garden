@@ -14,6 +14,7 @@ namespace HiepSiVeVuon.UI
     {
         private VBoxContainer _list;
         private Label _status;
+        private readonly LocalizedLabelSet _loc = new();
 
         public override void _Ready()
         {
@@ -33,12 +34,14 @@ namespace HiepSiVeVuon.UI
             var vb = new VBoxContainer { Position = new Vector2(20, 16), CustomMinimumSize = new Vector2(420, 0) };
             panel.AddChild(vb);
 
-            var title = new Label { Text = "BANG XAY DUNG" };
+            var title = new Label();
+            _loc.Track(title, "buildmenu.title");
             title.AddThemeColorOverride("font_color", new Color(0.75f, 0.62f, 0.35f));
             title.AddThemeFontSizeOverride("font_size", 18);
             vb.AddChild(title);
 
-            var sub = new Label { Text = "Chon cong trinh - se dat ngay truoc mat ban, can du vat lieu trong tui do." };
+            var sub = new Label();
+            _loc.Track(sub, "buildmenu.subtitle");
             sub.AddThemeColorOverride("font_color", new Color(0.95f, 0.92f, 0.82f, 0.7f));
             sub.AutowrapMode = TextServer.AutowrapMode.Word;
             sub.CustomMinimumSize = new Vector2(420, 0);
@@ -55,11 +58,25 @@ namespace HiepSiVeVuon.UI
             _status.AddThemeColorOverride("font_color", new Color(1f, 0.82f, 0.4f));
             vb.AddChild(_status);
 
-            var close = new Button { Text = "Dong [N]" };
+            var close = new Button();
+            _loc.Track(close, "buildmenu.close_btn");
             close.Pressed += () => Visible = false;
             vb.AddChild(close);
 
+            Loc.LanguageChanged += OnLanguageChanged;
+
             Visible = false;
+        }
+
+        public override void _ExitTree()
+        {
+            Loc.LanguageChanged -= OnLanguageChanged;
+        }
+
+        private void OnLanguageChanged()
+        {
+            _loc.Refresh();
+            if (Visible) Refresh();
         }
 
         public override void _Input(InputEvent e)
@@ -83,22 +100,22 @@ namespace HiepSiVeVuon.UI
                 string costText = string.Join(", ", def.Cost.Select(kv =>
                 {
                     var itemDef = ItemDatabase.Instance.GetItem(kv.Key);
-                    return $"{itemDef?.Name ?? kv.Key} x{kv.Value}";
+                    return $"{(itemDef != null ? ItemDatabase.Instance.GetDisplayName(kv.Key) : kv.Key)} x{kv.Value}";
                 }));
 
                 var row = new VBoxContainer();
                 _list.AddChild(row);
 
-                var nameLabel = new Label { Text = def.Name };
+                var nameLabel = new Label { Text = Loc.T("building." + def.Id) };
                 nameLabel.AddThemeColorOverride("font_color", canBuild ? new Color(0.95f, 0.92f, 0.85f) : new Color(0.6f, 0.58f, 0.55f));
                 row.AddChild(nameLabel);
 
-                var costLabel = new Label { Text = $"Can: {costText}" };
+                var costLabel = new Label { Text = string.Format(Loc.T("buildmenu.need_fmt"), costText) };
                 costLabel.AddThemeColorOverride("font_color", new Color(0.85f, 0.78f, 0.5f, 0.75f));
                 costLabel.AddThemeFontSizeOverride("font_size", 12);
                 row.AddChild(costLabel);
 
-                var btn = new Button { Text = canBuild ? "Xay" : "Thieu vat lieu", Disabled = !canBuild };
+                var btn = new Button { Text = canBuild ? Loc.T("buildmenu.build_btn") : Loc.T("buildmenu.missing_materials"), Disabled = !canBuild };
                 var d = def;
                 btn.Pressed += () => Build(d);
                 row.AddChild(btn);
@@ -113,7 +130,7 @@ namespace HiepSiVeVuon.UI
                 if (Inventory.Instance.CountOf(kv.Key) < kv.Value) { Refresh(); return; }
 
             var player = GetTree().GetFirstNodeInGroup("player") as Player;
-            if (player == null) { _status.Text = "Khong tim thay nguoi choi."; return; }
+            if (player == null) { _status.Text = Loc.T("buildmenu.no_player"); return; }
 
             foreach (var kv in def.Cost)
                 Inventory.Instance.RemoveItem(kv.Key, kv.Value);
@@ -121,7 +138,7 @@ namespace HiepSiVeVuon.UI
             Vector3 pos = player.GlobalPosition + player.Facing * (def.FootprintRadius + 40f);
             PlacedBuilding.Spawn(def, pos, GetTree().CurrentScene);
 
-            _status.Text = $"Da xay: {def.Name}.";
+            _status.Text = string.Format(Loc.T("buildmenu.built_fmt"), Loc.T("building." + def.Id));
             Refresh();
         }
     }

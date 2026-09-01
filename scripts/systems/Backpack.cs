@@ -29,7 +29,7 @@ namespace HiepSiVeVuon.Systems
             var def = ItemDatabase.Instance.GetItem(itemId);
             if (def == null)
             {
-                GD.PushWarning($"Vat pham khong ton tai: {itemId}");
+                GD.PushWarning($"Vật phẩm không tồn tại: {itemId}");
                 return false;
             }
 
@@ -49,7 +49,7 @@ namespace HiepSiVeVuon.Systems
             {
                 if (Slots.Count >= MaxSlots)
                 {
-                    GD.Print("Balo da day!");
+                    GD.Print("Balo đã đầy!");
                     EmitSignal(SignalName.BackpackChanged);
                     return false;
                 }

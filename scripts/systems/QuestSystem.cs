@@ -26,7 +26,7 @@ namespace HiepSiVeVuon.Systems
         {
             if (Active.ContainsKey(questId) || Completed.Contains(questId)) return;
             Active[questId] = 0;
-            GD.Print($"Nhan nhiem vu: {ItemDatabase.Instance.GetQuest(questId)?.Title}");
+            GD.Print($"Nhận nhiệm vụ: {ItemDatabase.Instance.GetQuest(questId)?.Title}");
             EmitSignal(SignalName.QuestUpdated, questId);
         }
 
@@ -77,7 +77,7 @@ namespace HiepSiVeVuon.Systems
 
             Active.Remove(questId);
             Completed.Add(questId);
-            GD.Print($"Hoan thanh nhiem vu: {def.Title}");
+            GD.Print($"Hoàn thành nhiệm vụ: {def.Title}");
             EmitSignal(SignalName.QuestCompleted, questId);
         }
 

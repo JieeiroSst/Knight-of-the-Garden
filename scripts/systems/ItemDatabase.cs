@@ -45,7 +45,7 @@ namespace HiepSiVeVuon.Systems
         {
             if (!FileAccess.FileExists(path))
             {
-                GD.PushWarning($"Khong tim thay file: {path}");
+                GD.PushWarning($"Không tìm thấy file: {path}");
                 return null;
             }
             using var f = FileAccess.Open(path, FileAccess.ModeFlags.Read);
@@ -58,7 +58,7 @@ namespace HiepSiVeVuon.Systems
             if (text == null) return;
             var list = JsonSerializer.Deserialize<List<ItemDef>>(text, JsonOpts);
             foreach (var it in list) Items[it.Id] = it;
-            GD.Print($"Da nap {Items.Count} vat pham.");
+            GD.Print($"Đã nạp {Items.Count} vật phẩm.");
         }
 
         private void LoadEnemies()
@@ -67,7 +67,7 @@ namespace HiepSiVeVuon.Systems
             if (text == null) return;
             var list = JsonSerializer.Deserialize<List<EnemyDef>>(text, JsonOpts);
             foreach (var e in list) Enemies[e.Id] = e;
-            GD.Print($"Da nap {Enemies.Count} quai vat.");
+            GD.Print($"Đã nạp {Enemies.Count} quái vật.");
         }
 
         private void LoadQuests()
@@ -76,7 +76,7 @@ namespace HiepSiVeVuon.Systems
             if (text == null) return;
             var list = JsonSerializer.Deserialize<List<QuestDef>>(text, JsonOpts);
             foreach (var q in list) Quests[q.Id] = q;
-            GD.Print($"Da nap {Quests.Count} nhiem vu.");
+            GD.Print($"Đã nạp {Quests.Count} nhiệm vụ.");
         }
 
         public ItemDef GetItem(string id) => Items.TryGetValue(id, out var v) ? v : null;
@@ -88,6 +88,44 @@ namespace HiepSiVeVuon.Systems
             var def = GetItem(id);
             if (def == null || string.IsNullOrEmpty(def.IconPath)) return null;
             return GD.Load<Texture2D>(def.IconPath);
+        }
+
+        // ==== Ten/mo ta hien thi theo ngon ngu dang chon (Loc.Current) ====
+        // JSON (Items/Enemies/Quests) van la tieng Viet goc - DataLoc.cs chua ban dich tieng
+        // Anh theo Id, tra ve chuoi VI mac dinh neu dang o VI hoac thieu ban dich EN.
+        public string GetDisplayName(string id)
+        {
+            var def = GetItem(id);
+            if (def == null) return id;
+            return Loc.Current == Loc.Lang.EN && DataLoc.ItemNamesEn.TryGetValue(id, out var en) ? en : def.Name;
+        }
+
+        public string GetDisplayDescription(string id)
+        {
+            var def = GetItem(id);
+            if (def == null) return "";
+            return Loc.Current == Loc.Lang.EN && DataLoc.ItemDescriptionsEn.TryGetValue(id, out var en) ? en : def.Description;
+        }
+
+        public string GetEnemyDisplayName(string id)
+        {
+            var def = GetEnemy(id);
+            if (def == null) return id;
+            return Loc.Current == Loc.Lang.EN && DataLoc.EnemyNamesEn.TryGetValue(id, out var en) ? en : def.Name;
+        }
+
+        public string GetQuestDisplayTitle(string id)
+        {
+            var def = GetQuest(id);
+            if (def == null) return id;
+            return Loc.Current == Loc.Lang.EN && DataLoc.QuestTitlesEn.TryGetValue(id, out var en) ? en : def.Title;
+        }
+
+        public string GetQuestDisplayDescription(string id)
+        {
+            var def = GetQuest(id);
+            if (def == null) return "";
+            return Loc.Current == Loc.Lang.EN && DataLoc.QuestDescriptionsEn.TryGetValue(id, out var en) ? en : def.Description;
         }
     }
 }

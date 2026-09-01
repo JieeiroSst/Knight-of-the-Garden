@@ -17,6 +17,7 @@ namespace HiepSiVeVuon.UI
 		private VBoxContainer _contractList;
 		private Label _status;
 		private NPC _current;
+		private readonly LocalizedLabelSet _loc = new();
 
 		public override void _Ready()
 		{
@@ -30,6 +31,12 @@ namespace HiepSiVeVuon.UI
 			FarmStorage.Instance.StorageChanged += () => { if (Visible) { RefreshBuy(); RefreshSell(); } };
 			GameManager.Instance.DayChanged += _ => { if (Visible) { RefreshBuy(); RefreshSell(); RefreshContracts(); UpdateStatus(); } };
 			ContractSystem.Instance.ContractUpdated += _ => { if (Visible) RefreshContracts(); };
+			Loc.LanguageChanged += OnLanguageChanged;
+		}
+
+		public override void _ExitTree()
+		{
+			Loc.LanguageChanged -= OnLanguageChanged;
 		}
 
 		private void Build()
@@ -41,26 +48,34 @@ namespace HiepSiVeVuon.UI
 
 			var vb = new VBoxContainer();
 			_panel.AddChild(vb);
-			var title = new Label { Text = "== CUA HANG ==" };
-			vb.AddChild(title);
+			vb.AddChild(_loc.Track(new Label(), "shop.title"));
 			_status = new Label();
 			vb.AddChild(_status);
 
-			vb.AddChild(new Label { Text = "-- Mua --" });
+			vb.AddChild(_loc.Track(new Label(), "shop.buy_header"));
 			_buyList = new VBoxContainer();
 			vb.AddChild(_buyList);
 
-			vb.AddChild(new Label { Text = "-- Ban nong san --" });
+			vb.AddChild(_loc.Track(new Label(), "shop.sell_header"));
 			_sellList = new VBoxContainer();
 			vb.AddChild(_sellList);
 
-			vb.AddChild(new Label { Text = "-- Hop dong --" });
+			vb.AddChild(_loc.Track(new Label(), "shop.contract_header"));
 			_contractList = new VBoxContainer();
 			vb.AddChild(_contractList);
 
-			var close = new Button { Text = "Dong" };
+			var close = _loc.Track(new Button(), "common.close");
 			close.Pressed += () => Visible = false;
 			vb.AddChild(close);
+		}
+
+		private void OnLanguageChanged()
+		{
+			_loc.Refresh();
+			UpdateStatus();
+			RefreshBuy();
+			RefreshSell();
+			RefreshContracts();
 		}
 
 		public void Open(NPC npc)
@@ -73,7 +88,7 @@ namespace HiepSiVeVuon.UI
 			UpdateStatus();
 		}
 
-		private void UpdateStatus() => _status.Text = $"Vang cua ban: {GameManager.Instance.Gold}";
+		private void UpdateStatus() => _status.Text = string.Format(Loc.T("shop.gold_fmt"), GameManager.Instance.Gold);
 
 		private void RefreshBuy()
 		{
@@ -86,7 +101,7 @@ namespace HiepSiVeVuon.UI
 				// Gia mua theo cung/cau (xem Market.cs) - CHI dong voi Crop/Material, cac loai
 				// khac (hat giong/vu khi/tool...) tra ve he so 1.0f (gia co dinh nhu cu).
 				int price = Mathf.RoundToInt(def.BuyPrice * Market.GetSupplyMultiplier(id));
-				var btn = new Button { Text = $"{def.Name} - {price} vang" };
+				var btn = new Button { Text = string.Format(Loc.T("shop.buy_item_fmt"), ItemDatabase.Instance.GetDisplayName(id), price) };
 				string itemId = id;
 				btn.Pressed += () => Buy(itemId, price);
 				_buyList.AddChild(btn);
@@ -105,7 +120,7 @@ namespace HiepSiVeVuon.UI
 				// (Market.GetSupplyMultiplier) - 2 he so DOC LAP, ca nhan hien thi label lan logic
 				// AddGold deu dung chung bien "price" nay nen tu dong dong bo.
 				int price = Mathf.RoundToInt(def.SellPrice * GameManager.Instance.GetSeasonalPriceMultiplier(def) * Market.GetSupplyMultiplier(def.Id));
-				var btn = new Button { Text = $"Ban {def.Name} x{stack.Count} ({price}/cai)" };
+				var btn = new Button { Text = string.Format(Loc.T("shop.sell_item_fmt"), ItemDatabase.Instance.GetDisplayName(stack.ItemId), stack.Count, price) };
 				string itemId = stack.ItemId;
 				btn.Pressed += () => Sell(itemId, price);
 				_sellList.AddChild(btn);
@@ -122,7 +137,7 @@ namespace HiepSiVeVuon.UI
 				var itemDef = ItemDatabase.Instance.GetItem(def.ItemId);
 				var btn = new Button
 				{
-					Text = $"Ky: {def.Title} ({def.AmountPerDelivery} {itemDef?.Name}/{def.IntervalDays} ngay x{def.TotalDeliveries}, thuong {def.RewardGold}v)"
+					Text = string.Format(Loc.T("shop.contract_sign_fmt"), def.Title, def.AmountPerDelivery, itemDef != null ? ItemDatabase.Instance.GetDisplayName(def.ItemId) : null, def.IntervalDays, def.TotalDeliveries, def.RewardGold)
 				};
 				string contractId = def.Id;
 				btn.Pressed += () => { ContractSystem.Instance.SignContract(contractId); };
@@ -136,7 +151,7 @@ namespace HiepSiVeVuon.UI
 				int daysLeft = Mathf.Max(0, kv.Value.NextDueDay - GameManager.Instance.Day);
 				_contractList.AddChild(new Label
 				{
-					Text = $"{def.Title}: {kv.Value.DeliveriesDone}/{def.TotalDeliveries} lan - con {daysLeft} ngay toi han giao"
+					Text = string.Format(Loc.T("shop.contract_active_fmt"), def.Title, kv.Value.DeliveriesDone, def.TotalDeliveries, daysLeft)
 				});
 			}
 		}
@@ -146,9 +161,9 @@ namespace HiepSiVeVuon.UI
 			if (GameManager.Instance.SpendGold(price))
 			{
 				Inventory.Instance.AddItem(itemId, 1);
-				_status.Text = "Mua thanh cong!";
+				_status.Text = Loc.T("shop.buy_success");
 			}
-			else _status.Text = "Khong du vang!";
+			else _status.Text = Loc.T("shop.buy_fail");
 			UpdateStatus();
 			RefreshBuy();
 			RefreshSell();
@@ -159,7 +174,7 @@ namespace HiepSiVeVuon.UI
 			if (Inventory.Instance.RemoveItem(itemId, 1))
 			{
 				GameManager.Instance.AddGold(price);
-				_status.Text = "Ban thanh cong!";
+				_status.Text = Loc.T("shop.sell_success");
 			}
 			RefreshBuy();
 			RefreshSell();

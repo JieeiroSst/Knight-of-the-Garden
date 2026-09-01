@@ -1,26 +1,34 @@
 using Godot;
+using HiepSiVeVuon.Systems;
 
 namespace HiepSiVeVuon.UI
 {
     // Man hinh Cai Dat / Huong Dan - truoc day danh sach phim tat nam CO DINH tren HUD (luon
     // choan 1 dong duoi man hinh moi luc choi), nay CHUYEN VAO DAY (bam [H] de bat/tat, giong
     // MapUI/ShopUI/InventoryUI) - man hinh choi sach hon, huong dan van xem duoc bat ky luc nao.
+    // Cung la NOI DUY NHAT co nut doi ngon ngu VI/EN (xem Loc.cs) - doi ngay lap tuc, khong can
+    // khoi dong lai.
     public partial class SettingsUI : CanvasLayer
     {
-        private static readonly (string key, string action)[] Controls =
+        // Chi con KHOA phim tat (khong phai chuoi mo ta truc tiep) - noi dung that lay qua Loc.T
+        // luc dung, tu doi theo ngon ngu dang chon.
+        private static readonly (string key, string actionKey)[] Controls =
         {
-            ("WASD", "Di chuyen"),
-            ("Chuot / J", "Tan cong"),
-            ("Space", "Dung cong cu (cuoc dat moi/trong/tuoi/thu hoach/cuoc quang/cau ca/dat may tuoi tu dong - cuoc bac/vang tac dong ca vung)"),
-            ("E", "Tuong tac / Mo cua / Cau thang / Sua thap nuoc / Cho vit an / May che bien / Bep / Cong Nha Kinh"),
-            ("R", "Cuoi / Xuong ngua hoac thuyen"),
-            ("I", "Tui do"),
-            ("B", "Balo (kho chua them 50 o - chuyen do qua lai voi tui do)"),
-            ("N", "Bang Xay Dung (xay nha/chuong/thap canh... can vat lieu go/da/sat/dong)"),
-            ("M", "Ban do the gioi"),
-            ("H", "Cai dat / Huong dan (man hinh nay)"),
-            ("F5", "Luu game"),
+            ("WASD", "settings.ctrl.move"),
+            ("Chuot / J", "settings.ctrl.attack"),
+            ("Space", "settings.ctrl.tool"),
+            ("E", "settings.ctrl.interact"),
+            ("R", "settings.ctrl.mount"),
+            ("I", "settings.ctrl.inventory"),
+            ("B", "settings.ctrl.backpack"),
+            ("N", "settings.ctrl.build"),
+            ("M", "settings.ctrl.map"),
+            ("H", "settings.ctrl.settings"),
+            ("F5", "settings.ctrl.save"),
         };
+
+        private readonly LocalizedLabelSet _loc = new();
+        private Button _viBtn, _enBtn;
 
         public override void _Ready()
         {
@@ -28,8 +36,8 @@ namespace HiepSiVeVuon.UI
 
             var panel = new Panel
             {
-                Position = new Vector2(260, 60),
-                CustomMinimumSize = new Vector2(420, 440),
+                Position = new Vector2(260, 50),
+                CustomMinimumSize = new Vector2(420, 480),
             };
             var frameStyle = new StyleBoxFlat
             {
@@ -45,14 +53,34 @@ namespace HiepSiVeVuon.UI
             var vb = new VBoxContainer { Position = new Vector2(24, 20), CustomMinimumSize = new Vector2(372, 0) };
             panel.AddChild(vb);
 
-            var title = new Label { Text = "CAI DAT  /  HUONG DAN" };
+            var title = new Label();
+            _loc.Track(title, "settings.title");
             title.AddThemeColorOverride("font_color", new Color(0.75f, 0.62f, 0.35f));
             title.AddThemeFontSizeOverride("font_size", 20);
             vb.AddChild(title);
 
             vb.AddChild(new HSeparator());
 
-            var sub = new Label { Text = "Phim tat" };
+            // Chuyen doi ngon ngu (theo yeu cau) - 2 nut, nut dang CHON duoc to sang, nut kia mo.
+            var langHeader = new Label();
+            _loc.Track(langHeader, "settings.language_header");
+            langHeader.AddThemeColorOverride("font_color", new Color(0.95f, 0.92f, 0.82f, 0.7f));
+            vb.AddChild(langHeader);
+
+            var langRow = new HBoxContainer();
+            vb.AddChild(langRow);
+            _viBtn = new Button { Text = "Tiếng Việt" };
+            _viBtn.Pressed += () => SetLanguage(Loc.Lang.VI);
+            langRow.AddChild(_viBtn);
+            _enBtn = new Button { Text = "English" };
+            _enBtn.Pressed += () => SetLanguage(Loc.Lang.EN);
+            langRow.AddChild(_enBtn);
+            RefreshLanguageButtons();
+
+            vb.AddChild(new HSeparator());
+
+            var sub = new Label();
+            _loc.Track(sub, "settings.shortcuts_header");
             sub.AddThemeColorOverride("font_color", new Color(0.95f, 0.92f, 0.82f, 0.7f));
             vb.AddChild(sub);
 
@@ -63,7 +91,7 @@ namespace HiepSiVeVuon.UI
             var listVb = new VBoxContainer { CustomMinimumSize = new Vector2(360, 0) };
             scroll.AddChild(listVb);
 
-            foreach (var (key, action) in Controls)
+            foreach (var (key, actionKey) in Controls)
             {
                 var row = new HBoxContainer();
                 listVb.AddChild(row);
@@ -72,16 +100,43 @@ namespace HiepSiVeVuon.UI
                 keyLabel.AddThemeColorOverride("font_color", new Color(1f, 0.82f, 0.15f));
                 row.AddChild(keyLabel);
 
-                var actionLabel = new Label { Text = action, AutowrapMode = TextServer.AutowrapMode.Word, CustomMinimumSize = new Vector2(260, 0) };
+                var actionLabel = new Label { AutowrapMode = TextServer.AutowrapMode.Word, CustomMinimumSize = new Vector2(260, 0) };
+                _loc.Track(actionLabel, actionKey);
                 actionLabel.AddThemeColorOverride("font_color", new Color(0.95f, 0.92f, 0.82f));
                 row.AddChild(actionLabel);
             }
 
-            var close = new Button { Text = "Dong [H]" };
+            var close = new Button();
+            _loc.Track(close, "settings.close_btn");
             close.Pressed += () => Visible = false;
             vb.AddChild(close);
 
+            Loc.LanguageChanged += OnLanguageChanged;
+
             Visible = false;
+        }
+
+        public override void _ExitTree()
+        {
+            Loc.LanguageChanged -= OnLanguageChanged;
+        }
+
+        private void SetLanguage(Loc.Lang lang)
+        {
+            Loc.SetLanguage(lang);
+            RefreshLanguageButtons();
+        }
+
+        private void OnLanguageChanged()
+        {
+            _loc.Refresh();
+            RefreshLanguageButtons();
+        }
+
+        private void RefreshLanguageButtons()
+        {
+            _viBtn.Disabled = Loc.Current == Loc.Lang.VI;
+            _enBtn.Disabled = Loc.Current == Loc.Lang.EN;
         }
 
         public override void _Input(InputEvent e)

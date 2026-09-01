@@ -13,6 +13,7 @@ namespace HiepSiVeVuon.UI
         private VBoxContainer _list;
         private Label _empty;
         private FarmPlot _targetPlot;
+        private readonly LocalizedLabelSet _loc = new();
 
         public override void _Ready()
         {
@@ -37,7 +38,8 @@ namespace HiepSiVeVuon.UI
             var vb = new VBoxContainer { Position = new Vector2(20, 16), CustomMinimumSize = new Vector2(320, 0) };
             panel.AddChild(vb);
 
-            var title = new Label { Text = "CHON GIONG DE TRONG" };
+            var title = new Label();
+            _loc.Track(title, "seedselect.title");
             title.AddThemeColorOverride("font_color", new Color(0.75f, 0.62f, 0.35f));
             title.AddThemeFontSizeOverride("font_size", 18);
             vb.AddChild(title);
@@ -51,19 +53,33 @@ namespace HiepSiVeVuon.UI
 
             _empty = new Label
             {
-                Text = "Ban khong co hat giong nao. Mua o cua hang!",
                 AutowrapMode = TextServer.AutowrapMode.Word,
                 CustomMinimumSize = new Vector2(310, 0),
                 Visible = false,
             };
+            _loc.Track(_empty, "seedselect.empty");
             _empty.AddThemeColorOverride("font_color", new Color(0.95f, 0.92f, 0.82f, 0.7f));
             vb.AddChild(_empty);
 
-            var cancel = new Button { Text = "Huy" };
+            var cancel = new Button();
+            _loc.Track(cancel, "common.cancel");
             cancel.Pressed += () => Visible = false;
             vb.AddChild(cancel);
 
+            Loc.LanguageChanged += OnLanguageChanged;
+
             Visible = false;
+        }
+
+        public override void _ExitTree()
+        {
+            Loc.LanguageChanged -= OnLanguageChanged;
+        }
+
+        private void OnLanguageChanged()
+        {
+            _loc.Refresh();
+            if (Visible) RefreshList();
         }
 
         public void Open(FarmPlot plot)
@@ -84,7 +100,7 @@ namespace HiepSiVeVuon.UI
                 if (def == null || def.Type != ItemType.Seed || stack.Count <= 0) continue;
 
                 shown++;
-                var btn = new Button { Text = $"{def.Name} (dang co {stack.Count})" };
+                var btn = new Button { Text = string.Format(Loc.T("seedselect.item_fmt"), ItemDatabase.Instance.GetDisplayName(stack.ItemId), stack.Count) };
                 string seedId = stack.ItemId;
                 btn.Pressed += () => ChooseSeed(seedId);
                 _list.AddChild(btn);

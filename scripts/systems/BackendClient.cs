@@ -49,12 +49,12 @@ namespace HiepSiVeVuon.Systems
             {
                 if (!ok)
                 {
-                    onDone?.Invoke(false, "Khong ket noi duoc server.");
+                    onDone?.Invoke(false, "Không kết nối được server.");
                     return;
                 }
                 if (!TryParse(text, out JsonDocument doc))
                 {
-                    onDone?.Invoke(false, "Server tra ve du lieu khong hop le.");
+                    onDone?.Invoke(false, "Server trả về dữ liệu không hợp lệ.");
                     return;
                 }
                 using (doc)
@@ -66,7 +66,7 @@ namespace HiepSiVeVuon.Systems
                     }
                     else
                     {
-                        string err = doc.RootElement.TryGetProperty("error", out var errEl) ? errEl.GetString() : "Loi khong ro.";
+                        string err = doc.RootElement.TryGetProperty("error", out var errEl) ? errEl.GetString() : "Lỗi không rõ.";
                         onDone?.Invoke(false, err);
                     }
                 }
@@ -81,7 +81,7 @@ namespace HiepSiVeVuon.Systems
             {
                 if (!ok)
                 {
-                    onDone?.Invoke(false, "ERR:Khong ket noi duoc server.");
+                    onDone?.Invoke(false, "ERR:Không kết nối được server.");
                     return;
                 }
                 if (status == 404)
@@ -91,7 +91,7 @@ namespace HiepSiVeVuon.Systems
                 }
                 if (status != 200 || !TryParse(text, out JsonDocument doc))
                 {
-                    onDone?.Invoke(false, "ERR:Loi tai du lieu luu.");
+                    onDone?.Invoke(false, "ERR:Lỗi tải dữ liệu lưu.");
                     return;
                 }
                 using (doc)
@@ -107,7 +107,7 @@ namespace HiepSiVeVuon.Systems
             string wrapped = "{\"data\":" + saveDataJson + "}";
             SendRequest("/api/save", HttpClient.Method.Put, wrapped, needsAuth: true, onDone: (ok, status, _) =>
             {
-                onDone?.Invoke(ok && status == 200, ok && status == 200 ? null : "Khong luu duoc len server.");
+                onDone?.Invoke(ok && status == 200, ok && status == 200 ? null : "Không lưu được lên server.");
             });
         }
 
@@ -131,7 +131,7 @@ namespace HiepSiVeVuon.Systems
         {
             if (needsAuth && !IsLoggedIn)
             {
-                onDone?.Invoke(false, 0, "Chua dang nhap.");
+                onDone?.Invoke(false, 0, "Chưa đăng nhập.");
                 return;
             }
 

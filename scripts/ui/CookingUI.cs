@@ -20,6 +20,7 @@ namespace HiepSiVeVuon.UI
         };
 
         private VBoxContainer _list;
+        private readonly LocalizedLabelSet _loc = new();
 
         public override void _Ready()
         {
@@ -39,7 +40,8 @@ namespace HiepSiVeVuon.UI
             var vb = new VBoxContainer { Position = new Vector2(20, 16), CustomMinimumSize = new Vector2(400, 0) };
             panel.AddChild(vb);
 
-            var title = new Label { Text = "BEP - NAU AN" };
+            var title = new Label();
+            _loc.Track(title, "cooking.title");
             title.AddThemeColorOverride("font_color", new Color(0.75f, 0.62f, 0.35f));
             title.AddThemeFontSizeOverride("font_size", 18);
             vb.AddChild(title);
@@ -51,11 +53,25 @@ namespace HiepSiVeVuon.UI
             _list.AddThemeConstantOverride("separation", 8);
             scroll.AddChild(_list);
 
-            var close = new Button { Text = "Dong" };
+            var close = new Button();
+            _loc.Track(close, "common.close");
             close.Pressed += () => Visible = false;
             vb.AddChild(close);
 
+            Loc.LanguageChanged += OnLanguageChanged;
+
             Visible = false;
+        }
+
+        public override void _ExitTree()
+        {
+            Loc.LanguageChanged -= OnLanguageChanged;
+        }
+
+        private void OnLanguageChanged()
+        {
+            _loc.Refresh();
+            if (Visible) Refresh();
         }
 
         public void Open()
@@ -77,22 +93,22 @@ namespace HiepSiVeVuon.UI
                 string ingText = string.Join(", ", recipe.ingredients.Select(ing =>
                 {
                     var d = ItemDatabase.Instance.GetItem(ing.ing);
-                    return $"{d?.Name ?? ing.ing} x{ing.qty}";
+                    return $"{(d != null ? ItemDatabase.Instance.GetDisplayName(ing.ing) : ing.ing)} x{ing.qty}";
                 }));
 
                 var row = new VBoxContainer();
                 _list.AddChild(row);
 
-                var nameLabel = new Label { Text = $"{outDef.Name}  (hoi {outDef.HealAmount} sinh luc)" };
+                var nameLabel = new Label { Text = string.Format(Loc.T("cooking.dish_fmt"), ItemDatabase.Instance.GetDisplayName(recipe.outputId), outDef.HealAmount) };
                 nameLabel.AddThemeColorOverride("font_color", canCook ? new Color(0.95f, 0.92f, 0.85f) : new Color(0.6f, 0.58f, 0.55f));
                 row.AddChild(nameLabel);
 
-                var reqLabel = new Label { Text = $"Can: {ingText}" };
+                var reqLabel = new Label { Text = string.Format(Loc.T("cooking.need_fmt"), ingText) };
                 reqLabel.AddThemeColorOverride("font_color", new Color(0.85f, 0.78f, 0.5f, 0.75f));
                 reqLabel.AddThemeFontSizeOverride("font_size", 12);
                 row.AddChild(reqLabel);
 
-                var btn = new Button { Text = canCook ? "Nau" : "Thieu nguyen lieu", Disabled = !canCook };
+                var btn = new Button { Text = canCook ? Loc.T("cooking.cook_btn") : Loc.T("cooking.missing_ingredients"), Disabled = !canCook };
                 var r = recipe;
                 btn.Pressed += () => Cook(r);
                 row.AddChild(btn);
@@ -111,7 +127,7 @@ namespace HiepSiVeVuon.UI
             Inventory.Instance.AddItem(recipe.outputId, 1);
 
             var def = ItemDatabase.Instance.GetItem(recipe.outputId);
-            GD.Print($"Da nau: {def?.Name}.");
+            GD.Print(string.Format(Loc.T("cooking.cooked_fmt"), def != null ? ItemDatabase.Instance.GetDisplayName(recipe.outputId) : null));
             Refresh();
         }
     }

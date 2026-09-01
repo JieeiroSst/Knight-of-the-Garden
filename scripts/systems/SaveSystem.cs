@@ -173,7 +173,7 @@ namespace HiepSiVeVuon.Systems
             string json = JsonSerializer.Serialize(data);
             BackendClient.Instance.PushSave(json, (ok, err) =>
             {
-                GD.Print(ok ? "Da luu game len server." : $"Loi luu game len server: {err}");
+                GD.Print(ok ? "Đã lưu game lên server." : $"Lỗi lưu game lên server: {err}");
             });
         }
 
@@ -195,17 +195,17 @@ namespace HiepSiVeVuon.Systems
                 {
                     var data = JsonSerializer.Deserialize<SaveData>(json);
                     ApplyLoadedData(data);
-                    GD.Print("Da nap game tu server.");
+                    GD.Print("Đã nạp game từ server.");
                 }
                 else if (json != null)
                 {
                     // json bat dau bang "ERR:" = loi that su (mat mang/server loi), KHAC voi
                     // json==null (nguoi choi moi, chua tung luu - giu nguyen the gioi mac dinh).
-                    GD.PrintErr($"Khong tai duoc ban luu: {json}");
+                    GD.PrintErr($"Không tải được bản lưu: {json}");
                 }
                 else
                 {
-                    GD.Print("Nguoi choi moi - chua co ban luu tren server, giu the gioi mac dinh.");
+                    GD.Print("Người chơi mới - chưa có bản lưu trên server, giữ thế giới mặc định.");
                 }
                 onDone?.Invoke();
             });
@@ -260,7 +260,7 @@ namespace HiepSiVeVuon.Systems
             for (int i = 0; i < data.BuildingIds.Count && i < data.BuildingX.Count && i < data.BuildingZ.Count; i++)
                 PlacedBuildings.Add((data.BuildingIds[i], new Vector2(data.BuildingX[i], data.BuildingZ[i])));
 
-            GD.Print("Da nap game.");
+            GD.Print("Đã nạp game.");
         }
     }
 }

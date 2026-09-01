@@ -11,12 +11,19 @@ namespace HiepSiVeVuon.Entities
     public partial class NPC : CharacterBody3D
     {
         [Export] public string NpcId = "elder";
-        [Export] public string NpcName = "Ong Gia Lang";
+        [Export] public string NpcName = "Ông Già Làng";
 
-        // Loi thoai theo cap do tin tuong
-        [Export] public string[] DialogueLow = { "Chao nguoi la. Ta chua tin ai de dang." };
-        [Export] public string[] DialogueMid = { "A, la cau. Cau dang lam an kha day." };
-        [Export] public string[] DialogueHigh = { "Ban cua ta, ta se ke cau nghe mot bi mat..." };
+        // Loi thoai theo cap do tin tuong (tieng Viet - luon co, la nguon goc/fallback)
+        [Export] public string[] DialogueLow = { "Chào người lạ. Ta chưa tin ai dễ dàng." };
+        [Export] public string[] DialogueMid = { "À, là cậu. Cậu đang làm ăn khá đấy." };
+        [Export] public string[] DialogueHigh = { "Bạn của ta, ta sẽ kể cậu nghe một bí mật..." };
+
+        // Ban dich tieng Anh (tuy chon) - neu Loc.Current == EN va mang nay co du lieu, PickDialogue
+        // se dung mang nay thay vi mang tieng Viet o tren; neu rong/null thi TU DONG fallback ve
+        // tieng Viet (khong bat buoc moi NPC phai co ban dich).
+        [Export] public string[] DialogueLowEn = System.Array.Empty<string>();
+        [Export] public string[] DialogueMidEn = System.Array.Empty<string>();
+        [Export] public string[] DialogueHighEn = System.Array.Empty<string>();
 
         // Nhiem vu NPC nay giao (id trong quests.json)
         [Export] public string QuestToGive = "";
@@ -84,13 +91,13 @@ namespace HiepSiVeVuon.Entities
                 && !QuestSystem.Instance.IsCompleted(QuestToGive))
             {
                 QuestSystem.Instance.AcceptQuest(QuestToGive);
-                var q = ItemDatabase.Instance.GetQuest(QuestToGive);
-                line += $"\n\n[Nhiem vu moi: {q?.Title}]";
+                string questTitle = ItemDatabase.Instance.GetQuestDisplayTitle(QuestToGive);
+                line += "\n\n" + string.Format(Loc.T("npc.new_quest_fmt"), questTitle);
             }
 
             // Mo cua hang neu co
             if (ShopItems.Length > 0)
-                line += "\n(Nhan cua hang: mua hat giong & do dung)";
+                line += "\n" + Loc.T("npc.shop_hint");
 
             dialogue?.Show(NpcName, line);
 
@@ -103,12 +110,19 @@ namespace HiepSiVeVuon.Entities
         // dinh nhu mac dinh.
         protected virtual string PickDialogue()
         {
-            string[] pool = Trust >= 60 ? DialogueHigh
-                          : Trust >= 25 ? DialogueMid
-                          : DialogueLow;
+            string[] pool = Trust >= 60 ? PickPool(DialogueHigh, DialogueHighEn)
+                          : Trust >= 25 ? PickPool(DialogueMid, DialogueMidEn)
+                          : PickPool(DialogueLow, DialogueLowEn);
             if (pool == null || pool.Length == 0) return "...";
             return pool[(int)(GD.Randi() % (uint)pool.Length)];
         }
+
+        // Dung ban dich tieng Anh neu dang o che do EN VA NPC nay co du lieu ban dich (mang khong
+        // rong) - neu khong (chua dich hoac dang o VI) thi fallback ve mang tieng Viet goc.
+        // protected: cho phep NPC con (vd GuardNpc voi DialogueRain/DialogueNight) tai su dung
+        // cung logic thay vi tu viet lai.
+        protected static string[] PickPool(string[] vi, string[] en) =>
+            Loc.Current == Loc.Lang.EN && en != null && en.Length > 0 ? en : vi;
 
         private void OpenShop()
         {

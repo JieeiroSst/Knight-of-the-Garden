@@ -52,7 +52,7 @@ namespace HiepSiVeVuon.Entities
             {
                 QuestSystem.Instance.OnItemCollected(ItemId);
                 var def = ItemDatabase.Instance.GetItem(ItemId);
-                GD.Print($"Nhat duoc: {def?.Name} x{Amount}");
+                GD.Print($"Nhặt được: {def?.Name} x{Amount}");
                 QueueFree();
             }
         }

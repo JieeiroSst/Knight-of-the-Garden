@@ -32,18 +32,18 @@ namespace HiepSiVeVuon.Entities
         {
             if (!IsBroken)
             {
-                GD.Print("Thap nuoc dang hoat dong tot, dang bom nuoc sach xuong ho.");
+                GD.Print("Tháp nước đang hoạt động tốt, đang bơm nước sạch xuống hồ.");
                 return;
             }
             if (GameManager.Instance.SpendGold(RepairCost))
             {
                 _daysSinceRepair = 0;
                 WaterEcosystem.Instance.TowerMaintained = true;
-                GD.Print("Da sua thap nuoc - nguon nuoc sach lai chay xuong ho.");
+                GD.Print("Đã sửa tháp nước - nguồn nước sạch lại chảy xuống hồ.");
             }
             else
             {
-                GD.Print($"Thap nuoc da hong, can {RepairCost} vang de sua.");
+                GD.Print($"Tháp nước đã hỏng, cần {RepairCost} vàng để sửa.");
             }
         }
     }

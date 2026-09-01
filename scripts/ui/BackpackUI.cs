@@ -13,13 +13,27 @@ namespace HiepSiVeVuon.UI
         private GridContainer _invGrid;
         private GridContainer _bagGrid;
         private Label _info;
+        private Label _bagHeaderLabel;
+        private readonly LocalizedLabelSet _loc = new();
 
         public override void _Ready()
         {
             Build();
             Inventory.Instance.InventoryChanged += Refresh;
             Backpack.Instance.BackpackChanged += Refresh;
+            Loc.LanguageChanged += OnLanguageChanged;
             Visible = false;
+        }
+
+        public override void _ExitTree()
+        {
+            Loc.LanguageChanged -= OnLanguageChanged;
+        }
+
+        private void OnLanguageChanged()
+        {
+            _loc.Refresh();
+            _bagHeaderLabel.Text = string.Format(Loc.T("backpack.balo_header_fmt"), Backpack.MaxSlots);
         }
 
         private void Build()
@@ -32,13 +46,14 @@ namespace HiepSiVeVuon.UI
             var vb = new VBoxContainer();
             _panel.AddChild(vb);
 
-            vb.AddChild(new Label { Text = "== BALO ==" });
+            vb.AddChild(_loc.Track(new Label(), "backpack.title"));
 
-            vb.AddChild(new Label { Text = $"-- Tui do (bam de cat vao balo) --" });
+            vb.AddChild(_loc.Track(new Label(), "backpack.inventory_header"));
             _invGrid = new GridContainer { Columns = 8 };
             vb.AddChild(_invGrid);
 
-            vb.AddChild(new Label { Text = $"-- Balo, {Backpack.MaxSlots} o (bam de lay ra tui do) --" });
+            _bagHeaderLabel = new Label { Text = string.Format(Loc.T("backpack.balo_header_fmt"), Backpack.MaxSlots) };
+            vb.AddChild(_bagHeaderLabel);
             _bagGrid = new GridContainer { Columns = 8 };
             vb.AddChild(_bagGrid);
 
@@ -92,20 +107,20 @@ namespace HiepSiVeVuon.UI
         private void ShowInfo(ItemDef def, int count)
         {
             if (def == null) return;
-            _info.Text = $"{def.Name} [{def.Rarity}] x{count}\n{def.Description}";
+            _info.Text = $"{ItemDatabase.Instance.GetDisplayName(def.Id)} [{def.Rarity}] x{count}\n{ItemDatabase.Instance.GetDisplayDescription(def.Id)}";
         }
 
         // LUON them vao noi DEN truoc, chi bo khoi noi DI neu them thanh cong - neu lam nguoc lai
         // (bo truoc, them sau) va noi den vua luc day, vat pham se BIEN MAT khoi ca 2 tui.
         private void DepositToBackpack(string itemId)
         {
-            if (!Backpack.Instance.AddItem(itemId, 1)) { _info.Text = "Balo da day!"; return; }
+            if (!Backpack.Instance.AddItem(itemId, 1)) { _info.Text = Loc.T("backpack.full"); return; }
             Inventory.Instance.RemoveItem(itemId, 1);
         }
 
         private void WithdrawFromBackpack(string itemId)
         {
-            if (!Inventory.Instance.AddItem(itemId, 1)) { _info.Text = "Tui do da day!"; return; }
+            if (!Inventory.Instance.AddItem(itemId, 1)) { _info.Text = Loc.T("backpack.inventory_full"); return; }
             Backpack.Instance.RemoveItem(itemId, 1);
         }
     }

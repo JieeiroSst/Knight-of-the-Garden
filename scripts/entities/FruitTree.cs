@@ -46,7 +46,7 @@ namespace HiepSiVeVuon.Entities
         {
             if (!_ripe)
             {
-                GD.Print("Cay chua co qua chin, cho them ngay.");
+                GD.Print("Cây chưa có quả chín, chờ thêm ngày.");
                 return;
             }
             Inventory.Instance.AddItem(FruitItemId, 1);
@@ -54,7 +54,7 @@ namespace HiepSiVeVuon.Entities
             FarmStorage.Instance.Add(FruitItemId, 1);
             QuestSystem.Instance.OnItemCollected(FruitItemId);
             var def = ItemDatabase.Instance.GetItem(FruitItemId);
-            GD.Print($"Hai duoc: {def?.Name}!");
+            GD.Print($"Hái được: {def?.Name}!");
 
             _ripe = false;
             _growStage = 0;

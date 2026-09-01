@@ -33,10 +33,10 @@ namespace HiepSiVeVuon.Systems
 
         public static readonly List<ContractDef> Catalog = new()
         {
-            new ContractDef { Id = "contract_wheat", Title = "Hop Dong Lua Mi", ItemId = "wheat", AmountPerDelivery = 10, IntervalDays = 7, TotalDeliveries = 4, RewardGold = 80, PenaltyGold = 40 },
-            new ContractDef { Id = "contract_milk", Title = "Hop Dong Sua Bo", ItemId = "milk", AmountPerDelivery = 8, IntervalDays = 7, TotalDeliveries = 4, RewardGold = 90, PenaltyGold = 45 },
-            new ContractDef { Id = "contract_wool", Title = "Hop Dong Len Cuu", ItemId = "wool", AmountPerDelivery = 6, IntervalDays = 7, TotalDeliveries = 4, RewardGold = 100, PenaltyGold = 50 },
-            new ContractDef { Id = "contract_egg", Title = "Hop Dong Trung Ga", ItemId = "egg", AmountPerDelivery = 12, IntervalDays = 7, TotalDeliveries = 4, RewardGold = 70, PenaltyGold = 35 },
+            new ContractDef { Id = "contract_wheat", Title = "Hợp Đồng Lúa Mì", ItemId = "wheat", AmountPerDelivery = 10, IntervalDays = 7, TotalDeliveries = 4, RewardGold = 80, PenaltyGold = 40 },
+            new ContractDef { Id = "contract_milk", Title = "Hợp Đồng Sữa Bò", ItemId = "milk", AmountPerDelivery = 8, IntervalDays = 7, TotalDeliveries = 4, RewardGold = 90, PenaltyGold = 45 },
+            new ContractDef { Id = "contract_wool", Title = "Hợp Đồng Len Cừu", ItemId = "wool", AmountPerDelivery = 6, IntervalDays = 7, TotalDeliveries = 4, RewardGold = 100, PenaltyGold = 50 },
+            new ContractDef { Id = "contract_egg", Title = "Hợp Đồng Trứng Gà", ItemId = "egg", AmountPerDelivery = 12, IntervalDays = 7, TotalDeliveries = 4, RewardGold = 70, PenaltyGold = 35 },
         };
 
         // contractId -> tien do hien tai
@@ -63,7 +63,7 @@ namespace HiepSiVeVuon.Systems
             var def = GetDef(id);
             if (def == null) return;
             Active[id] = new ContractProgress { DeliveriesDone = 0, NextDueDay = GameManager.Instance.Day + def.IntervalDays };
-            GD.Print($"Da ky hop dong: {def.Title}");
+            GD.Print($"Đã ký hợp đồng: {def.Title}");
             EmitSignal(SignalName.ContractUpdated, id);
         }
 
@@ -84,13 +84,13 @@ namespace HiepSiVeVuon.Systems
                 {
                     GameManager.Instance.AddGold(def.RewardGold);
                     prog.DeliveriesDone++;
-                    GD.Print($"Da giao hop dong '{def.Title}' ({prog.DeliveriesDone}/{def.TotalDeliveries}).");
+                    GD.Print($"Đã giao hợp đồng '{def.Title}' ({prog.DeliveriesDone}/{def.TotalDeliveries}).");
                 }
                 else
                 {
                     GameManager.Instance.SpendGold(def.PenaltyGold); // bo qua neu khong du tien - khong co co che no
                     prog.MissedCount++;
-                    GD.Print($"Thieu hang giao hop dong '{def.Title}' - bi phat {def.PenaltyGold} vang.");
+                    GD.Print($"Thiếu hàng giao hợp đồng '{def.Title}' - bị phạt {def.PenaltyGold} vàng.");
                 }
                 prog.NextDueDay = day + def.IntervalDays;
                 EmitSignal(SignalName.ContractUpdated, kv.Key);
@@ -101,7 +101,7 @@ namespace HiepSiVeVuon.Systems
             {
                 Active.Remove(id);
                 Completed.Add(id);
-                GD.Print($"Hoan thanh hop dong: {GetDef(id)?.Title}");
+                GD.Print($"Hoàn thành hợp đồng: {GetDef(id)?.Title}");
                 EmitSignal(SignalName.ContractUpdated, id);
             }
         }

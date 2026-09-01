@@ -1,4 +1,5 @@
 using Godot;
+using HiepSiVeVuon.Systems;
 
 namespace HiepSiVeVuon.UI
 {
@@ -9,11 +10,18 @@ namespace HiepSiVeVuon.UI
         private Label _nameLabel;
         private Label _textLabel;
         private bool _open = false;
+        private readonly LocalizedLabelSet _loc = new();
 
         public override void _Ready()
         {
             AddToGroup("dialogue_ui");
             Build();
+            Loc.LanguageChanged += _loc.Refresh;
+        }
+
+        public override void _ExitTree()
+        {
+            Loc.LanguageChanged -= _loc.Refresh;
         }
 
         private void Build()
@@ -32,7 +40,8 @@ namespace HiepSiVeVuon.UI
             _textLabel = new Label { AutowrapMode = TextServer.AutowrapMode.Word };
             _textLabel.CustomMinimumSize = new Vector2(620, 0);
             vb.AddChild(_textLabel);
-            var hint = new Label { Text = "[E] Dong" };
+            var hint = new Label();
+            _loc.Track(hint, "dialogue.close_hint");
             hint.AddThemeColorOverride("font_color", Colors.Gray);
             vb.AddChild(hint);
         }
