@@ -293,6 +293,7 @@ namespace HiepSiVeVuon.Core
                     var e = _enemyScene.Instantiate<Enemy>();
                     e.EnemyId = rng.Randf() < 0.85f ? "mud_monster" : "spiky_monster";
                     e.Position = center + localPos;
+                    e.StatMultiplier = Enemy.SeasonalMultiplier();
                     root.AddChild(e);
                 }
             }

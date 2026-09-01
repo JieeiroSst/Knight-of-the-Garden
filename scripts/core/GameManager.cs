@@ -1,4 +1,5 @@
 using Godot;
+using HiepSiVeVuon.Data;
 
 namespace HiepSiVeVuon.Core
 {
@@ -33,6 +34,19 @@ namespace HiepSiVeVuon.Core
         public bool IsRaining { get; private set; }
         [Signal] public delegate void WeatherChangedEventHandler(bool isRaining);
 
+        // ==== 4 mua (Xuan/Ha/Thu/Dong), 28 ngay THAT/mua (112 ngay/nam) ====
+        // Tinh TOAN TU Day (khong luu rieng) - Day la nguon su that duy nhat va DA duoc luu qua
+        // save/load (xem ApplyLoadedStats), nen mua tu dong dung ngay sau khi nap lai, khong can
+        // them field/logic luu rieng.
+        public enum Season { Spring, Summer, Fall, Winter }
+        public Season CurrentSeason => (Season)(((Day - 1) / 28) % 4);
+        public int DayInSeason => (Day - 1) % 28;
+        // Le Hoi Mua Xuan (ngay dau Xuan) + Le Hoi Mua Mang (ngay dau Thu) - dung 1 ngay dac biet
+        // gia tot hon, xem GetSeasonalPriceMultiplier.
+        public bool IsFestivalDay => DayInSeason == 0 && (CurrentSeason == Season.Spring || CurrentSeason == Season.Fall);
+        [Signal] public delegate void SeasonChangedEventHandler(int season);
+        private Season _lastSeason;
+
         private System.DateTime _lastDate = System.DateTime.Now.Date;
         private int _lastHour = System.DateTime.Now.Hour;
 
@@ -46,6 +60,7 @@ namespace HiepSiVeVuon.Core
         {
             Instance = this;
             RollWeather();
+            _lastSeason = CurrentSeason;
         }
 
         private void RollWeather()
@@ -124,7 +139,28 @@ namespace HiepSiVeVuon.Core
             RollWeather();
             EmitSignal(SignalName.DayChanged, Day);
             EmitSignal(SignalName.WeatherChanged, IsRaining);
+            var season = CurrentSeason;
+            if (season != _lastSeason)
+            {
+                _lastSeason = season;
+                EmitSignal(SignalName.SeasonChanged, (int)season);
+            }
             EmitSignal(SignalName.StatsChanged);
+        }
+
+        // Thu (+30% cho nong san Type=Crop) / Dong (+20% cho san pham chan nuoi - "chan nuoi tro
+        // nen quan trong" khi cay trong bi han che mua nay) / Le Hoi (+20% CONG THEM, khong thay
+        // the muc mua) - CHI 1 diem goi duy nhat trong ShopUI.RefreshSell(), xem ghi chu o do.
+        private static readonly string[] LivestockProduceIds = { "milk", "egg", "wool" };
+
+        public float GetSeasonalPriceMultiplier(ItemDef def)
+        {
+            if (def == null) return 1f;
+            float mult = 1f;
+            if (CurrentSeason == Season.Fall && def.Type == ItemType.Crop) mult += 0.3f;
+            if (CurrentSeason == Season.Winter && System.Array.IndexOf(LivestockProduceIds, def.Id) >= 0) mult += 0.2f;
+            if (IsFestivalDay) mult += 0.2f;
+            return mult;
         }
 
         // Dung khi nap save

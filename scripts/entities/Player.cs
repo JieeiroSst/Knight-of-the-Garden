@@ -274,6 +274,20 @@ namespace HiepSiVeVuon.Entities
                         tree.Chop(dmg);
                 }
             }
+            // Dao quang trong ham mo neu co (xem OreNode.cs) - dung suc Cuoc (Pickaxe) rieng,
+            // KHONG phai sat thuong vu khi (mo phong dung mau chat cay o tren).
+            int pickPower = Inventory.Instance.GetToolPower();
+            var oreNodes = GetTree().GetNodesInGroup("ore_nodes");
+            foreach (var node in oreNodes)
+            {
+                if (node is OreNode ore && IsInstanceValid(ore))
+                {
+                    float dist = GlobalPosition.DistanceTo(ore.GlobalPosition);
+                    Vector3 toOre = (ore.GlobalPosition - GlobalPosition).Normalized();
+                    if (dist <= AttackRange && _facing.Dot(toOre) > 0.3f)
+                        ore.Mine(pickPower);
+                }
+            }
             SpawnSlash();
             PlayAction("Sword_Slash");
         }

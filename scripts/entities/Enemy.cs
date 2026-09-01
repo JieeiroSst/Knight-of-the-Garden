@@ -17,6 +17,11 @@ namespace HiepSiVeVuon.Entities
 		[Export] public string EnemyId = "mud_monster";
 		[Export] public float Gravity = 980f;
 		[Export] public float ModelScale = 16f;
+		// He so nhan vao Hp/sat thuong luc spawn (mua Dong/tang ham mo sau - xem SeasonalMultiplier).
+		// KHONG sua truc tiep _def.MaxHp/_def.Damage vi _def la EnemyDef DUNG CHUNG cho MOI quai
+		// cung EnemyId (singleton tra ve tu ItemDatabase) - sua thang vao do se lam sai ca nhung
+		// con da spawn tu truoc/sau do, khong rieng gi con nay.
+		[Export] public float StatMultiplier = 1f;
 
 		private static readonly Dictionary<string, string> ModelPathByEnemyId = new()
 		{
@@ -45,6 +50,12 @@ namespace HiepSiVeVuon.Entities
 
 		[Signal] public delegate void DiedEventHandler(string enemyId);
 
+		// Mua Dong quai manh hon (theo yeu cau) - goi truoc AddChild tai MOI diem spawn quai
+		// trong game (xem Main.SpawnEnemy va WorldStreamer.GenerateWildernessDecor - CA HAI duong
+		// spawn doc lap deu can goi ham nay, thieu 1 cho se co quai khong theo mua).
+		public static float SeasonalMultiplier() =>
+			GameManager.Instance.CurrentSeason == GameManager.Season.Winter ? 1.6f : 1f;
+
 		public override void _Ready()
 		{
 			AddToGroup("enemies");
@@ -57,7 +68,7 @@ namespace HiepSiVeVuon.Entities
 			}
 			else
 			{
-				_hp = _def.MaxHp;
+				_hp = Mathf.RoundToInt(_def.MaxHp * StatMultiplier);
 			}
 
 			if (_model != null)
@@ -187,7 +198,7 @@ namespace HiepSiVeVuon.Entities
 			if (now - _lastAttack < (ulong)AttackCooldownMs) return;
 			_lastAttack = now;
 
-			int dmg = Mathf.Max(1, _def.Damage - Inventory.Instance.GetArmorDefense());
+			int dmg = Mathf.Max(1, Mathf.RoundToInt(_def.Damage * StatMultiplier) - Inventory.Instance.GetArmorDefense());
 			GameManager.Instance.TakeDamage(dmg);
 			PlayAction(AnimAttack);
 		}

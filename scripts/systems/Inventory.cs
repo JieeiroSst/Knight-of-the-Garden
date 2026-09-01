@@ -16,6 +16,7 @@ namespace HiepSiVeVuon.Systems
 		// Trang bi hien tai
 		public string EquippedWeapon = null;
 		public string EquippedArmor = null;
+		public string EquippedTool = null; // vd pickaxe - xem GetToolPower/OreNode.cs
 
 		[Signal] public delegate void InventoryChangedEventHandler();
 
@@ -93,6 +94,7 @@ namespace HiepSiVeVuon.Systems
 			if (def == null) return;
 			if (def.Type == ItemType.Weapon) EquippedWeapon = itemId;
 			else if (def.Type == ItemType.Armor) EquippedArmor = itemId;
+			else if (def.Type == ItemType.Tool) EquippedTool = itemId;
 			EmitSignal(SignalName.InventoryChanged);
 		}
 
@@ -101,6 +103,14 @@ namespace HiepSiVeVuon.Systems
 			if (EquippedWeapon == null) return 5; // dam tay
 			var def = ItemDatabase.Instance.GetItem(EquippedWeapon);
 			return def != null ? def.Damage : 5;
+		}
+
+		// Suc cuoc (dao quang, xem OreNode.cs) - mirror y het GetWeaponDamage() o tren.
+		public int GetToolPower()
+		{
+			if (EquippedTool == null) return 3; // tay khong cuoc yeu
+			var def = ItemDatabase.Instance.GetItem(EquippedTool);
+			return def != null ? def.Damage : 3;
 		}
 
 		public int GetArmorDefense()
@@ -126,6 +136,7 @@ namespace HiepSiVeVuon.Systems
 			Slots.Clear();
 			EquippedWeapon = null;
 			EquippedArmor = null;
+			EquippedTool = null;
 			EmitSignal(SignalName.InventoryChanged);
 		}
 	}

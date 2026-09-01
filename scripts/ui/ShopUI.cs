@@ -84,9 +84,12 @@ namespace HiepSiVeVuon.UI
 				var def = ItemDatabase.Instance.GetItem(stack.ItemId);
 				if (def == null || def.SellPrice <= 0) continue;
 				if (def.Type != ItemType.Crop && def.Type != ItemType.Material) continue;
-				var btn = new Button { Text = $"Ban {def.Name} x{stack.Count} ({def.SellPrice}/cai)" };
+				// Gia ban theo mua/le hoi (xem GameManager.GetSeasonalPriceMultiplier) - CHI 1 diem
+				// tinh gia duy nhat, ca nhan hien thi label lan logic AddGold deu dung chung bien
+				// "price" nay nen tu dong dong bo.
+				int price = Mathf.RoundToInt(def.SellPrice * GameManager.Instance.GetSeasonalPriceMultiplier(def));
+				var btn = new Button { Text = $"Ban {def.Name} x{stack.Count} ({price}/cai)" };
 				string itemId = stack.ItemId;
-				int price = def.SellPrice;
 				btn.Pressed += () => Sell(itemId, price);
 				_sellList.AddChild(btn);
 			}

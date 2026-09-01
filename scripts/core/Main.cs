@@ -240,6 +240,7 @@ namespace HiepSiVeVuon.Core
             // ChickenCoopCenter lam WorkPos/TroughPos - xem ghi chu o vi tri BuildAnimalPenDistrict
             // ben duoi) - da doi xuong.
             SafeBuildStep(BuildPlateaus, nameof(BuildPlateaus));
+            SafeBuildStep(BuildMine, nameof(BuildMine));
             SafeBuildStep(BuildSunflowerField, nameof(BuildSunflowerField));
             SafeBuildStep(BuildCityDistrict, nameof(BuildCityDistrict));
             SafeBuildStep(SpawnTownCitizens, nameof(SpawnTownCitizens));
@@ -1489,7 +1490,7 @@ namespace HiepSiVeVuon.Core
             var blacksmith = _npcScene.Instantiate<NPC>();
             blacksmith.NpcId = "blacksmith";
             blacksmith.NpcName = "Tho Ren";
-            blacksmith.ShopItems = new[] { "sword", "shield", "ring" };
+            blacksmith.ShopItems = new[] { "sword", "shield", "ring", "pickaxe" };
             blacksmith.DialogueLow = new[] { "Muon vu khi tot thi tim dung nguoi roi day. Nhung ta chua quen cau lam." };
             blacksmith.DialogueMid = new[] { "Thep tot can lua tot. Cau ghe thuong xuyen nhi." };
             blacksmith.DialogueHigh = new[] { "Vi tinh ban, ta se ren cho cau mon do ngon nhat xuong." };
@@ -1721,6 +1722,7 @@ namespace HiepSiVeVuon.Core
             var e = _enemyScene.Instantiate<Enemy>();
             e.EnemyId = id;
             e.Position = pos;
+            e.StatMultiplier = Enemy.SeasonalMultiplier();
             _world.AddChild(e);
         }
 
@@ -2026,6 +2028,100 @@ namespace HiepSiVeVuon.Core
             AddPlateau(new Vector3(1600, 0, -350), 240f, 200f, 4, 5101);
             AddPlateau(new Vector3(2650, 0, 750), 210f, 170f, 3, 5102);
             AddPlateau(new Vector3(1750, 0, 1950), 260f, 220f, 5, 5103);
+        }
+
+        // Ham mo (khai thac khoang san, quan trong mua Dong - xem GameManager.Season) - 1 cong
+        // ngoai troi (gan Cao Nguyen 1, hop chu de "nui da", cach du xa de khong dam vao ban kinh
+        // loai tru cua no) dan toi 3 TANG ham sau dan, TAI SU DUNG NGUYEN VEN he thong phong noi
+        // that + cau thang da co (BuildRoom - cung ham dung cho tang 2 nha o) thay vi dung he
+        // thong scene/dia hinh hang dong rieng (game khong co co che doi scene, tat ca luon o
+        // CHUNG 1 _world - xem AddBuildingEntrance) - CHI doi mau tuong/san sang da/nau xam de doc
+        // ra "hang dong" thay vi nha o. Day la phong noi that co san doi mau, KHONG PHAI dia hinh
+        // hang dao thu cong rieng.
+        private static readonly Vector3 MineEntrancePos = new(2500, 0, -400);
+
+        private void BuildMine()
+        {
+            // Loai tru trang trai/coi xay/quai hoang da khoi khu vuc cua ham (giong BuildPlateaus).
+            WorldStreamer.ExclusionZones.Add((MineEntrancePos, 260f));
+
+            // Mat tien hang da don gian (khoi da xam + vom cua) - khong tim duoc model hang dong
+            // CC0 phu hop nen dung primitive, giong cach lam silo/lo ren/nha kinh truoc do.
+            var rockMat = GetCachedMaterial(new Color(0.32f, 0.3f, 0.29f), 1f);
+            _world.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(180f, 90f, 60f) }, Position = MineEntrancePos + Vector3.Up * 45f, MaterialOverride = rockMat });
+            _world.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 30f, BottomRadius = 30f, Height = 62f }, Position = MineEntrancePos + Vector3.Up * 31f, RotationDegrees = new Vector3(90, 0, 0), MaterialOverride = GetCachedMaterial(new Color(0.06f, 0.06f, 0.06f), 1f) });
+            var mineBody = new StaticBody3D { Position = MineEntrancePos };
+            mineBody.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(180f, 90f, 60f) }, Position = Vector3.Up * 45f });
+            _world.AddChild(mineBody);
+            AddBuildingLabelZone(MineEntrancePos, 110f, "Ham Mo");
+
+            // 3 tang, moi tang 1 do cao (Y) RIENG qua bo dem CHUNG _nextInteriorIndex (giong het
+            // AddBuildingEntrance) - dam bao KHONG BAO GIO chong lan voi bat ky noi that nao khac
+            // trong game du dat toi bao nhieu cong trinh di nua.
+            Vector3 NextFloorAnchor()
+            {
+                var a = new Vector3(MineEntrancePos.X, 500f + _nextInteriorIndex * 900f, MineEntrancePos.Z);
+                _nextInteriorIndex++;
+                return a;
+            }
+            var floor1 = NextFloorAnchor();
+            var floor2 = NextFloorAnchor();
+            var floor3 = NextFloorAnchor();
+
+            AddBuildingDoor(MineEntrancePos, 90f, isExit: false, floor1);
+
+            var wallColor = new Color(0.3f, 0.27f, 0.24f);
+            var floorColor = new Color(0.22f, 0.2f, 0.18f);
+
+            BuildRoom(floor1, 360f, 140f, wallColor, floorColor, null, default, backIsExit: true, floor2,
+                anchor => FurnishMineFloor(anchor, "dong_tho", hp: 20, regrowDays: 2, enemyStatMult: 1.2f, rockColor: new Color(0.55f, 0.35f, 0.2f)));
+            BuildRoom(floor2, 380f, 150f, wallColor, floorColor, null, floor1, backIsExit: false, floor3,
+                anchor => FurnishMineFloor(anchor, "sat_tho", hp: 35, regrowDays: 3, enemyStatMult: 1.5f, rockColor: new Color(0.5f, 0.32f, 0.25f)));
+            BuildRoom(floor3, 400f, 160f, wallColor, floorColor, null, default, backIsExit: true, floor2,
+                anchor => FurnishMineFloor(anchor, "da_quy", hp: 55, regrowDays: 5, enemyStatMult: 1.8f, rockColor: new Color(0.5f, 0.35f, 0.65f)));
+        }
+
+        // Rai OreNode + vai quai trong 1 tang ham - do quy (Hp/RegrowDays/loai quang) va do manh
+        // quai TANG THEO TANG SAU (enemyStatMult), CONG DON voi he so mua Dong (xem
+        // Enemy.SeasonalMultiplier - ca 2 yeu to nhan chung, khong thay the nhau).
+        private void FurnishMineFloor(Vector3 anchor, string oreId, int hp, int regrowDays, float enemyStatMult, Color rockColor)
+        {
+            var rng = new RandomNumberGenerator { Seed = (ulong)(oreId.GetHashCode() ^ 0x5EED) };
+            for (int i = 0; i < 10; i++)
+            {
+                float angle = Mathf.Tau * i / 10f;
+                float radius = rng.RandfRange(80f, 150f);
+                var pos = anchor + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
+                AddOreNode(pos, oreId, hp, dropAmount: 2, regrowDays, rockColor);
+            }
+            for (int i = 0; i < 3; i++)
+            {
+                var pos = anchor + new Vector3(rng.RandfRange(-120f, 120f), 0, rng.RandfRange(-120f, 120f));
+                var e = _enemyScene.Instantiate<Enemy>();
+                e.EnemyId = rng.Randf() < 0.6f ? "mud_monster" : "spiky_monster";
+                e.Position = pos;
+                e.StatMultiplier = enemyStatMult * Enemy.SeasonalMultiplier();
+                _world.AddChild(e);
+            }
+        }
+
+        // 1 khoi quang mo (StaticBody3D + script OreNode - xem OreNode.cs) - khoi da tho voi mau
+        // tuy loai quang (dong/sat/da quy), khong tim duoc model quang CC0 phu hop nen dung
+        // primitive, giong cach lam da khac trong game.
+        private void AddOreNode(Vector3 pos, string oreId, int hp, int dropAmount, int regrowDays, Color rockColor)
+        {
+            var ore = new OreNode { Position = pos, MaxHp = hp, OreItemId = oreId, DropAmount = dropAmount, RegrowDays = regrowDays };
+            var visual = new MeshInstance3D
+            {
+                Mesh = new BoxMesh { Size = new Vector3(24f, 20f, 22f) },
+                Position = Vector3.Up * 10f,
+                RotationDegrees = new Vector3(0, 20f, 0),
+                MaterialOverride = GetCachedMaterial(rockColor, 0.6f)
+            };
+            ore.AddChild(visual);
+            ore.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(24f, 20f, 22f) }, Position = Vector3.Up * 10f });
+            _world.AddChild(ore);
+            ore.Init(visual);
         }
 
         // 1 cao nguyen: khoi hinh non cut (frustum - CylinderMesh voi TopRadius < BottomRadius)

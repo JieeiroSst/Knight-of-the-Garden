@@ -29,6 +29,11 @@ namespace HiepSiVeVuon.Data
         public string GrowsIntoCropId;  // id cay thu hoach
         public int GrowDays = 3;
 
+        // Mua trong duoc (xem GameManager.Season) - ten enum dang chuoi ("Spring"/"Summer"/"Fall"/
+        // "Winter") de khop truc tiep voi items.json. Null/rong = trong duoc QUANH NAM (mac dinh
+        // cho moi item KHONG phai hat giong, tranh phai gan cho tat ca item trong game).
+        public string[] ValidSeasons;
+
         // Cho phan bon (xem FarmPlot.UseOn) - 0 nghia la item nay KHONG phai phan bon.
         public int FertilizerGrowDaysBonus = 0;
         public float FertilizerQualityBonus = 0f;

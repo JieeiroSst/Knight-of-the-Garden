@@ -82,7 +82,7 @@ namespace HiepSiVeVuon.UI
         {
             var def = ItemDatabase.Instance.GetItem(itemId);
             if (def == null) return;
-            if (def.Type == ItemType.Weapon || def.Type == ItemType.Armor)
+            if (def.Type == ItemType.Weapon || def.Type == ItemType.Armor || def.Type == ItemType.Tool)
             {
                 Inventory.Instance.Equip(itemId);
                 _info.Text = $"Da trang bi: {def.Name}";

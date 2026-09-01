@@ -188,6 +188,13 @@ namespace HiepSiVeVuon.Entities
                 GD.Print("Khong co hat giong hop le.");
                 return;
             }
+            // Han che theo mua (xem GameManager.Season) - null/rong = trong duoc quanh nam.
+            if (seed.ValidSeasons != null && seed.ValidSeasons.Length > 0
+                && System.Array.IndexOf(seed.ValidSeasons, GameManager.Instance.CurrentSeason.ToString()) < 0)
+            {
+                GD.Print($"Mua nay khong trong duoc {seed.Name}.");
+                return;
+            }
             if (Inventory.Instance.CountOf(seedId) <= 0)
             {
                 GD.Print($"Ban khong co {seed.Name}. Mua o cua hang!");
@@ -223,7 +230,15 @@ namespace HiepSiVeVuon.Entities
             if (seedId.Contains("_premium")) _qualityScore += 0.25f;
             else if (seedId.Contains("_good")) _qualityScore += 0.1f;
 
-            _growDays = Mathf.Max(1, seed.GrowDays + soilAdjust + rotationDaysAdjust);
+            // Mua Xuan cay lon nhanh hon (dam chieu, nhieu anh sang), mua Dong cham hon (lanh).
+            int seasonAdjust = GameManager.Instance.CurrentSeason switch
+            {
+                GameManager.Season.Spring => -1,
+                GameManager.Season.Winter => 1,
+                _ => 0,
+            };
+
+            _growDays = Mathf.Max(1, seed.GrowDays + soilAdjust + rotationDaysAdjust + seasonAdjust);
             _growStage = 0;
             _watered = false;
             _fertilized = false;
@@ -289,12 +304,14 @@ namespace HiepSiVeVuon.Entities
             // da co - xem GameManager.IsRaining).
             if (GameManager.Instance.IsRaining) _watered = true;
 
-            // Sau benh: chi phat sinh khi con dang lon (chua chin) va chua dang bi.
+            // Sau benh: chi phat sinh khi con dang lon (chua chin) va chua dang bi. Mua Xuan
+            // nhieu con trung hon - nhan he so vao ty le roll THAY VI bia them 1 co che rieng.
             if (_growStage < _growDays && !_pestAfflicted)
             {
+                float pestMult = GameManager.Instance.CurrentSeason == GameManager.Season.Spring ? 2.5f : 1f;
                 var pestRng = new RandomNumberGenerator();
                 pestRng.Randomize();
-                if (pestRng.Randf() < DailyPestChance) _pestAfflicted = true;
+                if (pestRng.Randf() < DailyPestChance * pestMult) _pestAfflicted = true;
             }
             if (_pestAfflicted)
             {
@@ -314,7 +331,9 @@ namespace HiepSiVeVuon.Entities
             }
             else
             {
-                _daysUnwatered++;
+                // Han han mua He: dat kho nhanh hon (+2/ngay khong tuoi thay vi +1) - dung y "can
+                // nhieu nuoc hon" ma khong them co che rieng, tai su dung nguong chet co san.
+                _daysUnwatered += GameManager.Instance.CurrentSeason == GameManager.Season.Summer ? 2 : 1;
                 if (_daysUnwatered >= NeglectDeathThreshold)
                 {
                     Wither();

@@ -12,6 +12,51 @@
     "Damage": 25
   },
   {
+    "Id": "pickaxe",
+    "Name": "Cuoc Da",
+    "Description": "Dung de dao quang trong ham mo - trang bi tu tui do de dung.",
+    "Type": "Tool",
+    "Rarity": "Common",
+    "MaxStack": 1,
+    "SellPrice": 30,
+    "BuyPrice": 80,
+    "IconPath": "res://assets/items/coins.png",
+    "Damage": 12
+  },
+  {
+    "Id": "dong_tho",
+    "Name": "Dong Tho",
+    "Description": "Quang dong tho, dao duoc tu tang 1 ham mo.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 8,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "sat_tho",
+    "Name": "Sat Tho",
+    "Description": "Quang sat tho, dao duoc tu tang 2 ham mo.",
+    "Type": "Material",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 18,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "da_quy",
+    "Name": "Da Quy",
+    "Description": "Da quy hiem, chi tim thay o tang sau nhat ham mo.",
+    "Type": "Material",
+    "Rarity": "Rare",
+    "MaxStack": 99,
+    "SellPrice": 45,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
     "Id": "shield",
     "Name": "Khien Soi",
     "Description": "Khien go boc sat, khac hinh dau soi.",
@@ -457,7 +502,8 @@
     "BuyPrice": 15,
     "IconPath": "res://assets/crops/pumpkin.png",
     "GrowsIntoCropId": "pumpkin",
-    "GrowDays": 3
+    "GrowDays": 3,
+    "ValidSeasons": ["Summer", "Fall"]
   },
   {
     "Id": "pumpkin_seed_premium",
@@ -470,7 +516,8 @@
     "BuyPrice": 38,
     "IconPath": "res://assets/crops/pumpkin.png",
     "GrowsIntoCropId": "pumpkin",
-    "GrowDays": 3
+    "GrowDays": 3,
+    "ValidSeasons": ["Summer", "Fall"]
   },
   {
     "Id": "tomato_seed",
@@ -483,7 +530,8 @@
     "BuyPrice": 10,
     "IconPath": "res://assets/crops/tomato.png",
     "GrowsIntoCropId": "tomato",
-    "GrowDays": 2
+    "GrowDays": 2,
+    "ValidSeasons": ["Summer", "Fall"]
   },
   {
     "Id": "tomato_seed_premium",
@@ -496,7 +544,8 @@
     "BuyPrice": 25,
     "IconPath": "res://assets/crops/tomato.png",
     "GrowsIntoCropId": "tomato",
-    "GrowDays": 2
+    "GrowDays": 2,
+    "ValidSeasons": ["Summer", "Fall"]
   },
   {
     "Id": "wheat_seed",
@@ -509,7 +558,8 @@
     "BuyPrice": 8,
     "IconPath": "res://assets/crops/wheat.png",
     "GrowsIntoCropId": "wheat",
-    "GrowDays": 2
+    "GrowDays": 2,
+    "ValidSeasons": ["Spring", "Summer", "Fall"]
   },
   {
     "Id": "wheat_seed_premium",
@@ -522,7 +572,8 @@
     "BuyPrice": 20,
     "IconPath": "res://assets/crops/wheat.png",
     "GrowsIntoCropId": "wheat",
-    "GrowDays": 2
+    "GrowDays": 2,
+    "ValidSeasons": ["Spring", "Summer", "Fall"]
   },
   {
     "Id": "carrot_seed",
@@ -535,7 +586,8 @@
     "BuyPrice": 9,
     "IconPath": "res://assets/crops/tomato.png",
     "GrowsIntoCropId": "carrot",
-    "GrowDays": 2
+    "GrowDays": 2,
+    "ValidSeasons": ["Spring", "Fall", "Winter"]
   },
   {
     "Id": "carrot_seed_premium",
@@ -548,7 +600,8 @@
     "BuyPrice": 23,
     "IconPath": "res://assets/crops/tomato.png",
     "GrowsIntoCropId": "carrot",
-    "GrowDays": 2
+    "GrowDays": 2,
+    "ValidSeasons": ["Spring", "Fall", "Winter"]
   },
   {
     "Id": "potato_seed",
@@ -561,7 +614,8 @@
     "BuyPrice": 10,
     "IconPath": "res://assets/crops/pumpkin.png",
     "GrowsIntoCropId": "potato",
-    "GrowDays": 3
+    "GrowDays": 3,
+    "ValidSeasons": ["Spring", "Summer", "Fall"]
   },
   {
     "Id": "potato_seed_premium",
@@ -574,7 +628,8 @@
     "BuyPrice": 25,
     "IconPath": "res://assets/crops/pumpkin.png",
     "GrowsIntoCropId": "potato",
-    "GrowDays": 3
+    "GrowDays": 3,
+    "ValidSeasons": ["Spring", "Summer", "Fall"]
   },
   {
     "Id": "cabbage_seed",
@@ -587,7 +642,8 @@
     "BuyPrice": 11,
     "IconPath": "res://assets/crops/wheat.png",
     "GrowsIntoCropId": "cabbage",
-    "GrowDays": 3
+    "GrowDays": 3,
+    "ValidSeasons": ["Spring", "Fall", "Winter"]
   },
   {
     "Id": "cabbage_seed_premium",
@@ -600,6 +656,7 @@
     "BuyPrice": 28,
     "IconPath": "res://assets/crops/wheat.png",
     "GrowsIntoCropId": "cabbage",
-    "GrowDays": 3
+    "GrowDays": 3,
+    "ValidSeasons": ["Spring", "Fall", "Winter"]
   }
 ]
