@@ -66,7 +66,22 @@ namespace HiepSiVeVuon.Entities
             {
                 _animPlayer = CharacterRig.Attach(_model, ModelPath, ModelScale);
                 if (_animPlayer != null)
+                {
                     _animPlayer.AnimationFinished += _ => _actionPlaying = false;
+                    // Cac hoat canh DI CHUYEN (dung khi Idle/Walk/Run) PHAI lap lien tuc - file
+                    // GLTF khong luon ghi ro "loop" (Godot import mac dinh CO THE ra LoopMode.None
+                    // neu khong tu phat hien duoc chu ky khop dau/cuoi), khien hoat canh chi choi
+                    // MOT LAN roi dung yen o khung hinh cuoi (nhin nhu "treo 1 tu the") du nhan
+                    // vat van dang di chuyen - ep LoopMode = Linear TRUC TIEP bang code, khong phu
+                    // thuoc vao cai dat import (co the sai/khong nhat quan giua cac model), de dam
+                    // bao buoc chan luon lap muot ma tu nhien nhu that.
+                    foreach (var loopAnim in new[] { "Idle", "Walk", "Run" })
+                    {
+                        if (!_animPlayer.HasAnimation(loopAnim)) continue;
+                        var anim = _animPlayer.GetAnimation(loopAnim);
+                        if (anim != null) anim.LoopMode = Animation.LoopModeEnum.Linear;
+                    }
+                }
 
                 // Vu khi/cong cu dang trang bi hien THAT SU tren tay (xem HeldItemVisual.cs) -
                 // gan vao xuong co tay phai cua model vua tai.
