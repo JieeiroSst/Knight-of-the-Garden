@@ -5232,6 +5232,15 @@ namespace HiepSiVeVuon.Core
 			// (moi chuong lai tu coi minh la "cham" chinh vung dat rieng cua minh).
 			_extraPenZones.Add((districtOrigin, 2100f));
 
+			// Chan cay/da hoang da (WorldStreamer) khoi moc chen vao chuong trong CA khu chan
+			// nuoi - vung nay nam GAN RIA vung loai tru chung quanh tuong da (FarmWallHalfSize*1.45),
+			// vai chuong (vd Chuong Ngua) co the tho ra NGOAI vung loai tru chung do (da do dac
+			// kiem chung: canh xa nhat cua 1 chuong tung vuot ra ngoai ~590 don vi). Dang ky rieng
+			// 1 vung loai tru DU LON cho CA khu (2100 = ban kinh tim cho + du phong cho chuong lon
+			// nhat + bien do vuong cua FindOpenSpot) de dam bao KHONG chuong nao con bi cay/da moc
+			// chen vao, du no nam o goc/ria nao cua khu.
+			WorldStreamer.ExclusionZones.Add((districtOrigin, 2900f));
+
 			var built = new List<(Vector3 pos, (string tag, float half, int cow, int sheep, int pig, int horse, int chicken) spec)>();
 
 			for (int i = 0; i < specs.Length; i++)
