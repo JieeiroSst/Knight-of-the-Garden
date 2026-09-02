@@ -28,6 +28,13 @@ namespace HiepSiVeVuon.Entities
         public Vector3 InteriorHomePos;
         public Vector3 WorkPos; // tam vung ruong phu trach
 
+        // true = CHI cham soc o dat Nha Kinh (IsGreenhouse), false (mac dinh) = CHI cham soc o
+        // dat NGOAI Nha Kinh (luoi ruong chinh 12x6 + o cuoc tu do) - tach biet 2 nhom NPC theo
+        // dung yeu cau "1 NPC rieng quan ly Nha Kinh, cac NPC con lai chi lo ruong chinh". Neu
+        // khong tach, NPC ruong chinh se co the tim duong vao Nha Kinh (dang bi khoa boi
+        // GreenhouseGate truoc khi mo khoa) va bi ket ngay truoc cong.
+        [Export] public bool GreenhouseOnly = false;
+
         private Vector3 _facing = Vector3.Back;
         private readonly SteeringUtil.StuckDetector _stuckDetector = new();
         private readonly UtilityBrain _brain = new();
@@ -41,9 +48,11 @@ namespace HiepSiVeVuon.Entities
             _brain.Actions.Add(UtilityPresets.MakeWander(() => WorkPos, 140f));
         }
 
-        // Vai tro chia se "kinh nghiem" hoc duoc (xem NpcExperience.cs) - dung CHUNG voi
-        // ScheduledFarmNpc (cung lam dong ruong) de gop du lieu, hoc nhanh/on dinh hon.
-        private const string ExperienceRole = "field_work";
+        // Vai tro chia se "kinh nghiem" hoc duoc (xem NpcExperience.cs) - NPC ruong chinh dung
+        // chung "field_work" voi ScheduledFarmNpc (cung lam dong ruong, quy mo lon ~72 o) de gop
+        // du lieu hoc nhanh/on dinh hon; NPC Nha Kinh dung rieng "greenhouse_work" (quy mo nho hon
+        // han, ~16 o, khoang cach/trong so phu hop rat khac ruong chinh nen KHONG the dung chung).
+        private string ExperienceRole => GreenhouseOnly ? "greenhouse_work" : "field_work";
 
         // Cham diem TAT CA o dat (nhom "farm_plots") theo Urgency01 TRU DI phat khoang cach (trong
         // so hoc duoc qua thoi gian - xem NpcExperience.cs) - truoc day CHI dung Urgency01 thuan
@@ -64,6 +73,7 @@ namespace HiepSiVeVuon.Entities
                     foreach (var node in GetTree().GetNodesInGroup("farm_plots"))
                     {
                         if (node is not FarmPlot plot || !IsInstanceValid(plot)) continue;
+                        if (plot.IsGreenhouse != GreenhouseOnly) continue; // tach rieng khu Nha Kinh / ruong chinh
                         if (plot.IsEmpty) continue; // NPC lam thue khong tu gieo hat moi, chi cham soc
                         float u = plot.Urgency01;
                         if (u <= 0f) continue;
@@ -93,14 +103,16 @@ namespace HiepSiVeVuon.Entities
             };
         }
 
-        // Do khan cap TRUNG BINH con lai cua ca nhom o dat dang trong - dung lam "phan hoi" cho
-        // NpcExperience sau moi lan hoan thanh 1 buoc viec (xem NpcExperience.ReportOutcome).
+        // Do khan cap TRUNG BINH con lai cua ca nhom o dat dang trong (CUNG NHOM Nha Kinh/ruong
+        // chinh voi NPC nay) - dung lam "phan hoi" cho NpcExperience sau moi lan hoan thanh 1
+        // buoc viec (xem NpcExperience.ReportOutcome).
         private float AverageFarmPlotUrgency()
         {
             float sum = 0f; int count = 0;
             foreach (var node in GetTree().GetNodesInGroup("farm_plots"))
             {
                 if (node is not FarmPlot plot || !IsInstanceValid(plot) || plot.IsEmpty) continue;
+                if (plot.IsGreenhouse != GreenhouseOnly) continue;
                 sum += plot.Urgency01;
                 count++;
             }

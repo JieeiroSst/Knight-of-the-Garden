@@ -3832,8 +3832,63 @@ namespace HiepSiVeVuon.Core
 			npc.DialogueHighEn = new[] { "Whatever we harvest, I bring it all back to you in full." };
 			npc.HomePos = FarmWorkerHousePos + new Vector3(0, 0, 55);
 			npc.InteriorHomePos = interiorHomePos;
-			npc.WorkPos = FarmOrigin + new Vector3((FarmGridW - 1) * FarmSpacing / 2f, 0, (FarmGridH - 1) * FarmSpacing / 2f);
+			var fieldWorkPos = FarmOrigin + new Vector3((FarmGridW - 1) * FarmSpacing / 2f, 0, (FarmGridH - 1) * FarmSpacing / 2f);
+			npc.WorkPos = fieldWorkPos;
 			_world.AddChild(npc);
+
+			// Them 1 nam + 2 nu quan ly/cham soc RIENG ruong chinh (theo dung yeu cau) - cung
+			// WorkPos voi Theodore nen ca 4 nguoi cung tuan tra/cham soc toan bo luoi 72 o, NPC
+			// Task Board (xem NpcTaskBoard.cs) tu chia o dat cho tung nguoi, khong ai lam trung.
+			(string id, string name, string diaLow, string diaMid, string diaHigh, string diaLowEn, string diaMidEn, string diaHighEn, int houseSeed, float scale)[] extraFieldWorkers =
+			{
+				("farmworker_2", "Julien",
+					"Chào anh, tôi cũng làm ruộng ở đây, phụ Theodore chăm sóc cánh đồng.",
+					"Ruộng rộng thế này một mình Theodore lo không xuể, có tôi phụ đỡ vất vả hơn nhiều.",
+					"Anh cứ yên tâm, cả nhóm chúng tôi thay phiên nhau trông coi ruộng suốt ngày.",
+					"Hello, I work the fields here too, helping Theodore look after the crops.",
+					"A field this big is too much for Theodore alone - having me around makes it a lot easier.",
+					"Don't worry, the whole team of us takes turns watching over the fields all day.",
+					10806, 22f),
+				("farmworker_3", "Margot",
+					"Chào anh, tôi là một trong những người chăm ruộng chính ở đây.",
+					"Tôi thích nhìn cây lớn lên mỗi ngày, công việc này hợp với tôi lắm.",
+					"Mùa nào thức nấy, tôi luôn cố gắng để ruộng cho năng suất tốt nhất.",
+					"Hello, I'm one of the workers tending the main fields here.",
+					"I love watching the crops grow a little more each day, this work suits me well.",
+					"Whatever the season, I always try to get the best yield from the fields.",
+					10807, 20f),
+				("farmworker_4", "Camille",
+					"Chào anh, tôi cùng mọi người chăm sóc ruộng chính của trang trại.",
+					"Tưới nước, bắt sâu, bón phân - việc nào tôi cũng làm quen tay cả rồi.",
+					"Nhìn ruộng xanh tốt như vầy là tôi thấy công sức mình bỏ ra xứng đáng.",
+					"Hello, I help take care of the farm's main fields along with the others.",
+					"Watering, pest control, fertilizing - I've gotten the hang of all of it by now.",
+					"Seeing the fields this lush makes all the work feel worth it.",
+					10808, 20f),
+			};
+
+			foreach (var w in extraFieldWorkers)
+			{
+				var housePos = NextHousingCottagePos(w.houseSeed);
+				AddDecor(_smallBarnScene, housePos, 12f, 0f, SmallBarnFootprint);
+				var interior = AddBuildingEntrance(housePos, 0f, 80f, 50f, RoomKind.Village);
+				AddBuildingLabelZone(housePos, 100f, "label.farm_worker_house");
+
+				var w2 = _farmWorkerScene.Instantiate<FarmWorkerNpc>();
+				w2.NpcId = w.id;
+				w2.NpcName = w.name;
+				w2.ModelScale = w.scale;
+				w2.DialogueLow = new[] { w.diaLow };
+				w2.DialogueMid = new[] { w.diaMid };
+				w2.DialogueHigh = new[] { w.diaHigh };
+				w2.DialogueLowEn = new[] { w.diaLowEn };
+				w2.DialogueMidEn = new[] { w.diaMidEn };
+				w2.DialogueHighEn = new[] { w.diaHighEn };
+				w2.HomePos = housePos + new Vector3(0, 0, 55);
+				w2.InteriorHomePos = interior;
+				w2.WorkPos = fieldWorkPos;
+				_world.AddChild(w2);
+			}
 		}
 
 		// Chuong cuu + heo dung chung (khu chan nuoi phu), tiep noi cum chuong bo/ngua/ga ve
@@ -5562,6 +5617,35 @@ namespace HiepSiVeVuon.Core
 			}
 
 			AddBuildingLabelZone(GreenhouseAnchor, half, "label.greenhouse");
+
+			// 1 NPC nu rieng quan ly/cham soc Nha Kinh (theo dung yeu cau) - GreenhouseOnly=true
+			// nen CHI cham soc 16 o trong Nha Kinh, khong bao gio lan sang ruong chinh. Truoc khi
+			// nguoi choi mo khoa Cong Nha Kinh (xem GreenhouseGate.cs), toan bo o van rong
+			// (IsEmpty=true) nen co nay chi Ngu/Di dao gan do cho toi khi co cay de cham (khong bi
+			// ket o cong khoa vi khong co gi de tim duong toi ben trong ca).
+			if (_farmWorkerScene != null)
+			{
+				var greenhouseHousePos = NextHousingCottagePos(10809);
+				AddDecor(_smallBarnScene, greenhouseHousePos, 12f, 0f, SmallBarnFootprint);
+				var ghInterior = AddBuildingEntrance(greenhouseHousePos, 0f, 80f, 50f, RoomKind.Village);
+				AddBuildingLabelZone(greenhouseHousePos, 100f, "label.farm_worker_house");
+
+				var keeper = _farmWorkerScene.Instantiate<FarmWorkerNpc>();
+				keeper.NpcId = "greenhouse_keeper";
+				keeper.NpcName = "Adeline";
+				keeper.ModelScale = 20f;
+				keeper.GreenhouseOnly = true;
+				keeper.DialogueLow = new[] { "Chào anh, tôi phụ trách chăm sóc Nhà Kính của trang trại." };
+				keeper.DialogueMid = new[] { "Trồng trong Nhà Kính thích lắm, quanh năm mùa nào cũng trồng được." };
+				keeper.DialogueHigh = new[] { "Anh cứ tin tưởng, cây trong Nhà Kính lúc nào tôi cũng chăm kỹ từng chút một." };
+				keeper.DialogueLowEn = new[] { "Hello, I'm in charge of taking care of the farm's Greenhouse." };
+				keeper.DialogueMidEn = new[] { "I love growing things in the Greenhouse - you can plant year-round, any season." };
+				keeper.DialogueHighEn = new[] { "You can trust me, I look after every plant in the Greenhouse down to the last detail." };
+				keeper.HomePos = greenhouseHousePos + new Vector3(0, 0, 55);
+				keeper.InteriorHomePos = ghInterior;
+				keeper.WorkPos = GreenhouseAnchor;
+				_world.AddChild(keeper);
+			}
 		}
 
 		// May che bien nong san (xem ProcessingMachine.cs) - 5 may CANH NHAU gan Khu Nha Kho:

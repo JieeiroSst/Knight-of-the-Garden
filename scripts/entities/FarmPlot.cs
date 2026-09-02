@@ -41,6 +41,14 @@ namespace HiepSiVeVuon.Entities
 
         private MeshInstance3D _soilMesh;
         private Sprite3D _cropSprite;
+        // Mam non: hien RIENG trong giai doan dau (xem UpdateVisual/SproutPhaseEnd) thay vi dung
+        // TRUC TIEP icon nong san (thu nho) cho ca qua trinh - mot qua bi ngo/ca chua thu nho tu
+        // dau chu trong khong giong that, cay THAT bat dau bang mam la nho, chua co hinh dang qua/
+        // hat ro rang. Dung 1 texture chum la xanh don gian (tao bang GradientTexture2D, khong can
+        // asset moi) thay vi icon nong san cho giai doan nay.
+        private Sprite3D _sproutSprite;
+        private static Texture2D _sproutTexCache;
+        private const float SproutPhaseEnd = 0.4f; // ty le _growStage/_growDays duoi muc nay = con la mam
 
         // Hat giong MAC DINH khi khong co SeedSelectUI trong scene (fallback an toan) - binh
         // thuong nguoi choi TU CHON giong tu tui do qua SeedSelectUI (xem RequestPlant()).
@@ -83,9 +91,41 @@ namespace HiepSiVeVuon.Entities
             _cropSprite.PixelSize = 0.4f;
             _cropSprite.Position = Vector3.Up * 6f;
             _cropSprite.Scale = Vector3.One;
+
+            _sproutSprite = GetNodeOrNull<Sprite3D>("Sprout");
+            if (_sproutSprite == null)
+            {
+                _sproutSprite = new Sprite3D();
+                AddChild(_sproutSprite);
+            }
+            _sproutSprite.Texture = GetSproutTexture();
+            _sproutSprite.Billboard = BaseMaterial3D.BillboardModeEnum.Enabled;
+            _sproutSprite.PixelSize = 0.4f;
+            _sproutSprite.Visible = false;
+
+            // Lech pha rieng tung o (theo vi tri, KHONG dung RNG - giu tat dinh, khong doi giua
+            // cac lan tai lai) de cac cay khong du dua DONG LOAT giong het nhau, nhin tu nhien hon.
+            _swayPhase = (GridX * 7.3f + GridY * 3.7f + FreeformPos.X * 0.1f + FreeformPos.Z * 0.07f) % Mathf.Tau;
+
             GameManager.Instance.DayChanged += OnDayChanged;
             RestoreFromSave();
             UpdateVisual();
+        }
+
+        // Cay dang lon "du dua" nhe theo gio (offset ngang nho theo song sin) - CHI ap dung khi co
+        // cay dang song (khong pest chet/wither), thuan tuy tham my, khong anh huong logic/va cham
+        // (o dat van la StaticBody3D dung yen, chi 2 sprite con hien thi du dua).
+        private float _swayPhase;
+
+        public override void _Process(double delta)
+        {
+            if (_cropId == null) return;
+            var active = _sproutSprite.Visible ? _sproutSprite : (_cropSprite.Visible ? _cropSprite : null);
+            if (active == null) return;
+            float sway = Mathf.Sin((float)Time.GetTicksMsec() / 1000f * 1.1f + _swayPhase) * 0.35f;
+            var pos = active.Position;
+            pos.X = sway;
+            active.Position = pos;
         }
 
         // Chi khop cac o dat trong LUOI CO DINH (Freeform==false) - o dat CUOC TU DO (xem
@@ -424,6 +464,28 @@ namespace HiepSiVeVuon.Entities
             SyncToSave();
         }
 
+        // Texture chum mam non - 1 vong tron mem mau xanh la (tam mo phong 1 chum la nho vua nhu
+        // moc), tao qua GradientTexture2D (khong can file anh moi) - CACHE TINH (static) vi TAT
+        // CA o dat dung CHUNG 1 texture nay, chi tao 1 lan cho ca game thay vi moi o 1 ban rieng.
+        private static Texture2D GetSproutTexture()
+        {
+            if (_sproutTexCache != null) return _sproutTexCache;
+            var gradient = new Gradient();
+            gradient.SetColor(0, new Color(0.5f, 0.78f, 0.35f, 1f));
+            gradient.AddPoint(0.65f, new Color(0.4f, 0.68f, 0.28f, 0.95f));
+            gradient.SetColor(1, new Color(0.35f, 0.6f, 0.24f, 0f));
+            _sproutTexCache = new GradientTexture2D
+            {
+                Gradient = gradient,
+                Width = 32,
+                Height = 32,
+                Fill = GradientTexture2D.FillEnum.Radial,
+                FillFrom = new Vector2(0.5f, 0.5f),
+                FillTo = new Vector2(0.5f, 1f),
+            };
+            return _sproutTexCache;
+        }
+
         private void UpdateVisual()
         {
             if (_soilMesh != null)
@@ -451,20 +513,45 @@ namespace HiepSiVeVuon.Entities
             if (_cropId == null)
             {
                 _cropSprite.Visible = false;
+                _sproutSprite.Visible = false;
                 return;
             }
-            _cropSprite.Visible = true;
-            var tex = ItemDatabase.Instance.GetItemIcon(_cropId);
-            if (tex != null) _cropSprite.Texture = tex;
-            // Lon dan theo giai doan
+
             float ratio = _growDays > 0 ? (float)_growStage / _growDays : 1f;
-            _cropSprite.Scale = Vector3.One * (0.15f + 0.25f * ratio);
-            // Bi sau benh -> tint vang-xam om yeu, de nguoi choi nhan ra ngay can xu ly.
-            _cropSprite.Modulate = _pestAfflicted
-                ? new Color(0.72f, 0.68f, 0.35f)
-                : _growStage >= _growDays
-                    ? Colors.White
-                    : new Color(0.7f, 0.9f, 0.7f);
+            // Bi sau benh -> tint vang-xam om yeu, de nguoi choi nhan ra ngay can xu ly (ap dung
+            // cho ca 2 giai doan, mam non lan cay truong thanh).
+            var pestTint = new Color(0.72f, 0.68f, 0.35f);
+
+            if (ratio < SproutPhaseEnd)
+            {
+                // Giai doan MAM NON: hat vua nay mam, chua co hinh dang qua/hat ro rang - dung
+                // chum la xanh don gian (khong phai icon nong san thu nho, cay THAT khong bat dau
+                // bang 1 qua/cu ti hon), lon dan tu duoi dat len.
+                _cropSprite.Visible = false;
+                _sproutSprite.Visible = true;
+                float sproutT = ratio / SproutPhaseEnd;
+                _sproutSprite.Scale = Vector3.One * Mathf.Lerp(0.12f, 0.5f, sproutT);
+                _sproutSprite.Position = new Vector3(0, Mathf.Lerp(1f, 3f, sproutT), 0);
+                _sproutSprite.Modulate = _pestAfflicted ? pestTint : Colors.White;
+            }
+            else
+            {
+                // Giai doan TRUONG THANH: hien icon nong san that, lon dan ro ret va NHO LEN cao
+                // hon (cay that cao dan khi gan chin, khong chi "phinh to tai cho") cho toi khi
+                // chin hoan toan (mau sac day du, khong con tint xanh non nua).
+                _sproutSprite.Visible = false;
+                _cropSprite.Visible = true;
+                var tex = ItemDatabase.Instance.GetItemIcon(_cropId);
+                if (tex != null) _cropSprite.Texture = tex;
+                float matureT = (ratio - SproutPhaseEnd) / (1f - SproutPhaseEnd);
+                _cropSprite.Scale = Vector3.One * Mathf.Lerp(0.32f, 0.85f, matureT);
+                _cropSprite.Position = new Vector3(0, Mathf.Lerp(3f, 6f, matureT), 0);
+                _cropSprite.Modulate = _pestAfflicted
+                    ? pestTint
+                    : _growStage >= _growDays
+                        ? Colors.White
+                        : new Color(0.72f, 0.92f, 0.72f);
+            }
         }
 
         private static MeshInstance3D FindMeshInstance(Node root)
