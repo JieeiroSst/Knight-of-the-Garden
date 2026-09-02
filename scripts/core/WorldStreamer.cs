@@ -15,6 +15,13 @@ namespace HiepSiVeVuon.Core
         [Export] public int WorldSeed = 1337;
         [Export] public float UpdateInterval = 0.5f;
 
+        // Bien do go dat (xem GroundMaterial.CreateGrass/ground.gdshader) cho MOI chunk vung
+        // hoang da (khac han bump_height mac dinh 2.5 rat nhe cua San chinh/Thi tran) - du de
+        // "gap gho" ro ret, nhung van vua phai so voi ChunkSize=500 (khong qua doc, tranh cam
+        // giac "song bien" gia tao - san va cham van la BoxShape3D PHANG nhu cu, chi phan HINH
+        // ANH lon xuong).
+        private const float WildernessBumpHeight = 13f;
+
         // Cac vung do Main.cs da dung san (khong lien nhau - nong trai va thi tran cach xa nhau
         // ~500m, noi voi nhau bang 1 con duong dai chay xuyen qua vung hoang da). WorldStreamer
         // khong sinh chunk trong cac vung nay. PHAI khop chinh xac voi Main.cs.DrawGround /
@@ -138,7 +145,7 @@ namespace HiepSiVeVuon.Core
             new("res://assets3d/quaternius/nature/rock_2.glb", 14f, 20f),
             new("res://assets3d/kenney/nature/plant_bush.glb", 12f, 18f),
             new("res://assets3d/kenney/nature/flower_yellowA.glb", 6f, 10f),
-            new("res://assets3d/kenney/nature/grass_large.glb", 10f, 16f),
+            new("res://assets3d/kenney/nature/grass_large.glb", 10f, 16f), // GrassDecorIndex = 10 (xem ScatterGrassTufts)
         };
 
         private PackedScene[] _decorScenes;
@@ -147,6 +154,10 @@ namespace HiepSiVeVuon.Core
         private Node3D _player;
         private float _timer = 0f;
         private readonly Dictionary<Vector2I, Node3D> _loaded = new();
+
+        // Mesh "khuon" trich tu grass_large.glb, dung chung cho MultiMeshInstance3D cua MOI chunk
+        // (xem BuildGrassField) - null neu khong tai duoc model (an toan, chi bo qua tham co).
+        private Mesh _grassBladeMesh;
 
         // Nha 3 kich thuoc khac nhau + vat lieu doi rieng cho "vung que nuoc Phap" (xem
         // GenerateFrenchDecor) - Cottage/House deu la model CC0 tu poly.pizza (Quaternius/
@@ -169,6 +180,30 @@ namespace HiepSiVeVuon.Core
             _villageHouseScene = GD.Load<PackedScene>("res://assets3d/quaternius/french_countryside/village_house.glb");
             _bigHouseScene = GD.Load<PackedScene>("res://assets3d/quaternius/buildings/house_v2.glb");
             _frenchHillMat = new StandardMaterial3D { AlbedoColor = new Color(0.32f, 0.44f, 0.2f), Roughness = 1f };
+
+            // Lay RIENG mesh cua model co (grass_large.glb, xem GrassDecorIndex) MOT LAN de dung
+            // lam "khuon" cho MultiMeshInstance3D (xem BuildGrassField) - MultiMesh chi can 1
+            // Mesh resource dung chung cho HANG TRAM/NGHIN instance GPU, khong the dung ca
+            // PackedScene nhu cach rai decor thong thuong (qua nang neu tao tung Node3D rieng).
+            var grassScene = _decorScenes.Length > GrassDecorIndex ? _decorScenes[GrassDecorIndex] : null;
+            if (grassScene != null)
+            {
+                var temp = grassScene.Instantiate<Node3D>();
+                var meshInst = FindMeshInstance(temp);
+                if (meshInst != null) _grassBladeMesh = meshInst.Mesh;
+                temp.QueueFree();
+            }
+        }
+
+        private static MeshInstance3D FindMeshInstance(Node root)
+        {
+            if (root is MeshInstance3D mi) return mi;
+            foreach (Node child in root.GetChildren())
+            {
+                var found = FindMeshInstance(child);
+                if (found != null) return found;
+            }
+            return null;
         }
 
         public override void _Process(double delta)
@@ -249,7 +284,10 @@ namespace HiepSiVeVuon.Core
             int chunkSubdiv = GroundMaterial.SubdivisionsFor(ChunkSize);
             var ground = new MeshInstance3D { Mesh = new PlaneMesh { Size = new Vector2(ChunkSize, ChunkSize), SubdivideWidth = chunkSubdiv, SubdivideDepth = chunkSubdiv } };
             ground.Position = center;
-            ground.MaterialOverride = GroundMaterial.CreateGrass(ChunkSize, ChunkSize);
+            // Dia hinh gap gho ro ret hon San chinh (xem WildernessBumpHeight/GroundMaterial.CreateGrass)
+            // - "ngoai nong trai thi mat dat khong bang phang" theo dung yeu cau, khac voi dat
+            // nong trai da duoc san phang de canh tac (van dung bump_height mac dinh rat nhe).
+            ground.MaterialOverride = GroundMaterial.CreateGrass(ChunkSize, ChunkSize, WildernessBumpHeight);
             root.AddChild(ground);
 
             // Khoi dat dac duoi lop co, giong het cach lam trong Main.cs.DrawGround, de khong
@@ -279,10 +317,55 @@ namespace HiepSiVeVuon.Core
             return root;
         }
 
+        // Rai THEM 1 lop chum co day dac (doc lap voi _decorOptions/DecorOptions von chi ~1/11
+        // co hoi la co moi lan chon ngau nhien, qua thua de "vung dat hoang phai co co" ro rang
+        // theo dung yeu cau) - dung LAI DUNG model grass_large.glb da co (khong co model co nao
+        // khac trong du an), chi doi ty le/xoay ngau nhien de tao cam giac tu nhien, khong deu tam.
+        private const int GrassDecorIndex = 10; // vi tri "grass_large.glb" trong _decorOptions o tren
+
+        // Tham co 3D DAY DAC phu khap nen dat 1 chunk - dung MultiMeshInstance3D (GPU instancing,
+        // CHI 1 draw call cho ca tram/nghin lam co, giong cach BuildBigVineyard.cs da lam voi
+        // ~1980 goc nho) thay vi tao tung Node3D rieng (qua nang neu lam vay voi so luong lon nay
+        // - da tung dung cach do cho vai chum THUA THOT, gio thay bang lop tham day dac THAT SU
+        // theo dung yeu cau "co phai la 3D"). Dung LAI chinh mesh cua grass_large.glb (_grassBladeMesh)
+        // - khong co model "1 cong co don" rieng trong du an, nen phu day bang nhieu "chum" nho
+        // chong lan nhe tao cam giac tham co lien tuc.
+        private const int GrassFieldDensity = 340;
+
+        private Node3D BuildGrassField(Vector3 center, RandomNumberGenerator rng)
+        {
+            if (_grassBladeMesh == null) return null;
+            float half = ChunkSize / 2f - 15f;
+            var transforms = new System.Collections.Generic.List<Transform3D>(GrassFieldDensity);
+            for (int i = 0; i < GrassFieldDensity; i++)
+            {
+                var localPos = new Vector3(rng.RandfRange(-half, half), 0f, rng.RandfRange(-half, half));
+                if (IsExcluded(center + localPos)) continue;
+                float scale = rng.RandfRange(2.2f, 5.5f);
+                float rotY = rng.RandfRange(0f, Mathf.Tau);
+                var basis = new Basis(Vector3.Up, rotY).Scaled(Vector3.One * scale);
+                transforms.Add(new Transform3D(basis, localPos));
+            }
+            if (transforms.Count == 0) return null;
+
+            var multiMesh = new MultiMesh
+            {
+                TransformFormat = MultiMesh.TransformFormatEnum.Transform3D,
+                Mesh = _grassBladeMesh,
+                InstanceCount = transforms.Count,
+            };
+            for (int i = 0; i < transforms.Count; i++)
+                multiMesh.SetInstanceTransform(i, transforms[i]);
+
+            return new MultiMeshInstance3D { Multimesh = multiMesh, Position = center };
+        }
+
         // Ban tong quat cua GenerateWildernessDecor, doc tham so tu RegionProfile thay vi hang so
         // co dinh - dung CHUNG cho MOI vung dang ky trong Regions (xem RegionProfile o tren).
         private void GenerateRegionDecor(Node3D root, Vector3 center, RandomNumberGenerator rng, RegionProfile profile)
         {
+            var grassField = BuildGrassField(center, rng);
+            if (grassField != null) root.AddChild(grassField);
             var options = profile.DecorOptions;
             if (options != null && options.Length > 0)
             {
@@ -350,14 +433,27 @@ namespace HiepSiVeVuon.Core
             return table[table.Length - 1].enemyId;
         }
 
+        // 6 model cay dau tien trong _decorOptions (xem mang o tren) - dung de gioi han lua chon
+        // CHI con cay khi dang o trong 1 "mang rung nho" (xem GenerateWildernessDecor).
+        private const int TreeDecorIndexMax = 5;
+        // Xac suat 1 o luoi vung hoang da TRO THANH 1 mang rung nho (dung y "them cac canh rung
+        // rai rac" theo yeu cau - khac voi khu "Rung" duy nhat co san, day la NHIEU mang rung NHO
+        // xen ke khap vung hoang da chung, giong rung that xen ke dong co ngoai doi thuc).
+        private const float ForestPatchChance = 0.16f;
+
         private void GenerateWildernessDecor(Node3D root, Vector3 center, RandomNumberGenerator rng)
         {
-            // Vat trang tri rai ngau nhien
-            int decorCount = rng.RandiRange(4, 9);
+            var grassField = BuildGrassField(center, rng);
+            if (grassField != null) root.AddChild(grassField);
+
+            // Mang rung nho: o luoi nay CHI rai cay (mat do day hon nhieu), khong xen rock/bui/hoa
+            // - tao cam giac 1 cum rung ro net thay vi cay le te lan trong decor thong thuong.
+            bool isForestPatch = rng.Randf() < ForestPatchChance;
+            int decorCount = isForestPatch ? rng.RandiRange(16, 26) : rng.RandiRange(4, 9);
             float half = ChunkSize / 2f - 20f;
             for (int i = 0; i < decorCount; i++)
             {
-                int idx = rng.RandiRange(0, _decorScenes.Length - 1);
+                int idx = isForestPatch ? rng.RandiRange(0, TreeDecorIndexMax) : rng.RandiRange(0, _decorScenes.Length - 1);
                 var scene = _decorScenes[idx];
                 if (scene == null) continue;
                 var opt = _decorOptions[idx];

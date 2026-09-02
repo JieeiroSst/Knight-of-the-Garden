@@ -35,7 +35,16 @@ namespace HiepSiVeVuon.Core
         // ShaderMaterial (thay StandardMaterial3D truoc day) de them go nhe hinh hoc THAT qua
         // vertex shader (xem ground.gdshader) - PlaneMesh goi ham nay PHAI co Subdivide du (xem
         // SubdivisionsFor) de bum hien ra duoc.
-        public static ShaderMaterial CreateGrass(float worldWidth, float worldDepth)
+        //
+        // bumpHeight: MAC DINH 2.5 (rat nhe, dung cho San chinh/Thi tran - dat nong trai da duoc
+        // "san phang" de canh tac, khong nen gap ghenh). Vung hoang da (WorldStreamer.GenerateChunk)
+        // truyen gia tri LON HON (xem WildernessBumpHeight) de tao cam giac "dia hinh tu nhien gap
+        // gho" ro ret hon, theo dung yeu cau "ngoai nong trai thi mat dat gap gho". Van GIU CHUNG 1
+        // ham NOISE trong shader (chi doi bien do), nen bien dang van lien tuc/muot giua cac o luoi
+        // ke nhau du bumpHeight khac nhau - CHI co the "bac thang" o ranh gioi giua 2 vung dung
+        // bumpHeight khac nhau (vd tuong da nong trai), tuong tu tuong da von da la 1 ranh gioi thi
+        // giac ro rang san co, khong tao cam giac loi.
+        public static ShaderMaterial CreateGrass(float worldWidth, float worldDepth, float bumpHeight = 2.5f)
         {
             _grassColor ??= GD.Load<Texture2D>(GrassColorPath);
             _grassNormal ??= GD.Load<Texture2D>(GrassNormalPath);
@@ -50,6 +59,7 @@ namespace HiepSiVeVuon.Core
             // Co that khong bong: giam phan xa Fresnel goc hep, tranh hien tuong ca dam co "anh
             // len" mau troi thanh mot dai sang xanh o duong chan troi.
             mat.SetShaderParameter("specular_val", 0.05f);
+            mat.SetShaderParameter("bump_height", bumpHeight);
             return mat;
         }
 
