@@ -345,7 +345,11 @@ namespace HiepSiVeVuon.Entities
             if (Soil == SoilType.Wet) _watered = true;
             // Troi mua thi cay ngoai troi cung tu duoc tuoi (thoi tiet anh huong cay trong that
             // su, thay vi bia them 1 co che "bao lam hong cay" tach biet khoi he thong thoi tiet
-            // da co - xem GameManager.IsRaining).
+            // da co - xem GameManager.IsRaining). Ghi lai RIENG hom nay co phai tuoi BOI MUA hay
+            // khong (khac voi tuoi tay/may tuoi tu dong/dat uot san) - nuoc mua tu nhien giup cay
+            // lon NHANH va KHOE hon nuoc tuoi thuong (theo yeu cau "thoi tiet anh huong toc do cay
+            // lon nhu thuc te", xem duoi).
+            bool wateredByRainToday = !_watered && GameManager.Instance.IsRaining;
             if (GameManager.Instance.IsRaining) _watered = true;
             // Nha Kinh tu dong tuoi MOI NGAY (khong can nguoi choi/may tuoi tu dong).
             if (IsGreenhouse) _watered = true;
@@ -372,6 +376,16 @@ namespace HiepSiVeVuon.Entities
             if (_watered)
             {
                 if (_growStage < _growDays) _growStage++;
+                // Nuoc mua tu nhien: ~35% co them 1 giai doan lon NGAY TRONG NGAY DO (nhanh hon
+                // tuoi tay/may tuoi tu dong ro ret ve lau dai), va cay khoe hon mot chut (+chat
+                // luong nho, tich luy duoc ca chu ky trong nhu fertilizer/luan canh).
+                if (wateredByRainToday && _growStage < _growDays)
+                {
+                    var rainRng = new RandomNumberGenerator();
+                    rainRng.Randomize();
+                    if (rainRng.Randf() < 0.35f) _growStage++;
+                    _qualityScore += 0.03f;
+                }
                 _watered = false;
                 _daysUnwatered = 0;
             }
