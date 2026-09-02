@@ -1,5 +1,5 @@
 ea4bc82a6ad023ab7ee23ee620429895
-::res://::1788351802
+::res://::1788375864
 CREDITS.md::TextFile::-1::1788249979::0::1::::<><>::
 default_bus_layout.tres::AudioBusLayout::3704913522479182841::1788280442::0::1::::<><>::
 icon.svg::CompressedTexture2D::6049366095944010679::1788179742::1788179780::1::::<><>::
@@ -219,7 +219,7 @@ enemies.json::JSON::-1::1788291214::0::1::::<><>::
 items.json::JSON::-1::1788291172::0::1::::<><>::
 quests.json::JSON::-1::1788291225::0::1::::<><>::
 warehouse_products.json::JSON::-1::1788291233::0::1::::<><>::
-::res://scenes/::1788350344
+::res://scenes/::1788352182
 AutoSprinkler.tscn::PackedScene::108289197337478784::1788281992::0::1::::<><>::res://scripts/entities/AutoSprinkler.cs
 Boat.tscn::PackedScene::2150125555731240::1788278964::0::1::::<><>::res://scripts/entities/Boat.cs
 BuildingLabelZone.tscn::PackedScene::-1::1788206127::0::1::::<><>::
@@ -241,7 +241,7 @@ GreenhouseGate.tscn::PackedScene::7282918618953418068::1788282187::0::1::::<><>:
 GuardNpc.tscn::PackedScene::-1::1788205834::0::1::::<><>::
 Horse.tscn::PackedScene::85520836254037352::1788181154::0::1::::<><>::res://scripts/entities/Horse.cs
 LoginScreen.tscn::PackedScene::6927378338794553120::1788269860::0::1::::<><>::res://scripts/ui/LoginUI.cs
-Main.tscn::PackedScene::2793422279468456::1788350344::0::1::::<><>::res://scripts/core/Main.cs<>res://scripts/ui/HUD.cs<>res://scripts/ui/DialogueBox.cs<>res://scripts/ui/InventoryUI.cs<>res://scripts/ui/ShopUI.cs<>res://scripts/ui/MapUI.cs<>res://scripts/ui/SettingsUI.cs<>res://scripts/ui/SeedSelectUI.cs<>res://scripts/ui/BackpackUI.cs<>res://scripts/ui/CookingUI.cs<>res://scripts/ui/BuildMenuUI.cs
+Main.tscn::PackedScene::2793422279468456::1788352182::0::1::::<><>::res://scripts/core/Main.cs<>res://scripts/ui/HUD.cs<>res://scripts/ui/DialogueBox.cs<>res://scripts/ui/InventoryUI.cs<>res://scripts/ui/ShopUI.cs<>res://scripts/ui/MapUI.cs<>res://scripts/ui/SettingsUI.cs<>res://scripts/ui/SeedSelectUI.cs<>res://scripts/ui/BackpackUI.cs<>res://scripts/ui/CookingUI.cs<>res://scripts/ui/BuildMenuUI.cs
 NPC.tscn::PackedScene::84723596343656::1788112169::0::1::::<><>::res://scripts/entities/NPC.cs
 PalaceGuardNpc.tscn::PackedScene::-1::1788207082::0::1::::<><>::
 Pig.tscn::PackedScene::-1::1788195483::0::1::::<><>::
@@ -259,20 +259,20 @@ WildAnimal.tscn::PackedScene::3947763530526427928::1788278942::0::1::::<><>::res
 WildAquatic.tscn::PackedScene::3415020359594316::1788278949::0::1::::<><>::res://scripts/entities/WildAnimal.cs
 ::res://scenes/decor/::1788160279
 ::res://scripts/::1788276496
-::res://scripts/core/::1788351197
+::res://scripts/core/::1788353095
 CharacterRig.cs::CSharpScript::-1::1788351197::0::1::::<><>::
 DayNightCycle.cs::CSharpScript::-1::1788348469::0::1::::<>Node3D<>::
 GameManager.cs::CSharpScript::-1::1788291559::0::1::::<>Node<>::
 GoapPlanner.cs::CSharpScript::-1::1788254414::0::1::::<><>::
-GroundMaterial.cs::CSharpScript::-1::1788287287::0::1::::<><>::
+GroundMaterial.cs::CSharpScript::-1::1788352661::0::1::::<><>::
 Main.cs::CSharpScript::-1::1788350968::0::1::::<>Node3D<>::
 NpcExperience.cs::CSharpScript::-1::1788348968::0::1::::<><>::
 SteeringUtil.cs::CSharpScript::-1::1788279590::0::1::::<><>::
 UtilityAi.cs::CSharpScript::-1::1788254851::0::1::::<><>::
-WorldStreamer.cs::CSharpScript::-1::1788287309::0::1::::<>Node3D<>::
+WorldStreamer.cs::CSharpScript::-1::1788353095::0::1::::<>Node3D<>::
 ::res://scripts/data/::1788267208
 GameData.cs::CSharpScript::-1::1788267208::0::1::::<><>::
-::res://scripts/entities/::1788351407
+::res://scripts/entities/::1788352004
 AnimalCareUtil.cs::CSharpScript::-1::1788254979::0::1::::<><>::
 AutoSprinkler.cs::CSharpScript::-1::1788281986::0::1::::<>StaticBody3D<>::
 Boat.cs::CSharpScript::-1::1788278930::0::1::::<>StaticBody3D<>::
@@ -297,7 +297,7 @@ FruitTree.cs::CSharpScript::-1::1788350937::0::1::::<>StaticBody3D<>::
 Goat.cs::CSharpScript::-1::1788254950::0::1::::<>CharacterBody3D<>::
 GreenhouseGate.cs::CSharpScript::-1::1788291677::0::1::::<>StaticBody3D<>::
 GuardNpc.cs::CSharpScript::-1::1788292414::0::1::::<>CharacterBody3D<>::
-HeldItemVisual.cs::CSharpScript::-1::1788351407::0::1::::<>Node3D<>::
+HeldItemVisual.cs::CSharpScript::-1::1788352004::0::1::::<>Node3D<>::
 Horse.cs::CSharpScript::-1::1788254938::0::1::::<>CharacterBody3D<>::
 IHungryAnimal.cs::CSharpScript::-1::1788254923::0::1::::<><>::
 NPC.cs::CSharpScript::-1::1788292403::0::1::::<>CharacterBody3D<>::
@@ -305,7 +305,7 @@ OreNode.cs::CSharpScript::-1::1788260086::0::1::::<>StaticBody3D<>::
 PalaceGuardNpc.cs::CSharpScript::-1::1788255464::0::1::::<>CharacterBody3D<>::
 Pig.cs::CSharpScript::-1::1788254934::0::1::::<>CharacterBody3D<>::
 PlacedBuilding.cs::CSharpScript::-1::1788282920::0::1::::<>StaticBody3D<>::
-Player.cs::CSharpScript::-1::1788351322::0::1::::<>CharacterBody3D<>::
+Player.cs::CSharpScript::-1::1788351947::0::1::::<>CharacterBody3D<>::
 PoultryKeeperNpc.cs::CSharpScript::-1::1788255097::0::1::::<>CharacterBody3D<>::
 ProcessingMachine.cs::CSharpScript::-1::1788291704::0::1::::<>StaticBody3D<>::
 RepairmanNpc.cs::CSharpScript::-1::1788254888::0::1::::<>CharacterBody3D<>::

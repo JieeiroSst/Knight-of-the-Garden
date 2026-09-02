@@ -130,7 +130,7 @@ namespace HiepSiVeVuon.Core
                 Exp -= ExpToNext;
                 Level++;
                 ExpToNext = (int)(ExpToNext * 1.4f);
-                MaxHp += 20;
+                MaxHp += 100; // theo yeu cau: moi lan len cap tang 100 mau (truoc day chi +20)
                 Hp = MaxHp; // hoi day khi len cap
                 GD.Print($"Lên cấp! Level {Level}");
             }

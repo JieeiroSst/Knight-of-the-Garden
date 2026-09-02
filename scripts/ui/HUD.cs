@@ -164,7 +164,7 @@ namespace HiepSiVeVuon.UI
             var gm = GameManager.Instance;
             _hpBar.MaxValue = gm.MaxHp;
             _hpBar.Value = gm.Hp;
-            _hpLabel.Text = string.Format(Loc.T("hud.hp_fmt"), gm.Hp, gm.MaxHp);
+            _hpLabel.Text = string.Format(Loc.T("hud.hp_fmt"), FormatHp(gm.Hp), FormatHp(gm.MaxHp));
             _levelLabel.Text = string.Format(Loc.T("hud.level_fmt"), gm.Level, gm.Exp, gm.ExpToNext);
             _goldLabel.Text = string.Format(Loc.T("hud.gold_fmt"), gm.Gold);
             _questHeaderLabel.Text = Loc.T("hud.quest_header");
@@ -178,6 +178,16 @@ namespace HiepSiVeVuon.UI
                     qtext += $"- {ItemDatabase.Instance.GetQuestDisplayTitle(kv.Key)} ({kv.Value}/{def.TargetCount})\n";
             }
             _questLabel.Text = qtext == "" ? Loc.T("hud.quest_empty") : qtext;
+        }
+
+        // Rut gon so mau tu 1000 tro len thanh dang "1k"/"1.2k" (theo dung yeu cau) - mau toi da
+        // tang +100/lan len cap nen se nhanh choong vuot 1000, so day du (vd "1500") chiem nhieu
+        // cho tren HUD hon can thiet. Duoi 1000 giu nguyen so binh thuong.
+        private static string FormatHp(int value)
+        {
+            if (value < 1000) return value.ToString();
+            float k = value / 1000f;
+            return Mathf.IsEqualApprox(k, Mathf.Round(k)) ? $"{k:0}k" : $"{k:0.#}k";
         }
     }
 }
