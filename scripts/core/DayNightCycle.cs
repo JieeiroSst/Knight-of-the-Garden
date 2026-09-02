@@ -68,7 +68,18 @@ namespace HiepSiVeVuon.Core
             float progress = GameManager.Instance.DayProgress;
             // 0 = 6h sang (chan troi), Pi/2 = trua (dinh dau), Pi = 6h toi (chan troi)
             float angle = (progress - 0.25f) * Mathf.Tau;
-            var sunDir = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0.35f).Normalized();
+
+            // Huong theo LA BAN THAT cua the gioi (khop voi MapUI.DrawCompassRose): the gioi +X =
+            // Dong, -X = Tay, +Z = Nam, -Z = Bac (goc dia ly az=0 la Bac, az=90 la Dong, tang theo
+            // chieu kim dong ho). Mat troi moc DUNG huong Dong (az=90 luc angle=0, tuc 6h sang),
+            // quet qua Nam luc dinh ngo (az=180 luc trua - giong huong mat troi ban trua o Bac Ban
+            // Cau that), roi lan DUNG huong Tay (az=270 luc angle=Pi, tuc 6h toi) - truoc day dung
+            // truc tiep Cos/Sin(angle) lam X/Z, KHONG khop voi quy uoc la ban tren (huong moc/lan
+            // bi lech, khong dung Dong/Tay that su).
+            float azimuthDeg = 90f + (angle / Mathf.Tau) * 360f;
+            float azimuthRad = Mathf.DegToRad(azimuthDeg);
+            float elevation = Mathf.Sin(angle); // 0 luc moc/lan, dinh diem luc trua, am ban dem (duoi chan troi)
+            var sunDir = new Vector3(Mathf.Sin(azimuthRad), elevation, -Mathf.Cos(azimuthRad)).Normalized();
             var moonDir = -sunDir;
 
             var basePos = _player != null ? _player.GlobalPosition : Vector3.Zero;
@@ -83,11 +94,17 @@ namespace HiepSiVeVuon.Core
             {
                 _light.Basis = Basis.LookingAt(-sunDir, Vector3.Forward);
                 _light.LightColor = NightLightColor.Lerp(DayLightColor, dayFactor);
-                _light.LightEnergy = Mathf.Lerp(0.18f, 1.15f, dayFactor);
+                // Tang do sang toi da (1.15 -> 2.0 ban ngay, 0.18 -> 0.35 ban dem) - voi tonemap
+                // ACES (xem Main.tscn), can nang luong dau vao CAO hon de anh sang thuc su "sang"
+                // sau khi nen tonemap, khong chi "du sang" theo con so tuyet doi.
+                _light.LightEnergy = Mathf.Lerp(0.35f, 2.0f, dayFactor);
             }
 
             if (_worldEnv?.Environment != null)
-                _worldEnv.Environment.AmbientLightEnergy = Mathf.Lerp(0.25f, 0.6f, dayFactor);
+                // Anh sang moi truong (chieu vao vung khuat nang truc tiep) cung tang tuong ung -
+                // 0.6 cu qua toi cho cac mang khuat/duoi tan cay, de lai cam giac "toi" du mat troi
+                // da sang.
+                _worldEnv.Environment.AmbientLightEnergy = Mathf.Lerp(0.4f, 0.9f, dayFactor);
 
             if (_skyMaterial != null)
             {
