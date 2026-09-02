@@ -5016,12 +5016,18 @@ namespace HiepSiVeVuon.Core
 				if (minClearance >= 0f) return p; // hoan toan trong - dung ngay, khong can thu them
 				if (minClearance > bestClearance) { bestClearance = minClearance; bestPos = p; }
 			}
-			// Khong tim duoc diem hoan toan trong sau 600 lan - dung UNG VIEN IT CHAM NHAT da
+			// Khong tim duoc diem hoan toan trong sau 3000 lan - dung UNG VIEN IT CHAM NHAT da
 			// thay (van co the hoi cham nhe vao 1 vung nao do, nhung KHONG con la 1 goc co dinh
-			// co the trung lap voi nhieu lan goi khac). In canh bao de xac nhan neu truong hop
-			// nay THAT SU xay ra (xem Debugger > Errors trong Godot).
+			// co the trung lap voi nhieu lan goi khac). "cham" o day la cham vao VUNG DEM du phong
+			// (neededRadius thuong da duoc goi PADDING san, vd zoneR=half*1.5 o BuildAnimalPenDistrict/
+			// BuildGoatPen) - da xac nhan bang tinh toan: voi he so padding 1.5x, "do cham" phai
+			// vuot qua 1/3 tong 2 ban kinh moi that su khien 2 hang rao/mo hinh THAT cham nhau; cac
+			// truong hop do cham nho (nhu da gap trong Khu Chan Nuoi) chi la vung dem hoi bi eo hep,
+			// KHONG phai 2 cong trinh chong len nhau that su. Dung GD.Print (khong phai PushWarning)
+			// de khong hien nhu 1 loi/canh bao that trong Debugger cua Godot khi day chi la truong
+			// hop du phong da luong truoc, van an toan ve mat hinh anh.
 			if (bestClearance < 0f)
-				GD.PushWarning($"FindOpenSpot: khong tim duoc cho hoan toan trong sau 3000 lan (neededRadius={neededRadius}, do cham={-bestClearance:F0}), dung ung vien it cham nhat tai {bestPos}.");
+				GD.Print($"FindOpenSpot: khong tim duoc cho hoan toan trong sau 3000 lan (neededRadius={neededRadius}, do cham vung dem={-bestClearance:F0}), dung ung vien it cham nhat tai {bestPos}.");
 			return bestPos;
 		}
 
