@@ -96,10 +96,42 @@ namespace HiepSiVeVuon.UI
                 // toan, khong can di chuyen vat pham qua lai. Cac loai con lai (nguyen lieu/nong
                 // san/hat giong/do dung) van RUT ra Tui Do nhu quy uoc cu.
                 if (def != null && (def.Type == ItemType.Weapon || def.Type == ItemType.Armor || def.Type == ItemType.Tool))
+                {
                     btn.Pressed += () => EquipFromBackpack(id);
+                    // Them han 1 nut chu "Su Dung" duoi icon - bam thang vao icon van trang bi
+                    // duoc (giu nguyen tien loi cu), nhung nut co chu ro rang de nguoi choi khong
+                    // phai doan "bam vao icon la lam gi" (theo dung yeu cau, thay vi chi co icon
+                    // tran khong nhan biet duoc hanh dong).
+                    bool isCurrentlyEquipped = def.Type switch
+                    {
+                        ItemType.Weapon => id == Inventory.Instance.EquippedWeapon,
+                        ItemType.Armor => id == Inventory.Instance.EquippedArmor,
+                        ItemType.Tool => id == Inventory.Instance.EquippedTool,
+                        _ => false,
+                    };
+                    var cell = new VBoxContainer();
+                    cell.AddChild(btn);
+                    // O DANG TRANG BI: an nut "Su Dung" (khong the bam de trang bi lai cai da
+                    // dang cam) va thay bang chu "Dang dung" - day CHINH la dau hieu de nguoi
+                    // choi biet o nao dang cam tren tay, theo dung yeu cau.
+                    GD.Print($"[BackpackUI DEBUG] slot={id} type={def.Type} isCurrentlyEquipped={isCurrentlyEquipped}");
+                    if (isCurrentlyEquipped)
+                    {
+                        cell.AddChild(new Label { Text = Loc.T("backpack.currently_used"), HorizontalAlignment = HorizontalAlignment.Center });
+                    }
+                    else
+                    {
+                        var useBtn = new Button { Text = Loc.T("backpack.use_button") };
+                        useBtn.Pressed += () => EquipFromBackpack(id);
+                        cell.AddChild(useBtn);
+                    }
+                    _bagGrid.AddChild(cell);
+                }
                 else
+                {
                     btn.Pressed += () => WithdrawFromBackpack(id);
-                _bagGrid.AddChild(btn);
+                    _bagGrid.AddChild(btn);
+                }
             }
         }
 

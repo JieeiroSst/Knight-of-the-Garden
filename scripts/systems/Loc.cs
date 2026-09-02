@@ -160,6 +160,8 @@ namespace HiepSiVeVuon.Systems
             ["backpack.balo_header_fmt"] = ("Balo, {0} ô (bấm để lấy ra túi đồ)", "Backpack, {0} slots (click to withdraw to inventory)"),
             ["backpack.full"] = ("Balo đã đầy!", "Backpack is full!"),
             ["backpack.inventory_full"] = ("Túi đồ đã đầy!", "Inventory is full!"),
+            ["backpack.use_button"] = ("Sử Dụng", "Use"),
+            ["backpack.currently_used"] = ("Đang dùng", "In use"),
 
             // ---- Cooking ----
             ["cooking.title"] = ("BẾP - NẤU ĂN", "KITCHEN - COOKING"),

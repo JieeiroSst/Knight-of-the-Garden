@@ -88,7 +88,16 @@ namespace HiepSiVeVuon.Core
             _sun.Visible = sunDir.Y > -0.15f;
             _moon.Visible = moonDir.Y > -0.15f;
 
-            float dayFactor = Mathf.Clamp(sunDir.Y, 0f, 1f);
+            // Ngoai doi that, troi bat dau sang dan (hoang hon/binh minh) TU KHI mat troi con o
+            // duoi chan troi khoang 15-20 do (twilight thien van/hang hai), khong phai cho DEN LUC
+            // mat troi thuc su moc moi bat dau sang - truoc day dung thang Clamp(sunDir.Y,0,1) nen
+            // moi luc mat troi con duoi chan troi (vd 5h sang, con ~1h nua moi den 6h moc) deu bi
+            // tinh dayFactor=0 GIONG HET nua dem, khien troi van den kit ngay ca luc gan sang. Mo
+            // rong vung noi suy bat dau tu do cao -0.4 (mat troi ~-23.6 do, gan muc twilight thien
+            // van that) thay vi 0, de troi sang dan TRUOC khi mat troi thuc su nhoi len.
+            const float TwilightStart = -0.4f;
+            float twilightT = Mathf.Clamp((sunDir.Y - TwilightStart) / -TwilightStart, 0f, 1f);
+            float dayFactor = twilightT * twilightT * (3f - 2f * twilightT); // smoothstep - chuyen muot, khong bi "bat/tat" dot ngot
 
             if (_light != null)
             {
