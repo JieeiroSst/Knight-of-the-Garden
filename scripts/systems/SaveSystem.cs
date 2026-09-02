@@ -112,7 +112,11 @@ namespace HiepSiVeVuon.Systems
             public float PosZ { get; set; }
         }
 
-        public void SaveGame()
+        // onDone: goi LAI (bool ok) sau khi request luu len backend THAT SU hoan tat (thanh cong
+        // hay loi deu goi, khong chi luc thanh cong) - can cho luong "luu roi moi thoat" khi dong
+        // cua so (xem Main.cs OnCloseRequested), vi PushSave la request MANG bat dong bo, khong
+        // the "cho" dong bo nhu ghi file truoc day.
+        public void SaveGame(Action<bool> onDone = null)
         {
             var gm = GameManager.Instance;
             var data = new SaveData
@@ -174,6 +178,7 @@ namespace HiepSiVeVuon.Systems
             BackendClient.Instance.PushSave(json, (ok, err) =>
             {
                 GD.Print(ok ? "Đã lưu game lên server." : $"Lỗi lưu game lên server: {err}");
+                onDone?.Invoke(ok);
             });
         }
 

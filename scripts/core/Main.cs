@@ -210,6 +210,13 @@ namespace HiepSiVeVuon.Core
 
 		public override void _Ready()
 		{
+			// Tu dong luu 1 lan cuoi TRUOC KHI thoat (dong cua so/bam nut thoat that su) - theo
+			// yeu cau, bo sung cho F5 (luu tay). Chan lai request dong mac dinh (AutoAcceptQuit=
+			// false) de co the LUU XONG (request MANG bat dong bo) roi moi tu goi Quit(), thay vi
+			// de Godot dong tien trinh ngay lap tuc truoc khi request kip gui/nhan phan hoi.
+			GetTree().AutoAcceptQuit = false;
+			GetWindow().CloseRequested += OnCloseRequested;
+
 			_world = new Node3D { Name = "World" };
 			AddChild(_world);
 
@@ -377,6 +384,34 @@ namespace HiepSiVeVuon.Core
 		{
 			if (Input.IsActionJustPressed("save_game"))
 				SaveSystem.Instance.SaveGame();
+		}
+
+		// Da dang luu (hoac da het thoi gian cho) chua - tranh goi Quit()/SaveGame() lap lai neu
+		// nguoi choi bam nut dong cua so nhieu lan lien tiep trong luc dang cho luu.
+		private bool _isQuitting = false;
+
+		private void OnCloseRequested()
+		{
+			if (_isQuitting) return;
+			_isQuitting = true;
+			GD.Print("Đang lưu game trước khi thoát...");
+
+			bool done = false;
+			SaveSystem.Instance.SaveGame(_ =>
+			{
+				if (done) return; // da thoat qua nguong an toan ben duoi, khong Quit() 2 lan
+				done = true;
+				GetTree().Quit();
+			});
+			// Nguong an toan: neu sau vai giay van chua co phan hoi tu server (vd mat mang/server
+			// treo), van thoat de KHONG "treo" cua so - dung y "luu neu duoc" chu khong bat buoc
+			// nguoi choi phai cho vo han han moi dong duoc game.
+			GetTree().CreateTimer(4.0).Timeout += () =>
+			{
+				if (done) return;
+				done = true;
+				GetTree().Quit();
+			};
 		}
 
 		private void DrawGround()
