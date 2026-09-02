@@ -3335,7 +3335,7 @@ namespace HiepSiVeVuon.Core
 		// dung OutbuildingsAnchor cu (gia tri khong doi). Cac ham dat vi tri qua FindOpenSpot gio
 		// dung tham so searchCenter/searchRadius de LUON tim cho GAN diem neo cua khu minh thuoc
 		// ve, thay vi tim ngau nhien khap tuong da (xem FindOpenSpot).
-		private static readonly Vector3 LivestockZoneOrigin = new(-1550, 0, -1450);
+		private static readonly Vector3 LivestockZoneOrigin = new(-1100, 0, -1000);
 		private static readonly Vector3 HousingZoneAnchor = new(900, 0, -1900);
 		private static readonly Vector3 CropsExtensionAnchor = new(780, 0, 1220);
 		private static readonly Vector3 StorageZoneAnchor = new(-880, 0, 120);
@@ -4982,6 +4982,18 @@ namespace HiepSiVeVuon.Core
 			float minX = center.X - effectiveHalf + margin, maxX = center.X + effectiveHalf - margin;
 			float minZ = center.Z - effectiveHalf + margin, maxZ = center.Z + effectiveHalf - margin;
 
+			// KEP CUNG trong pham vi tuong da trang trai - mot searchCenter/searchRadius tuy y
+			// (vd LivestockZoneOrigin + 2100) co the vuon RA NGOAI tuong neu diem neo qua gan mep
+			// tuong (khoang cach toi mep gan nhat < searchRadius yeu cau), vi cong thuc tren CHI
+			// biet ve searchCenter/searchRadius rieng, khong he biet gi ve bien tuong that su - da
+			// tung khien Khu Chan Nuoi dat vai chuong (vd Chuong Ngua) LO RA NGOAI tuong ~590 don
+			// vi. Giao (intersect) voi bien trong cua tuong dam bao KHONG BAO GIO co ket qua nam
+			// ngoai tuong, du searchCenter/searchRadius truyen vao la gi.
+			float wallMinX = FarmWallCenter.X - FarmWallHalfSize + margin, wallMaxX = FarmWallCenter.X + FarmWallHalfSize - margin;
+			float wallMinZ = FarmWallCenter.Z - FarmWallHalfSize + margin, wallMaxZ = FarmWallCenter.Z + FarmWallHalfSize - margin;
+			minX = Mathf.Max(minX, wallMinX); maxX = Mathf.Min(maxX, wallMaxX);
+			minZ = Mathf.Max(minZ, wallMinZ); maxZ = Mathf.Min(maxZ, wallMaxZ);
+
 			// Theo doi UNG VIEN TOT NHAT tung thay (it cham vao vung khac nhat) trong luc thu,
 			// de dung lam du phong NEU khong co diem nao hoan toan trong sau 600 lan - truoc day
 			// du phong la 1 GOC CO DINH (minX, minZ, gan sat tuong) KHONG HE kiem tra avoid, nen
@@ -4992,7 +5004,7 @@ namespace HiepSiVeVuon.Core
 			Vector3 bestPos = new(minX, 0, minZ);
 			float bestClearance = float.NegativeInfinity;
 
-			for (int tries = 0; tries < 600; tries++)
+			for (int tries = 0; tries < 3000; tries++)
 			{
 				var p = new Vector3(rng.RandfRange(minX, maxX), 0, rng.RandfRange(minZ, maxZ));
 				float minClearance = float.PositiveInfinity;
@@ -5009,7 +5021,7 @@ namespace HiepSiVeVuon.Core
 			// co the trung lap voi nhieu lan goi khac). In canh bao de xac nhan neu truong hop
 			// nay THAT SU xay ra (xem Debugger > Errors trong Godot).
 			if (bestClearance < 0f)
-				GD.PushWarning($"FindOpenSpot: khong tim duoc cho hoan toan trong sau 600 lan (neededRadius={neededRadius}, do cham={-bestClearance:F0}), dung ung vien it cham nhat tai {bestPos}.");
+				GD.PushWarning($"FindOpenSpot: khong tim duoc cho hoan toan trong sau 3000 lan (neededRadius={neededRadius}, do cham={-bestClearance:F0}), dung ung vien it cham nhat tai {bestPos}.");
 			return bestPos;
 		}
 
@@ -5253,9 +5265,16 @@ namespace HiepSiVeVuon.Core
 					var gridPos = districtOrigin + new Vector3((col - (cols - 1) / 2f) * cellSpacing, 0, (row - 1.5f) * cellSpacing);
 
 					float zoneR = spec.half * 1.5f;
-					bool gridSlotFree = true;
-					foreach (var (c, r) in avoid)
-						if (new Vector2(gridPos.X - c.X, gridPos.Z - c.Z).Length() < r + zoneR) { gridSlotFree = false; break; }
+					// O luoi PHAI nam TRON trong tuong da (khong chi khong-cham avoid[]) - luoi 7
+					// cot rong toi ~3120 don vi tinh tu districtOrigin, co the vuon ra ngoai tuong
+					// o cot ngoai cung neu districtOrigin khong du xa tam tuong; kiem tra rieng,
+					// neu vuon ra ngoai thi coi nhu "khong free" de roi sang FindOpenSpot (ham nay
+					// da tu kep trong tuong).
+					bool gridSlotFree = Mathf.Abs(gridPos.X - FarmWallCenter.X) + zoneR <= FarmWallHalfSize
+						&& Mathf.Abs(gridPos.Z - FarmWallCenter.Z) + zoneR <= FarmWallHalfSize;
+					if (gridSlotFree)
+						foreach (var (c, r) in avoid)
+							if (new Vector2(gridPos.X - c.X, gridPos.Z - c.Z).Length() < r + zoneR) { gridSlotFree = false; break; }
 					var pos = gridSlotFree ? gridPos : FindOpenSpot(avoid, zoneR, rng, searchCenter: districtOrigin, searchRadius: 2100f);
 
 					avoid.Add((pos, zoneR));
