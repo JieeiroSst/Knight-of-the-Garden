@@ -291,16 +291,29 @@ namespace HiepSiVeVuon.UI
             SetBusy(true);
             _status.Text = Loc.T("login.connecting");
 
-            void OnDone(bool ok, string tokenOrError)
+            async void OnDone(bool ok, string tokenOrError)
             {
                 if (!IsInstanceValid(this)) return; // scene co the da doi truoc khi callback ve
-                SetBusy(false);
                 if (ok)
                 {
+                    // Main.tscn._Ready() dung san CA THE GIOI (64 buoc, ~2s) HOAN TOAN DONG BO
+                    // tren main thread - ChangeSceneToFile() goi truc tiep se lam man hinh "dong
+                    // cung" khong ve duoc gi trong suot 2s do (nhin y het bi treo/crash), vi
+                    // Godot CHUA KIP ve 1 frame nao voi man hinh loading truoc khi buoc dung san
+                    // nang bat dau chan main thread. Hien man hinh "Dang vao trang trai..." TRUOC,
+                    // roi CHO 2 frame (await ProcessFrame) de dam bao no THUC SU duoc ve/hien ra
+                    // man hinh (co 1 lan present() that su) truoc khi kich hoat doan dong san
+                    // nang - luc do nguoi choi thay dung 1 man hinh "dang tai" quen thuoc thay vi
+                    // 1 khoang trang treo kho hieu.
+                    ShowLoadingOverlay();
+                    await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                    await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                    if (!IsInstanceValid(this)) return;
                     GetTree().ChangeSceneToFile("res://scenes/Main.tscn");
                 }
                 else
                 {
+                    SetBusy(false);
                     _status.Text = tokenOrError ?? Loc.T("login.unknown_error");
                 }
             }
@@ -313,6 +326,38 @@ namespace HiepSiVeVuon.UI
         {
             _primaryBtn.Disabled = busy;
             _toggleModeBtn.Disabled = busy;
+        }
+
+        // Man hinh "dang tai" phu kin toan bo cua so, hien NGAY khi dang nhap/dang ky thanh cong -
+        // xem ghi chu chi tiet tai noi goi (Submit -> OnDone) ve ly do can man hinh nay THUC SU
+        // duoc ve ra truoc khi Main.tscn bat dau dung san (dong bo, chan main thread ~2s).
+        private void ShowLoadingOverlay()
+        {
+            var overlay = new ColorRect
+            {
+                Color = new Color(0.05f, 0.045f, 0.04f, 1f),
+                AnchorRight = 1, AnchorBottom = 1,
+                MouseFilter = Control.MouseFilterEnum.Stop, // chan het thao tac voi form dang nhap phia duoi
+            };
+            AddChild(overlay);
+
+            var center = new CenterContainer { AnchorRight = 1, AnchorBottom = 1 };
+            overlay.AddChild(center);
+
+            var vb = new VBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+            vb.AddThemeConstantOverride("separation", 14);
+            center.AddChild(vb);
+
+            vb.AddChild(MakeSprite("res://assets/player/player.png", 72f));
+
+            var label = new Label
+            {
+                Text = Loc.T("login.entering_world"),
+                HorizontalAlignment = HorizontalAlignment.Center,
+            };
+            label.AddThemeColorOverride("font_color", GoldAccent);
+            label.AddThemeFontSizeOverride("font_size", 18);
+            vb.AddChild(label);
         }
     }
 }

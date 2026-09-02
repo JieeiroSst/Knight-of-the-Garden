@@ -209,6 +209,7 @@ namespace HiepSiVeVuon.Systems
                 "Tên đăng nhập >= 3 ký tự, mật khẩu >= 6 ký tự.",
                 "Username must be >= 3 characters, password >= 6 characters."),
             ["login.connecting"] = ("Đang kết nối server...", "Connecting to server..."),
+            ["login.entering_world"] = ("Đang vào trang trại...", "Entering the farm..."),
             ["login.unknown_error"] = ("Lỗi không rõ.", "Unknown error."),
             ["login.footer"] = (
                 "Gieo hạt, nuôi trồng, phiêu lưu - hành trình của bạn bắt đầu từ đây.",
