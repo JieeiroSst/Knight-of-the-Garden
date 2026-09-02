@@ -41,9 +41,15 @@ namespace HiepSiVeVuon.Entities
             _brain.Actions.Add(UtilityPresets.MakeWander(() => WorkPos, 140f));
         }
 
-        // Cham diem TAT CA o dat (nhom "farm_plots") theo Urgency01, chon o can cham soc NHAT
-        // chua bi NPC khac claim - dung diem so nay TRUC TIEP lam Utility score (nhan 100 de cung
-        // thang do voi cac hanh dong khac trong game).
+        // Vai tro chia se "kinh nghiem" hoc duoc (xem NpcExperience.cs) - dung CHUNG voi
+        // ScheduledFarmNpc (cung lam dong ruong) de gop du lieu, hoc nhanh/on dinh hon.
+        private const string ExperienceRole = "field_work";
+
+        // Cham diem TAT CA o dat (nhom "farm_plots") theo Urgency01 TRU DI phat khoang cach (trong
+        // so hoc duoc qua thoi gian - xem NpcExperience.cs) - truoc day CHI dung Urgency01 thuan
+        // tuy, khien NPC co the boi qua 1 o dat GAN (hoi khan) de chay xa hon toi 1 o khan hon chut
+        // it, ton thoi gian di duong trong luc cac o gan tiep tuc xuong cap. Diem so dung TRUC TIEP
+        // lam Utility score (nhan 100 de cung thang do voi cac hanh dong khac trong game).
         private UtilityAction MakeTendPlotAction()
         {
             return new UtilityAction
@@ -51,7 +57,9 @@ namespace HiepSiVeVuon.Entities
                 Id = "TendPlot",
                 Evaluate = ctx =>
                 {
+                    float distWeight = NpcExperience.DistanceWeight(ExperienceRole);
                     FarmPlot best = null;
+                    float bestScore = float.NegativeInfinity;
                     float bestUrgency = 0f;
                     foreach (var node in GetTree().GetNodesInGroup("farm_plots"))
                     {
@@ -60,7 +68,9 @@ namespace HiepSiVeVuon.Entities
                         float u = plot.Urgency01;
                         if (u <= 0f) continue;
                         if (NpcTaskBoard.IsClaimedByOther(plot, this)) continue;
-                        if (u > bestUrgency) { bestUrgency = u; best = plot; }
+                        float dist = ctx.SelfPos.DistanceTo(plot.GlobalPosition);
+                        float score = u * 100f - dist * distWeight;
+                        if (score > bestScore) { bestScore = score; bestUrgency = u; best = plot; }
                     }
                     if (best == null) return new UtilityResult(float.NegativeInfinity);
                     return new UtilityResult(bestUrgency * 100f, best);
@@ -73,10 +83,28 @@ namespace HiepSiVeVuon.Entities
                     {
                         Id = "UseOnPlot", Effects = { { "tended", true } }, DurationSec = (float)WorkPauseSec,
                         TargetPos = (ctx, t) => (t as FarmPlot)?.GlobalPosition ?? ctx.SelfPos,
-                        Execute = (ctx, t) => (t as FarmPlot)?.UseOn(),
+                        Execute = (ctx, t) =>
+                        {
+                            (t as FarmPlot)?.UseOn();
+                            NpcExperience.ReportOutcome(ExperienceRole, AverageFarmPlotUrgency());
+                        },
                     },
                 },
             };
+        }
+
+        // Do khan cap TRUNG BINH con lai cua ca nhom o dat dang trong - dung lam "phan hoi" cho
+        // NpcExperience sau moi lan hoan thanh 1 buoc viec (xem NpcExperience.ReportOutcome).
+        private float AverageFarmPlotUrgency()
+        {
+            float sum = 0f; int count = 0;
+            foreach (var node in GetTree().GetNodesInGroup("farm_plots"))
+            {
+                if (node is not FarmPlot plot || !IsInstanceValid(plot) || plot.IsEmpty) continue;
+                sum += plot.Urgency01;
+                count++;
+            }
+            return count > 0 ? sum / count : 0f;
         }
 
         public override void _PhysicsProcess(double delta)

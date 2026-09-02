@@ -46,6 +46,10 @@ namespace HiepSiVeVuon.Entities
             _brain.Actions.Add(UtilityPresets.MakeWander(() => WorkPos, WorkWanderRadius));
         }
 
+        // Dung chung khoa voi FarmWorkerNpc.cs (xem NpcExperience.cs) - ca 2 loai NPC lam dong
+        // ruong gop du lieu "kinh nghiem" chung, hoc nhanh/on dinh hon.
+        private const string ExperienceRole = "field_work";
+
         private UtilityAction MakeTendPlotAction()
         {
             return new UtilityAction
@@ -53,7 +57,9 @@ namespace HiepSiVeVuon.Entities
                 Id = "TendPlot",
                 Evaluate = ctx =>
                 {
+                    float distWeight = NpcExperience.DistanceWeight(ExperienceRole);
                     FarmPlot best = null;
+                    float bestScore = float.NegativeInfinity;
                     float bestUrgency = 0f;
                     foreach (var node in GetTree().GetNodesInGroup("farm_plots"))
                     {
@@ -62,7 +68,9 @@ namespace HiepSiVeVuon.Entities
                         float u = plot.Urgency01;
                         if (u <= 0f) continue;
                         if (NpcTaskBoard.IsClaimedByOther(plot, this)) continue;
-                        if (u > bestUrgency) { bestUrgency = u; best = plot; }
+                        float dist = ctx.SelfPos.DistanceTo(plot.GlobalPosition);
+                        float score = u * 100f - dist * distWeight;
+                        if (score > bestScore) { bestScore = score; bestUrgency = u; best = plot; }
                     }
                     if (best == null) return new UtilityResult(float.NegativeInfinity);
                     return new UtilityResult(bestUrgency * 100f, best);
@@ -75,10 +83,28 @@ namespace HiepSiVeVuon.Entities
                     {
                         Id = "UseOnPlot", Effects = { { "tended", true } }, DurationSec = (float)WorkPauseSec,
                         TargetPos = (ctx, t) => (t as FarmPlot)?.GlobalPosition ?? ctx.SelfPos,
-                        Execute = (ctx, t) => (t as FarmPlot)?.UseOn(),
+                        Execute = (ctx, t) =>
+                        {
+                            (t as FarmPlot)?.UseOn();
+                            NpcExperience.ReportOutcome(ExperienceRole, AverageFarmPlotUrgency());
+                        },
                     },
                 },
             };
+        }
+
+        // Do khan cap TRUNG BINH con lai cua ca nhom o dat dang trong - dung lam "phan hoi" cho
+        // NpcExperience sau moi lan hoan thanh 1 buoc viec (xem NpcExperience.ReportOutcome).
+        private float AverageFarmPlotUrgency()
+        {
+            float sum = 0f; int count = 0;
+            foreach (var node in GetTree().GetNodesInGroup("farm_plots"))
+            {
+                if (node is not FarmPlot plot || !IsInstanceValid(plot) || plot.IsEmpty) continue;
+                sum += plot.Urgency01;
+                count++;
+            }
+            return count > 0 ? sum / count : 0f;
         }
 
         private UtilityAction MakeRestockFeedAction()
