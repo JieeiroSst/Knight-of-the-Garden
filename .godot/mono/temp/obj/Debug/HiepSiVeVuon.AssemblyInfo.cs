@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("HiepSiVeVuon")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3769b64b044edbacf00f1e653e205f0831b50ae5")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f35a144debe10574427db310cd3fa25100710842")]
 [assembly: System.Reflection.AssemblyProductAttribute("HiepSiVeVuon")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HiepSiVeVuon")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

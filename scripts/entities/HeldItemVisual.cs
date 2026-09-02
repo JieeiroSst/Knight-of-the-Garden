@@ -73,19 +73,51 @@ namespace HiepSiVeVuon.Entities
         private static Node3D BuildMesh(string itemId) => itemId switch
         {
             "sword" => MakeSword(),
-            "hoe" => MakeHoe(new Color(0.42f, 0.42f, 0.45f)),
-            "cuoc_bac" => MakeHoe(new Color(0.82f, 0.83f, 0.86f)),
-            "cuoc_vang" => MakeHoe(new Color(0.85f, 0.68f, 0.2f)),
+            "hoe" => MakeImportedTool("hoe", new Color(0.42f, 0.42f, 0.45f)),
+            "cuoc_bac" => MakeImportedTool("hoe", new Color(0.82f, 0.83f, 0.86f)),
+            "cuoc_vang" => MakeImportedTool("hoe", new Color(0.85f, 0.68f, 0.2f)),
             "pickaxe" => MakePickaxe(new Color(0.42f, 0.42f, 0.45f)),
             "pickaxe_bac" => MakePickaxe(new Color(0.82f, 0.83f, 0.86f)),
             "pickaxe_vang" => MakePickaxe(new Color(0.85f, 0.68f, 0.2f)),
             "can_cau" => MakeFishingRod(),
             "may_tuoi_tu_dong" => MakeSprinklerHeld(),
             "binh_tuoi" => MakeWateringCan(),
-            "xeng" => MakeShovel(),
-            "cao_co" => MakeRake(),
+            "xeng" => MakeImportedTool("xeng", new Color(0.6f, 0.61f, 0.64f)),
+            "cao_co" => MakeImportedTool("cao_co", new Color(0.48f, 0.48f, 0.52f)),
             _ => null,
         };
+
+        // Model that GA that (khong phai khoi hop/tru tu tao) - lay tu goi "Farm Tool Pack" (CGTrader,
+        // free-3d-models/industrial/tool/farm-tools-pack, nguoi dung tu tai ve). File OBJ goc chi co
+        // hinh khoi (khong kem .mtl/texture), nen tach san thanh 2 file rieng (_handle/_head, xem
+        // tools/icon_render.gd - CUNG mot logic tach dung de render icon Balo, giu dong nhat giua
+        // icon va mo hinh cam tren tay) de AP 2 VAT LIEU khac nhau (go nau cho tay cam, kim loai mau
+        // theo cap do cho phan dau/luoi) thay vi nhuom CA CUM 1 mau nhu truoc (nhin "nhua trang" don
+        // dieu, khong ro dau la go dau la kim loai).
+        private static readonly System.Collections.Generic.Dictionary<string, Mesh> _importedMeshCache = new();
+
+        private static Mesh LoadImportedMesh(string fileBaseName)
+        {
+            if (_importedMeshCache.TryGetValue(fileBaseName, out var cached)) return cached;
+            var mesh = GD.Load<Mesh>($"res://assets3d/garden_tools/{fileBaseName}.obj");
+            _importedMeshCache[fileBaseName] = mesh;
+            return mesh;
+        }
+
+        private static readonly Color WoodHandleColor = new(0.42f, 0.29f, 0.16f);
+
+        private static Node3D MakeImportedTool(string fileBaseName, Color headColor)
+        {
+            var handleMesh = LoadImportedMesh($"{fileBaseName}_handle");
+            var headMesh = LoadImportedMesh($"{fileBaseName}_head");
+            if (handleMesh == null && headMesh == null) return null;
+            var root = new Node3D();
+            if (handleMesh != null)
+                root.AddChild(MakeMesh(handleMesh, Vector3.Zero, WoodHandleColor, roughness: 0.75f, metallic: 0f));
+            if (headMesh != null)
+                root.AddChild(MakeMesh(headMesh, Vector3.Zero, headColor, roughness: 0.4f, metallic: 0.35f));
+            return root;
+        }
 
         private static MeshInstance3D MakeMesh(Mesh mesh, Vector3 pos, Color color, float roughness = 0.5f, float metallic = 0f)
         {
@@ -110,23 +142,6 @@ namespace HiepSiVeVuon.Entities
                 new Color(0.32f, 0.2f, 0.12f), roughness: 0.85f)); // chuoi cam
             root.AddChild(MakeMesh(new SphereMesh { Radius = 0.38f, Height = 0.76f }, new Vector3(0, -1.65f, 0),
                 new Color(0.55f, 0.45f, 0.2f), roughness: 0.4f, metallic: 0.5f)); // nut chan
-            return root;
-        }
-
-        // Cuoc dat: can dai + vong dai kim loai noi can voi luoi + luoi cuoc phang goc ~70 do o dau
-        // (dang cuoc that, khong phai xeng). Luoi day 0.32 (khong phai 0.15 mong nhu tam bia) de
-        // nhin ro la 1 khoi co the tich that, khong phai 1 mat phang "gia 3D".
-        private static Node3D MakeHoe(Color bladeColor)
-        {
-            var root = new Node3D();
-            root.AddChild(MakeMesh(new CylinderMesh { TopRadius = 0.22f, BottomRadius = 0.28f, Height = 8f }, new Vector3(0, 3f, 0),
-                new Color(0.4f, 0.27f, 0.15f), roughness: 0.9f)); // can go
-            root.AddChild(MakeMesh(new CylinderMesh { TopRadius = 0.32f, BottomRadius = 0.26f, Height = 0.45f }, new Vector3(0, 6.85f, 0.22f),
-                new Color(0.25f, 0.25f, 0.28f), roughness: 0.4f, metallic: 0.7f)); // vong dai noi can-luoi
-            var blade = MakeMesh(new BoxMesh { Size = new Vector3(2.1f, 0.32f, 1.3f) }, new Vector3(0, 7.15f, 0.75f),
-                bladeColor, roughness: 0.35f, metallic: 0.6f);
-            blade.RotationDegrees = new Vector3(-70f, 0, 0);
-            root.AddChild(blade);
             return root;
         }
 
@@ -168,9 +183,11 @@ namespace HiepSiVeVuon.Entities
             return root;
         }
 
-        // Binh tuoi nuoc: than binh hinh tru + vien mieng binh + voi phun cheo phia truoc (co dau
-        // voi hinh cau nho o dau) + quai cam nho phia tren. Them vien mieng + dau voi de tang chi
-        // tiet khoi (khong chi 3 tru don gian nhu truoc).
+        // Binh tuoi nuoc: than binh hinh tru + vien mieng binh + voi phun cheo phia truoc (dau voi
+        // la 1 khoi cau NHO - hoa sen tuoi, khong phai qua cau to nhu truoc de tranh nhin giong "keo
+        // mut") + QUAI CAM HINH CUNG (2 tru dung + 1 thanh ngang noi dinh, giong quai xach that,
+        // khong phai 1 que thang don gian nhu truoc - dung 1 que thang khien nhin khong ro la binh
+        // tuoi khi xem ro (vd render icon), du o gan trong tay nguoi choi it thay ro hon.
         private static Node3D MakeWateringCan()
         {
             var root = new Node3D();
@@ -184,49 +201,20 @@ namespace HiepSiVeVuon.Entities
                 canColor, roughness: 0.45f, metallic: 0.35f);
             spout.RotationDegrees = new Vector3(70f, 0, 0);
             root.AddChild(spout); // voi phun cheo ra truoc
-            root.AddChild(MakeMesh(new SphereMesh { Radius = 0.32f, Height = 0.64f }, new Vector3(0, 2.85f, 2.15f),
-                darkColor, roughness: 0.5f, metallic: 0.2f)); // dau voi (hoa sen)
-            root.AddChild(MakeMesh(new CylinderMesh { TopRadius = 0.15f, BottomRadius = 0.15f, Height = 1.4f }, new Vector3(0, 2.9f, -0.3f),
-                canColor, roughness: 0.45f, metallic: 0.35f)); // quai cam
+            root.AddChild(MakeMesh(new SphereMesh { Radius = 0.22f, Height = 0.44f }, new Vector3(0, 2.85f, 2.15f),
+                darkColor, roughness: 0.5f, metallic: 0.2f)); // dau voi (hoa sen) - nho lai, khong to nhu qua bong
+
+            // Quai cam hinh cung (dang chu U nguoc): 2 tru dung hai ben + 1 thanh ngang noi dinh.
+            root.AddChild(MakeMesh(new CylinderMesh { TopRadius = 0.09f, BottomRadius = 0.09f, Height = 1.3f },
+                new Vector3(-0.75f, 3.3f, -0.35f), canColor, roughness: 0.45f, metallic: 0.35f));
+            root.AddChild(MakeMesh(new CylinderMesh { TopRadius = 0.09f, BottomRadius = 0.09f, Height = 1.3f },
+                new Vector3(0.75f, 3.3f, -0.35f), canColor, roughness: 0.45f, metallic: 0.35f));
+            var handleBar = MakeMesh(new CylinderMesh { TopRadius = 0.09f, BottomRadius = 0.09f, Height = 1.6f },
+                new Vector3(0, 3.95f, -0.35f), canColor, roughness: 0.45f, metallic: 0.35f);
+            handleBar.RotationDegrees = new Vector3(0, 0, 90f);
+            root.AddChild(handleBar);
             return root;
         }
 
-        // Xeng: can dai + vong dai kim loai + luoi xeng BAU TRON o DAU can (khong phai o duoi/gan
-        // tay cam nhu truoc - loi cu dat luoi ngay vi tri nam tay, chong len than can, khien nhin
-        // nhu 1 con dao nho thay vi 1 cai xeng). SphereMesh ep det (Scale.z=0.36) thay vi PrismMesh
-        // mong 0.25 - vua giu dang bau tron that cua luoi xeng, vua co do day nhin ro la khoi 3D.
-        private static Node3D MakeShovel()
-        {
-            var root = new Node3D();
-            root.AddChild(MakeMesh(new CylinderMesh { TopRadius = 0.22f, BottomRadius = 0.28f, Height = 7f }, new Vector3(0, 3f, 0),
-                new Color(0.4f, 0.27f, 0.15f), roughness: 0.9f)); // can go
-            root.AddChild(MakeMesh(new CylinderMesh { TopRadius = 0.34f, BottomRadius = 0.28f, Height = 0.5f }, new Vector3(0, 6.6f, 0.1f),
-                new Color(0.25f, 0.25f, 0.28f), roughness: 0.4f, metallic: 0.7f)); // vong dai noi can-luoi
-            var blade = MakeMesh(new SphereMesh { Radius = 1.05f, Height = 1.9f, RadialSegments = 14, Rings = 7 },
-                new Vector3(0, 7.75f, 0.15f), new Color(0.56f, 0.57f, 0.6f), roughness: 0.3f, metallic: 0.55f);
-            blade.Scale = new Vector3(1f, 1.1f, 0.36f);
-            root.AddChild(blade); // luoi xeng bau tron o dau can (dau xa tay cam)
-            return root;
-        }
-
-        // Cao co: can dai + vong dai + thanh ngang tren dau (day hon truoc, 0.3 thay vi 0.22) + vai
-        // rang cao day hon cam xuong - tong the day dan len de nhin ro la khoi kim loai that, khong
-        // phai que/tam mong.
-        private static Node3D MakeRake()
-        {
-            var root = new Node3D();
-            root.AddChild(MakeMesh(new CylinderMesh { TopRadius = 0.2f, BottomRadius = 0.25f, Height = 7.6f }, new Vector3(0, 3.2f, 0),
-                new Color(0.4f, 0.27f, 0.15f), roughness: 0.9f)); // can go
-            root.AddChild(MakeMesh(new CylinderMesh { TopRadius = 0.3f, BottomRadius = 0.25f, Height = 0.4f }, new Vector3(0, 6.9f, 0.15f),
-                new Color(0.22f, 0.22f, 0.25f), roughness: 0.4f, metallic: 0.7f)); // vong dai noi can-dau cao
-            root.AddChild(MakeMesh(new BoxMesh { Size = new Vector3(2.3f, 0.3f, 0.3f) }, new Vector3(0, 7.3f, 0.3f),
-                new Color(0.35f, 0.35f, 0.38f), roughness: 0.4f, metallic: 0.5f)); // thanh ngang
-            for (int i = -2; i <= 2; i++)
-            {
-                root.AddChild(MakeMesh(new CylinderMesh { TopRadius = 0.07f, BottomRadius = 0.09f, Height = 0.85f },
-                    new Vector3(i * 0.44f, 6.85f, 0.55f), new Color(0.35f, 0.35f, 0.38f), roughness: 0.4f, metallic: 0.5f)); // rang cao
-            }
-            return root;
-        }
     }
 }

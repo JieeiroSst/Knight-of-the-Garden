@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dg6c33qrpsj8t"
+path="res://.godot/imported/cao_co_handle.obj-b683bea036c4a9ef7b98a74701b23f09.mesh"
+
+[deps]
+
+files=["res://.godot/imported/cao_co_handle.obj-b683bea036c4a9ef7b98a74701b23f09.mesh"]
+
+source_file="res://assets3d/garden_tools/cao_co_handle.obj"
+dest_files=["res://.godot/imported/cao_co_handle.obj-b683bea036c4a9ef7b98a74701b23f09.mesh", "res://.godot/imported/cao_co_handle.obj-b683bea036c4a9ef7b98a74701b23f09.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false

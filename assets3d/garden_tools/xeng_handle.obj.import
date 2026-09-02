@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://ce46c00a2jtlv"
+path="res://.godot/imported/xeng_handle.obj-e9c2ef1dc795554241abdc574685b626.mesh"
+
+[deps]
+
+files=["res://.godot/imported/xeng_handle.obj-e9c2ef1dc795554241abdc574685b626.mesh"]
+
+source_file="res://assets3d/garden_tools/xeng_handle.obj"
+dest_files=["res://.godot/imported/xeng_handle.obj-e9c2ef1dc795554241abdc574685b626.mesh", "res://.godot/imported/xeng_handle.obj-e9c2ef1dc795554241abdc574685b626.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false

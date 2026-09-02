@@ -18,6 +18,12 @@ namespace HiepSiVeVuon.Systems
 		public string EquippedArmor = null;
 		public string EquippedTool = null; // vd pickaxe - xem GetToolPower/OreNode.cs
 
+		// Loai vat pham vua duoc Equip() gan day nhat - Player.cs doc gia tri nay khi nhan
+		// InventoryChanged de biet NEN UU TIEN hien vu khi hay cong cu tren tay ngay lap tuc (vd
+		// nguoi choi vao Balo bam chon 1 cong cu - can thay đổi tren tay NGAY, khong phu thuoc vao
+		// hanh dong choi gan nhat la tan cong hay dung cong cu).
+		public ItemType? LastEquippedType = null;
+
 		[Signal] public delegate void InventoryChangedEventHandler();
 
 		public override void _EnterTree()
@@ -95,6 +101,7 @@ namespace HiepSiVeVuon.Systems
 			if (def.Type == ItemType.Weapon) EquippedWeapon = itemId;
 			else if (def.Type == ItemType.Armor) EquippedArmor = itemId;
 			else if (def.Type == ItemType.Tool) EquippedTool = itemId;
+			LastEquippedType = def.Type;
 			EmitSignal(SignalName.InventoryChanged);
 		}
 

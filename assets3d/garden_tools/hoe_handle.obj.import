@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://ck7ext75k36fo"
+path="res://.godot/imported/hoe_handle.obj-dd54267a10c4f1ee6920a755ff65b0e0.mesh"
+
+[deps]
+
+files=["res://.godot/imported/hoe_handle.obj-dd54267a10c4f1ee6920a755ff65b0e0.mesh"]
+
+source_file="res://assets3d/garden_tools/hoe_handle.obj"
+dest_files=["res://.godot/imported/hoe_handle.obj-dd54267a10c4f1ee6920a755ff65b0e0.mesh", "res://.godot/imported/hoe_handle.obj-dd54267a10c4f1ee6920a755ff65b0e0.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false

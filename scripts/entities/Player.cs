@@ -1,6 +1,7 @@
 using Godot;
 using HiepSiVeVuon.Core;
 using HiepSiVeVuon.Systems;
+using HiepSiVeVuon.Data;
 
 namespace HiepSiVeVuon.Entities
 {
@@ -94,14 +95,14 @@ namespace HiepSiVeVuon.Entities
                     RefreshHeldItem();
                 }
             }
-            Inventory.Instance.InventoryChanged += RefreshHeldItem;
+            Inventory.Instance.InventoryChanged += OnInventoryChanged;
             GameManager.Instance.PlayerDied += OnDied;
             SetupFade();
         }
 
         public override void _ExitTree()
         {
-            Inventory.Instance.InventoryChanged -= RefreshHeldItem;
+            Inventory.Instance.InventoryChanged -= OnInventoryChanged;
         }
 
         // Uu tien hien vat pham THUOC LOAI HANH DONG vua thuc hien gan day nhat (tan cong ->
@@ -110,6 +111,20 @@ namespace HiepSiVeVuon.Entities
         // hanh dong nao) uu tien cong cu vi day la game nong trai, cong cu dung thuong xuyen hon.
         private HeldItemVisual _heldItem;
         private bool _lastActionWasAttack = false;
+
+        // Rieng cho su kien Equip TU BALO/TUI DO (khong phai hanh dong tan cong/dung cong cu that
+        // su) - can "day" _lastActionWasAttack theo dung LOAI vua duoc trang bi de tren tay THAY
+        // DOI NGAY LAP TUC, khong bi che boi hanh dong choi gan nhat (vd nguoi choi vua tan cong
+        // quai xong, sau do vao Balo bam chon Cao Co - neu khong co buoc nay, uu tien cu se van
+        // chon vu khi vi _lastActionWasAttack con la true, khien tren tay KHONG DOI du vua bam
+        // chon cong cu khac trong Balo).
+        private void OnInventoryChanged()
+        {
+            var justEquipped = Inventory.Instance.LastEquippedType;
+            if (justEquipped == ItemType.Weapon) _lastActionWasAttack = true;
+            else if (justEquipped == ItemType.Tool) _lastActionWasAttack = false;
+            RefreshHeldItem();
+        }
 
         private void RefreshHeldItem()
         {
