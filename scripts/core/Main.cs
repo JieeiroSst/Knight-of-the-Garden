@@ -4060,7 +4060,7 @@ namespace HiepSiVeVuon.Core
 						// Gian nho NAY la CAY LAU NAM hai duoc that su (xem FruitTree.cs) - dung
 						// CHINH model nho lam "fruit visual" de an/hien (khac vuon cay tren, o day
 						// khong co tan la rieng de giu lai khi chua chin nen an ca gian nho luon).
-						var vineTree = new FruitTree { Position = pos + Vector3.Up * 16f, FruitItemId = "grape" };
+						var vineTree = new FruitTree { Position = pos + Vector3.Up * 16f, FruitItemId = "grape", GrowsFromSapling = true, MaturationDays = 10 };
 						vineTree.AddChild(new CollisionShape3D { Shape = new CylinderShape3D { Radius = 10f, Height = 30f } });
 						_world.AddChild(vineTree);
 						vineTree.Init(vine);
@@ -4150,6 +4150,54 @@ namespace HiepSiVeVuon.Core
 			npc.WorkWanderRadius = 320f;
 			npc.Products = new[] { "apple", "grape", "honey", "beeswax", "wine" };
 			_world.AddChild(npc);
+
+			// Them 2 NPC phu Augustin (theo dung yeu cau) - cung WorkPos/Products/ban kinh nen
+			// ca 3 nguoi cung thu thap san pham xoay vong quanh Khu Trong Trot, tang san luong va
+			// khong khi nhon nhip hon cho khu vuon.
+			(string id, string name, string diaLow, string diaMid, string diaHigh, string diaLowEn, string diaMidEn, string diaHighEn, int houseSeed, float rot, float scale)[] estateHelpers =
+			{
+				("estateworker_2", "Bernard",
+					"Chào anh, tôi phụ Augustin trông coi vườn cây, vườn nho ở đây.",
+					"Vườn nho dạo này lớn nhanh lắm, tôi với Augustin thay phiên nhau chăm.",
+					"Có tôi phụ nên Augustin đỡ vất vả hơn nhiều, khu vườn cũng được chăm kỹ hơn.",
+					"Hello, I help Augustin look after the orchard and vineyard here.",
+					"The vineyard's been growing fast lately, Augustin and I take turns tending it.",
+					"With me helping out, Augustin has it much easier and the whole garden gets better care.",
+					10810, 90f, 22f),
+				("estateworker_3", "Isabelle",
+					"Chào anh, tôi cùng Augustin chăm sóc vườn cây, vườn nho và tổ ong.",
+					"Nhìn chùm nho lớn dần mỗi ngày là tôi thấy vui trong lòng.",
+					"Anh cứ yên tâm, khu vườn lúc nào cũng có người trông coi cẩn thận.",
+					"Hello, I take care of the orchard, vineyard, and beehives together with Augustin.",
+					"Watching the grape clusters grow bigger each day makes me happy.",
+					"Don't worry, the garden is always looked after carefully.",
+					10811, -90f, 20f),
+			};
+
+			foreach (var h in estateHelpers)
+			{
+				var housePos = NextHousingCottagePos(h.houseSeed);
+				AddDecor(_smallBarnScene, housePos, 12f, h.rot, SmallBarnFootprint);
+				var interior = AddBuildingEntrance(housePos, h.rot, 80f, 50f, RoomKind.Village);
+				AddBuildingLabelZone(housePos, 100f, "label.estate_worker_house");
+
+				var helper = _estateWorkerScene.Instantiate<EstateWorkerNpc>();
+				helper.NpcId = h.id;
+				helper.NpcName = h.name;
+				helper.ModelScale = h.scale;
+				helper.DialogueLow = new[] { h.diaLow };
+				helper.DialogueMid = new[] { h.diaMid };
+				helper.DialogueHigh = new[] { h.diaHigh };
+				helper.DialogueLowEn = new[] { h.diaLowEn };
+				helper.DialogueMidEn = new[] { h.diaMidEn };
+				helper.DialogueHighEn = new[] { h.diaHighEn };
+				helper.HomePos = housePos + new Vector3(0, 0, 55);
+				helper.InteriorHomePos = interior;
+				helper.WorkPos = CropsExtensionAnchor;
+				helper.WorkWanderRadius = 320f;
+				helper.Products = new[] { "apple", "grape", "honey", "beeswax", "wine" };
+				_world.AddChild(helper);
+			}
 		}
 
 		// He thong nuoc: gieng gan nha chinh + ao nho canh ruong + kenh tuoi noi gieng-ao toi

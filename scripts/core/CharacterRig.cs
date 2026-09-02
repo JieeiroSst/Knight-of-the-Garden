@@ -26,5 +26,18 @@ namespace HiepSiVeVuon.Core
             }
             return null;
         }
+
+        // Tim Skeleton3D trong model vua gan (xem Attach) - dung de gan BoneAttachment3D (vd vat
+        // pham cam tay, xem HeldItemVisual.cs) vao dung xuong co tay (Wrist.R trong rig Quaternius).
+        public static Skeleton3D FindSkeleton(Node root)
+        {
+            if (root is Skeleton3D sk) return sk;
+            foreach (Node child in root.GetChildren())
+            {
+                var found = FindSkeleton(child);
+                if (found != null) return found;
+            }
+            return null;
+        }
     }
 }

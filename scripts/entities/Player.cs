@@ -67,9 +67,44 @@ namespace HiepSiVeVuon.Entities
                 _animPlayer = CharacterRig.Attach(_model, ModelPath, ModelScale);
                 if (_animPlayer != null)
                     _animPlayer.AnimationFinished += _ => _actionPlaying = false;
+
+                // Vu khi/cong cu dang trang bi hien THAT SU tren tay (xem HeldItemVisual.cs) -
+                // gan vao xuong co tay phai cua model vua tai.
+                var skeleton = CharacterRig.FindSkeleton(_model);
+                if (skeleton != null)
+                {
+                    _heldItem = new HeldItemVisual();
+                    AddChild(_heldItem);
+                    _heldItem.Setup(skeleton, ModelScale);
+                    RefreshHeldItem();
+                }
             }
+            Inventory.Instance.InventoryChanged += RefreshHeldItem;
             GameManager.Instance.PlayerDied += OnDied;
             SetupFade();
+        }
+
+        public override void _ExitTree()
+        {
+            Inventory.Instance.InventoryChanged -= RefreshHeldItem;
+        }
+
+        // Uu tien hien vat pham THUOC LOAI HANH DONG vua thuc hien gan day nhat (tan cong ->
+        // kiem, dung cong cu -> cuoc/can cau...) - nguoi choi co the trang bi CA vu khi lan cong
+        // cu CUNG LUC (2 o rieng biet), nen can 1 quy uoc de biet hien cai nao. Mac dinh (chua
+        // hanh dong nao) uu tien cong cu vi day la game nong trai, cong cu dung thuong xuyen hon.
+        private HeldItemVisual _heldItem;
+        private bool _lastActionWasAttack = false;
+
+        private void RefreshHeldItem()
+        {
+            if (_heldItem == null) return;
+            string tool = Inventory.Instance.EquippedTool;
+            string weapon = Inventory.Instance.EquippedWeapon;
+            string toShow = _lastActionWasAttack
+                ? (weapon ?? tool)
+                : (tool ?? weapon);
+            _heldItem.ShowItem(toShow);
         }
 
         // Man hinh toi den nhanh khi qua cua (vao/ra nha) - che di buoc "day tuc thoi" phia sau,
@@ -301,6 +336,9 @@ namespace HiepSiVeVuon.Entities
             if (now - _lastAttackTime < (ulong)AttackCooldownMs) return;
             _lastAttackTime = now;
 
+            _lastActionWasAttack = true;
+            RefreshHeldItem();
+
             int dmg = Inventory.Instance.GetWeaponDamage();
             // Tim quai trong ban kinh tan cong theo huong dang nhin
             var enemies = GetTree().GetNodesInGroup("enemies");
@@ -433,6 +471,9 @@ namespace HiepSiVeVuon.Entities
 
         private void TryUseTool()
         {
+            _lastActionWasAttack = false;
+            RefreshHeldItem();
+
             var plots = GetTree().GetNodesInGroup("farm_plots");
             float areaRadius = ToolAreaRadius(Inventory.Instance.EquippedTool);
 
