@@ -538,9 +538,13 @@ namespace HiepSiVeVuon.Entities
             // ngay truoc mat (xem FarmPlot.TryTillFreeform) de mo rong nong trai tu do. Cuoc nang
             // cap (bac/vang) cuoc CA CUM O (3x3/5x5) cung 1 lan thay vi tung o.
             string tool = Inventory.Instance.EquippedTool;
-            if (tool == "hoe" || tool == "cuoc_bac" || tool == "cuoc_vang")
+            if (tool == "hoe" || tool == "xeng" || tool == "cuoc_bac" || tool == "cuoc_vang")
             {
-                int tilesPerSide = tool switch { "cuoc_bac" => 3, "cuoc_vang" => 5, _ => 1 };
+                // Xeng: cong cu cuoc dat CHUYEN DUNG, cuoc duoc 2x2 O MOT LAN - o giua Cuoc Dat
+                // thuong (1 o) va Cuoc Bac (3x3), rieng cho viec khai hoang dat tu do NHANH hon
+                // ma khong can nang cap len Cuoc Bac (van khong co AOE tuoi/thu hoach - xem
+                // ToolAreaRadius, giu Cuoc Bac/Vang la lua chon toan dien hon).
+                int tilesPerSide = tool switch { "xeng" => 2, "cuoc_bac" => 3, "cuoc_vang" => 5, _ => 1 };
                 int half = tilesPerSide / 2;
                 Vector3 center = GlobalPosition + _facing * 42f;
                 Vector3 right = _facing.Cross(Vector3.Up).Normalized();

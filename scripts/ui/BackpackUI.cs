@@ -88,9 +88,25 @@ namespace HiepSiVeVuon.UI
             {
                 string id = stack.ItemId;
                 var btn = MakeSlotButton(id, stack.Count);
-                btn.Pressed += () => WithdrawFromBackpack(id);
+                var def = ItemDatabase.Instance.GetItem(id);
+                // Vu khi/giap/cong cu: bam de TRANG BI TRUC TIEP ngay tu Balo (khong can rut ra
+                // Tui Do roi mo rieng man hinh Tui Do de trang bi nhu truoc - dung yeu cau "xem
+                // balo thi co the doi vat cam tay"). Inventory.Equip() chi ghi co trang bi, KHONG
+                // doi hoi vat pham phai nam trong Inventory.Slots, nen trang bi thang tu Balo an
+                // toan, khong can di chuyen vat pham qua lai. Cac loai con lai (nguyen lieu/nong
+                // san/hat giong/do dung) van RUT ra Tui Do nhu quy uoc cu.
+                if (def != null && (def.Type == ItemType.Weapon || def.Type == ItemType.Armor || def.Type == ItemType.Tool))
+                    btn.Pressed += () => EquipFromBackpack(id);
+                else
+                    btn.Pressed += () => WithdrawFromBackpack(id);
                 _bagGrid.AddChild(btn);
             }
+        }
+
+        private void EquipFromBackpack(string itemId)
+        {
+            Inventory.Instance.Equip(itemId);
+            _info.Text = string.Format(Loc.T("inventory.equipped_fmt"), ItemDatabase.Instance.GetDisplayName(itemId));
         }
 
         private Button MakeSlotButton(string itemId, int count)

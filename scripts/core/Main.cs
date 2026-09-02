@@ -342,7 +342,25 @@ namespace HiepSiVeVuon.Core
 			// The gioi da dung xong voi trang thai mac dinh - gio moi hoi backend xem nguoi choi
 			// dang nhap co ban luu khong (goi MANG bat dong bo, khong the cho dong bo o day nhu
 			// doc file truoc day). Neu co, du lieu that se AP LEN TREN sau khi phan hoi ve.
-			SaveSystem.Instance.FetchAndApplySave(RestoreFreeformFarmPlots);
+			SaveSystem.Instance.FetchAndApplySave(() =>
+			{
+				RestoreFreeformFarmPlots();
+				GrantNewToolsIfMissing();
+			});
+		}
+
+		// Nguoi choi co save CU (tao TRUOC KHI 3 cong cu Binh Tuoi/Xeng/Cao Co duoc them vao game)
+		// se KHONG co san cac item nay trong Balo du GiveStartingItems() da cap luc dau - vi
+		// FetchAndApplySave() o tren GHI DE toan bo Tui Do/Balo bang du lieu save cu (khong co 3
+		// item moi), xoa mat phan vua cap. Cap BO SUNG 1 lan cho nguoi choi CU neu ho CHUA CO san
+		// (o CA Tui Do lan Balo) - tranh cap trung nhieu lan qua moi lan tai lai game.
+		private void GrantNewToolsIfMissing()
+		{
+			foreach (var id in new[] { "binh_tuoi", "xeng", "cao_co" })
+			{
+				if (Backpack.Instance.CountOf(id) == 0 && Inventory.Instance.CountOf(id) == 0)
+					Backpack.Instance.AddItem(id, 1);
+			}
 		}
 
 		// O dat CUOC TU DO (xem FarmPlot.TryTillFreeform) KHONG nam trong luoi 12x6 co dinh
@@ -1599,7 +1617,7 @@ namespace HiepSiVeVuon.Core
 			var blacksmith = _npcScene.Instantiate<NPC>();
 			blacksmith.NpcId = "blacksmith";
 			blacksmith.NpcName = "Thợ Rèn";
-			blacksmith.ShopItems = new[] { "sword", "shield", "ring", "pickaxe", "hoe", "can_cau", "cuoc_bac", "cuoc_vang", "pickaxe_bac", "pickaxe_vang" };
+			blacksmith.ShopItems = new[] { "sword", "shield", "ring", "pickaxe", "hoe", "can_cau", "cuoc_bac", "cuoc_vang", "pickaxe_bac", "pickaxe_vang", "binh_tuoi", "xeng", "cao_co" };
 			blacksmith.DialogueLow = new[] { "Muốn vũ khí tốt thì tìm đúng người rồi đấy. Nhưng ta chưa quen cậu lắm." };
 			blacksmith.DialogueMid = new[] { "Thép tốt cần lửa tốt. Cậu ghé thường xuyên nhỉ." };
 			blacksmith.DialogueHigh = new[] { "Vì tình bạn, ta sẽ rèn cho cậu món đồ ngon nhất xưởng." };
@@ -6198,6 +6216,13 @@ namespace HiepSiVeVuon.Core
 			Inventory.Instance.AddItem("sword", 1);
 			Inventory.Instance.AddItem("hoe", 1);
 			Inventory.Instance.Equip("sword");
+
+			// Cong cu nong dan MOI (Binh Tuoi/Xeng/Cao Co, xem HeldItemVisual.cs) - dat san trong
+			// Balo (khong phai Tui Do) de nguoi choi choi thu ngay tu dau ma khong can mua rieng
+			// o Tho Ren, theo dung yeu cau "cap nhap vao trong balo".
+			Backpack.Instance.AddItem("binh_tuoi", 1);
+			Backpack.Instance.AddItem("xeng", 1);
+			Backpack.Instance.AddItem("cao_co", 1);
 		}
 	}
 }

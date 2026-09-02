@@ -110,6 +110,9 @@ namespace HiepSiVeVuon.Systems
             ["pickaxe_vang"] = "Golden Pickaxe",
             ["may_tuoi_tu_dong"] = "Automatic Sprinkler",
             ["da"] = "Stone",
+            ["binh_tuoi"] = "Watering Can",
+            ["xeng"] = "Shovel",
+            ["cao_co"] = "Garden Rake",
         };
 
         public static readonly Dictionary<string, string> ItemDescriptionsEn = new()
@@ -211,6 +214,9 @@ namespace HiepSiVeVuon.Systems
             ["pickaxe_vang"] = "The finest pickaxe upgrade - mines ore with tremendous power.",
             ["may_tuoi_tu_dong"] = "Equip it and press Space near a soil tile to place it - automatically waters the surrounding tiles EVERY DAY.",
             ["da"] = "A basic building material - used to construct houses and pens through the Build Menu.",
+            ["binh_tuoi"] = "A dedicated watering tool - waters more evenly than a plain hoe, giving crops a small boost to health and quality.",
+            ["xeng"] = "A dedicated tilling tool - clears a 2x2 patch of new soil at once, faster than a regular Hoe.",
+            ["cao_co"] = "Scrapes pests off crops by hand - no need to spend Pesticide.",
         };
 
         // ---- Enemies (data/enemies.json) ----

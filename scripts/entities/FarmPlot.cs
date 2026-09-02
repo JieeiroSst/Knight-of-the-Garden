@@ -211,9 +211,12 @@ namespace HiepSiVeVuon.Entities
             {
                 Harvest();
             }
-            else if (_pestAfflicted && Inventory.Instance.CountOf(DefaultPesticideId) > 0)
+            else if (_pestAfflicted && (Inventory.Instance.EquippedTool == "cao_co" || Inventory.Instance.CountOf(DefaultPesticideId) > 0))
             {
-                Inventory.Instance.RemoveItem(DefaultPesticideId, 1);
+                // Cao Co: cao sach sau benh bang tay, khong can tieu hao Thuoc Diet Sau (thay the
+                // "hoa hoc" bang "co hoc" - cong cu chuyen dung rieng cho viec nay).
+                if (Inventory.Instance.EquippedTool != "cao_co")
+                    Inventory.Instance.RemoveItem(DefaultPesticideId, 1);
                 _pestAfflicted = false;
                 _pestDays = 0;
                 GD.Print("Đã diệt sâu bệnh.");
@@ -236,6 +239,9 @@ namespace HiepSiVeVuon.Entities
             {
                 _watered = true;
                 _daysUnwatered = 0;
+                // Binh Tuoi Nuoc: dung cu CHUYEN DUNG cho viec tuoi, tuoi deu nuoc hon cuoc dat
+                // thong thuong - thuong nho chat luong (giong co che thuong mua/luan canh da co).
+                if (Inventory.Instance.EquippedTool == "binh_tuoi") _qualityScore += 0.04f;
                 GD.Print("Đã tưới nước.");
                 UpdateVisual();
             }

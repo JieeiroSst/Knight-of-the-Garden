@@ -20,7 +20,7 @@
     "MaxStack": 1,
     "SellPrice": 30,
     "BuyPrice": 80,
-    "IconPath": "res://assets/items/coins.png",
+    "IconPath": "res://assets/items/pickaxe.png",
     "Damage": 12
   },
   {
@@ -32,7 +32,7 @@
     "MaxStack": 1,
     "SellPrice": 25,
     "BuyPrice": 60,
-    "IconPath": "res://assets/items/coins.png"
+    "IconPath": "res://assets/items/hoe.png"
   },
   {
     "Id": "dong_tho",
@@ -153,7 +153,7 @@
     "MaxStack": 1,
     "SellPrice": 28,
     "BuyPrice": 70,
-    "IconPath": "res://assets/items/coins.png"
+    "IconPath": "res://assets/items/can_cau.png"
   },
   {
     "Id": "co_vat",
@@ -418,7 +418,6 @@
     "SellPrice": 11,
     "IconPath": "res://assets/crops/pumpkin.png"
   },
-
   {
     "Id": "pumpkin",
     "Name": "Bí Ngô",
@@ -611,7 +610,6 @@
     "SellPrice": 44,
     "IconPath": "res://assets/crops/wheat.png"
   },
-
   {
     "Id": "pumpkin_seed",
     "Name": "Hạt Bí Ngô",
@@ -624,7 +622,10 @@
     "IconPath": "res://assets/crops/pumpkin.png",
     "GrowsIntoCropId": "pumpkin",
     "GrowDays": 3,
-    "ValidSeasons": ["Summer", "Fall"]
+    "ValidSeasons": [
+      "Summer",
+      "Fall"
+    ]
   },
   {
     "Id": "pumpkin_seed_premium",
@@ -638,7 +639,10 @@
     "IconPath": "res://assets/crops/pumpkin.png",
     "GrowsIntoCropId": "pumpkin",
     "GrowDays": 3,
-    "ValidSeasons": ["Summer", "Fall"]
+    "ValidSeasons": [
+      "Summer",
+      "Fall"
+    ]
   },
   {
     "Id": "tomato_seed",
@@ -652,7 +656,10 @@
     "IconPath": "res://assets/crops/tomato.png",
     "GrowsIntoCropId": "tomato",
     "GrowDays": 2,
-    "ValidSeasons": ["Summer", "Fall"]
+    "ValidSeasons": [
+      "Summer",
+      "Fall"
+    ]
   },
   {
     "Id": "tomato_seed_premium",
@@ -666,7 +673,10 @@
     "IconPath": "res://assets/crops/tomato.png",
     "GrowsIntoCropId": "tomato",
     "GrowDays": 2,
-    "ValidSeasons": ["Summer", "Fall"]
+    "ValidSeasons": [
+      "Summer",
+      "Fall"
+    ]
   },
   {
     "Id": "wheat_seed",
@@ -680,7 +690,11 @@
     "IconPath": "res://assets/crops/wheat.png",
     "GrowsIntoCropId": "wheat",
     "GrowDays": 2,
-    "ValidSeasons": ["Spring", "Summer", "Fall"]
+    "ValidSeasons": [
+      "Spring",
+      "Summer",
+      "Fall"
+    ]
   },
   {
     "Id": "wheat_seed_premium",
@@ -694,7 +708,11 @@
     "IconPath": "res://assets/crops/wheat.png",
     "GrowsIntoCropId": "wheat",
     "GrowDays": 2,
-    "ValidSeasons": ["Spring", "Summer", "Fall"]
+    "ValidSeasons": [
+      "Spring",
+      "Summer",
+      "Fall"
+    ]
   },
   {
     "Id": "carrot_seed",
@@ -708,7 +726,11 @@
     "IconPath": "res://assets/crops/tomato.png",
     "GrowsIntoCropId": "carrot",
     "GrowDays": 2,
-    "ValidSeasons": ["Spring", "Fall", "Winter"]
+    "ValidSeasons": [
+      "Spring",
+      "Fall",
+      "Winter"
+    ]
   },
   {
     "Id": "carrot_seed_premium",
@@ -722,7 +744,11 @@
     "IconPath": "res://assets/crops/tomato.png",
     "GrowsIntoCropId": "carrot",
     "GrowDays": 2,
-    "ValidSeasons": ["Spring", "Fall", "Winter"]
+    "ValidSeasons": [
+      "Spring",
+      "Fall",
+      "Winter"
+    ]
   },
   {
     "Id": "potato_seed",
@@ -736,7 +762,11 @@
     "IconPath": "res://assets/crops/pumpkin.png",
     "GrowsIntoCropId": "potato",
     "GrowDays": 3,
-    "ValidSeasons": ["Spring", "Summer", "Fall"]
+    "ValidSeasons": [
+      "Spring",
+      "Summer",
+      "Fall"
+    ]
   },
   {
     "Id": "potato_seed_premium",
@@ -750,7 +780,11 @@
     "IconPath": "res://assets/crops/pumpkin.png",
     "GrowsIntoCropId": "potato",
     "GrowDays": 3,
-    "ValidSeasons": ["Spring", "Summer", "Fall"]
+    "ValidSeasons": [
+      "Spring",
+      "Summer",
+      "Fall"
+    ]
   },
   {
     "Id": "cabbage_seed",
@@ -764,7 +798,11 @@
     "IconPath": "res://assets/crops/wheat.png",
     "GrowsIntoCropId": "cabbage",
     "GrowDays": 3,
-    "ValidSeasons": ["Spring", "Fall", "Winter"]
+    "ValidSeasons": [
+      "Spring",
+      "Fall",
+      "Winter"
+    ]
   },
   {
     "Id": "cabbage_seed_premium",
@@ -778,40 +816,359 @@
     "IconPath": "res://assets/crops/wheat.png",
     "GrowsIntoCropId": "cabbage",
     "GrowDays": 3,
-    "ValidSeasons": ["Spring", "Fall", "Winter"]
+    "ValidSeasons": [
+      "Spring",
+      "Fall",
+      "Winter"
+    ]
   },
-
-  { "Id": "mut_wheat", "Name": "Mứt Lúa Mì", "Description": "Nông sản chế biến từ Lò Sấy - giá trị cao hơn bán thô.", "Type": "Material", "Rarity": "Uncommon", "MaxStack": 99, "SellPrice": 33, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
-  { "Id": "mut_tomato", "Name": "Mứt Cà Chua", "Description": "Nông sản chế biến từ Lò Sấy - giá trị cao hơn bán thô.", "Type": "Material", "Rarity": "Uncommon", "MaxStack": 99, "SellPrice": 44, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
-  { "Id": "mut_carrot", "Name": "Mứt Cà Rốt", "Description": "Nông sản chế biến từ Lò Sấy - giá trị cao hơn bán thô.", "Type": "Material", "Rarity": "Uncommon", "MaxStack": 99, "SellPrice": 40, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
-  { "Id": "mut_potato", "Name": "Mứt Khoai Tây", "Description": "Nông sản chế biến từ Lò Sấy - giá trị cao hơn bán thô.", "Type": "Material", "Rarity": "Uncommon", "MaxStack": 99, "SellPrice": 35, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
-  { "Id": "mut_cabbage", "Name": "Mứt Bắp Cải", "Description": "Nông sản chế biến từ Lò Sấy - giá trị cao hơn bán thô.", "Type": "Material", "Rarity": "Uncommon", "MaxStack": 99, "SellPrice": 48, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
-  { "Id": "mut_pumpkin", "Name": "Mứt Bí Ngô", "Description": "Nông sản chế biến từ Lò Sấy - giá trị cao hơn bán thô.", "Type": "Material", "Rarity": "Uncommon", "MaxStack": 99, "SellPrice": 77, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
-
-  { "Id": "ruou_wheat", "Name": "Rượu Lúa Mì", "Description": "Ủ từ Máy Ép - giá trị cao hơn nhiều so với nông sản thô.", "Type": "Material", "Rarity": "Rare", "MaxStack": 99, "SellPrice": 48, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
-  { "Id": "ruou_tomato", "Name": "Rượu Cà Chua", "Description": "Ủ từ Máy Ép - giá trị cao hơn nhiều so với nông sản thô.", "Type": "Material", "Rarity": "Rare", "MaxStack": 99, "SellPrice": 64, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
-  { "Id": "ruou_carrot", "Name": "Rượu Cà Rốt", "Description": "Ủ từ Máy Ép - giá trị cao hơn nhiều so với nông sản thô.", "Type": "Material", "Rarity": "Rare", "MaxStack": 99, "SellPrice": 58, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
-  { "Id": "ruou_potato", "Name": "Rượu Khoai Tây", "Description": "Ủ từ Máy Ép - giá trị cao hơn nhiều so với nông sản thô.", "Type": "Material", "Rarity": "Rare", "MaxStack": 99, "SellPrice": 51, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
-  { "Id": "ruou_cabbage", "Name": "Rượu Bắp Cải", "Description": "Ủ từ Máy Ép - giá trị cao hơn nhiều so với nông sản thô.", "Type": "Material", "Rarity": "Rare", "MaxStack": 99, "SellPrice": 70, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
-  { "Id": "ruou_pumpkin", "Name": "Rượu Bí Ngô", "Description": "Ủ từ Máy Ép - giá trị cao hơn nhiều so với nông sản thô.", "Type": "Material", "Rarity": "Rare", "MaxStack": 99, "SellPrice": 112, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
-
-  { "Id": "pho_mai", "Name": "Phô Mai", "Description": "Ép từ sữa bò - giá trị cao hơn sữa thô.", "Type": "Material", "Rarity": "Uncommon", "MaxStack": 99, "SellPrice": 25, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
-  { "Id": "mayonnaise", "Name": "Sốt Mayonnaise", "Description": "Chế biến từ trứng gà - giá trị cao hơn trứng thô.", "Type": "Material", "Rarity": "Uncommon", "MaxStack": 99, "SellPrice": 20, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
-  { "Id": "vai", "Name": "Vải Dệt", "Description": "Dệt từ len cừu - giá trị cao hơn len thô.", "Type": "Material", "Rarity": "Uncommon", "MaxStack": 99, "SellPrice": 30, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
-  { "Id": "mat_ong", "Name": "Mật Ong", "Description": "Thu hoạch từ chuồng ong - không cần chăm sóc hàng ngày.", "Type": "Material", "Rarity": "Uncommon", "MaxStack": 99, "SellPrice": 25, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png" },
-
-  { "Id": "sup_rau", "Name": "Súp Rau Củ", "Description": "Nấu từ cà rốt + bắp cải - hồi phục sinh lực.", "Type": "Consumable", "Rarity": "Common", "MaxStack": 20, "SellPrice": 30, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png", "HealAmount": 40 },
-  { "Id": "trung_chien", "Name": "Trứng Chiên", "Description": "Nấu từ 2 trứng gà - hồi phục sinh lực.", "Type": "Consumable", "Rarity": "Common", "MaxStack": 20, "SellPrice": 18, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png", "HealAmount": 25 },
-  { "Id": "banh_bi_ngo", "Name": "Bánh Bí Ngô", "Description": "Nấu từ bí ngô + sữa bò - hồi phục sinh lực lớn.", "Type": "Consumable", "Rarity": "Uncommon", "MaxStack": 20, "SellPrice": 45, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png", "HealAmount": 55 },
-  { "Id": "salad_ca_chua", "Name": "Salad Cà Chua Phô Mai", "Description": "Nấu từ cà chua + phô mai - hồi phục sinh lực lớn.", "Type": "Consumable", "Rarity": "Uncommon", "MaxStack": 20, "SellPrice": 40, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png", "HealAmount": 50 },
-  { "Id": "banh_mi_trung", "Name": "Bánh Mì Trứng Gà", "Description": "Nấu từ lúa mì + trứng gà - hồi phục sinh lực.", "Type": "Consumable", "Rarity": "Common", "MaxStack": 20, "SellPrice": 25, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png", "HealAmount": 35 },
-  { "Id": "sup_ca", "Name": "Súp Cá", "Description": "Nấu từ cá + cà rốt - hồi phục sinh lực.", "Type": "Consumable", "Rarity": "Uncommon", "MaxStack": 20, "SellPrice": 35, "BuyPrice": 0, "IconPath": "res://assets/items/coins.png", "HealAmount": 45 },
-
-  { "Id": "cuoc_bac", "Name": "Cuốc Bạc", "Description": "Cuốc nâng cấp - cày/tưới/thu hoạch CẢ VÙNG 3x3 quanh điểm ngắm thay vì từng ô.", "Type": "Tool", "Rarity": "Uncommon", "MaxStack": 1, "SellPrice": 60, "BuyPrice": 220, "IconPath": "res://assets/items/coins.png" },
-  { "Id": "cuoc_vang", "Name": "Cuốc Vàng", "Description": "Cuốc nâng cấp cao nhất - cày/tưới/thu hoạch CẢ VÙNG 5x5 quanh điểm ngắm.", "Type": "Tool", "Rarity": "Rare", "MaxStack": 1, "SellPrice": 150, "BuyPrice": 600, "IconPath": "res://assets/items/coins.png" },
-  { "Id": "pickaxe_bac", "Name": "Cuốc Đá Bạc", "Description": "Cuốc đá nâng cấp - đào quặng mạnh hơn.", "Type": "Tool", "Rarity": "Uncommon", "MaxStack": 1, "SellPrice": 70, "BuyPrice": 240, "IconPath": "res://assets/items/coins.png", "Damage": 24 },
-  { "Id": "pickaxe_vang", "Name": "Cuốc Đá Vàng", "Description": "Cuốc đá nâng cấp cao nhất - đào quặng rất mạnh.", "Type": "Tool", "Rarity": "Rare", "MaxStack": 1, "SellPrice": 160, "BuyPrice": 650, "IconPath": "res://assets/items/coins.png", "Damage": 42 },
-
-  { "Id": "may_tuoi_tu_dong", "Name": "Máy Tưới Tự Động", "Description": "Trang bị rồi bấm Space gần ô đất để đặt máy - tự động tưới CÁC Ô ĐẤT quanh nó MỖI NGÀY.", "Type": "Tool", "Rarity": "Rare", "MaxStack": 10, "SellPrice": 80, "BuyPrice": 350, "IconPath": "res://assets/items/coins.png" },
-  { "Id": "da", "Name": "Đá", "Description": "Vật liệu xây dựng cơ bản - dùng để xây nhà/chuồng qua Bảng Xây Dựng.", "Type": "Material", "Rarity": "Common", "MaxStack": 99, "SellPrice": 4, "BuyPrice": 12, "IconPath": "res://assets/items/coins.png" }
+  {
+    "Id": "mut_wheat",
+    "Name": "Mứt Lúa Mì",
+    "Description": "Nông sản chế biến từ Lò Sấy - giá trị cao hơn bán thô.",
+    "Type": "Material",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 33,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "mut_tomato",
+    "Name": "Mứt Cà Chua",
+    "Description": "Nông sản chế biến từ Lò Sấy - giá trị cao hơn bán thô.",
+    "Type": "Material",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 44,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "mut_carrot",
+    "Name": "Mứt Cà Rốt",
+    "Description": "Nông sản chế biến từ Lò Sấy - giá trị cao hơn bán thô.",
+    "Type": "Material",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 40,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "mut_potato",
+    "Name": "Mứt Khoai Tây",
+    "Description": "Nông sản chế biến từ Lò Sấy - giá trị cao hơn bán thô.",
+    "Type": "Material",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 35,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "mut_cabbage",
+    "Name": "Mứt Bắp Cải",
+    "Description": "Nông sản chế biến từ Lò Sấy - giá trị cao hơn bán thô.",
+    "Type": "Material",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 48,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "mut_pumpkin",
+    "Name": "Mứt Bí Ngô",
+    "Description": "Nông sản chế biến từ Lò Sấy - giá trị cao hơn bán thô.",
+    "Type": "Material",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 77,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "ruou_wheat",
+    "Name": "Rượu Lúa Mì",
+    "Description": "Ủ từ Máy Ép - giá trị cao hơn nhiều so với nông sản thô.",
+    "Type": "Material",
+    "Rarity": "Rare",
+    "MaxStack": 99,
+    "SellPrice": 48,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "ruou_tomato",
+    "Name": "Rượu Cà Chua",
+    "Description": "Ủ từ Máy Ép - giá trị cao hơn nhiều so với nông sản thô.",
+    "Type": "Material",
+    "Rarity": "Rare",
+    "MaxStack": 99,
+    "SellPrice": 64,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "ruou_carrot",
+    "Name": "Rượu Cà Rốt",
+    "Description": "Ủ từ Máy Ép - giá trị cao hơn nhiều so với nông sản thô.",
+    "Type": "Material",
+    "Rarity": "Rare",
+    "MaxStack": 99,
+    "SellPrice": 58,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "ruou_potato",
+    "Name": "Rượu Khoai Tây",
+    "Description": "Ủ từ Máy Ép - giá trị cao hơn nhiều so với nông sản thô.",
+    "Type": "Material",
+    "Rarity": "Rare",
+    "MaxStack": 99,
+    "SellPrice": 51,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "ruou_cabbage",
+    "Name": "Rượu Bắp Cải",
+    "Description": "Ủ từ Máy Ép - giá trị cao hơn nhiều so với nông sản thô.",
+    "Type": "Material",
+    "Rarity": "Rare",
+    "MaxStack": 99,
+    "SellPrice": 70,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "ruou_pumpkin",
+    "Name": "Rượu Bí Ngô",
+    "Description": "Ủ từ Máy Ép - giá trị cao hơn nhiều so với nông sản thô.",
+    "Type": "Material",
+    "Rarity": "Rare",
+    "MaxStack": 99,
+    "SellPrice": 112,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "pho_mai",
+    "Name": "Phô Mai",
+    "Description": "Ép từ sữa bò - giá trị cao hơn sữa thô.",
+    "Type": "Material",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 25,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "mayonnaise",
+    "Name": "Sốt Mayonnaise",
+    "Description": "Chế biến từ trứng gà - giá trị cao hơn trứng thô.",
+    "Type": "Material",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 20,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "vai",
+    "Name": "Vải Dệt",
+    "Description": "Dệt từ len cừu - giá trị cao hơn len thô.",
+    "Type": "Material",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 30,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "mat_ong",
+    "Name": "Mật Ong",
+    "Description": "Thu hoạch từ chuồng ong - không cần chăm sóc hàng ngày.",
+    "Type": "Material",
+    "Rarity": "Uncommon",
+    "MaxStack": 99,
+    "SellPrice": 25,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "sup_rau",
+    "Name": "Súp Rau Củ",
+    "Description": "Nấu từ cà rốt + bắp cải - hồi phục sinh lực.",
+    "Type": "Consumable",
+    "Rarity": "Common",
+    "MaxStack": 20,
+    "SellPrice": 30,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png",
+    "HealAmount": 40
+  },
+  {
+    "Id": "trung_chien",
+    "Name": "Trứng Chiên",
+    "Description": "Nấu từ 2 trứng gà - hồi phục sinh lực.",
+    "Type": "Consumable",
+    "Rarity": "Common",
+    "MaxStack": 20,
+    "SellPrice": 18,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png",
+    "HealAmount": 25
+  },
+  {
+    "Id": "banh_bi_ngo",
+    "Name": "Bánh Bí Ngô",
+    "Description": "Nấu từ bí ngô + sữa bò - hồi phục sinh lực lớn.",
+    "Type": "Consumable",
+    "Rarity": "Uncommon",
+    "MaxStack": 20,
+    "SellPrice": 45,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png",
+    "HealAmount": 55
+  },
+  {
+    "Id": "salad_ca_chua",
+    "Name": "Salad Cà Chua Phô Mai",
+    "Description": "Nấu từ cà chua + phô mai - hồi phục sinh lực lớn.",
+    "Type": "Consumable",
+    "Rarity": "Uncommon",
+    "MaxStack": 20,
+    "SellPrice": 40,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png",
+    "HealAmount": 50
+  },
+  {
+    "Id": "banh_mi_trung",
+    "Name": "Bánh Mì Trứng Gà",
+    "Description": "Nấu từ lúa mì + trứng gà - hồi phục sinh lực.",
+    "Type": "Consumable",
+    "Rarity": "Common",
+    "MaxStack": 20,
+    "SellPrice": 25,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png",
+    "HealAmount": 35
+  },
+  {
+    "Id": "sup_ca",
+    "Name": "Súp Cá",
+    "Description": "Nấu từ cá + cà rốt - hồi phục sinh lực.",
+    "Type": "Consumable",
+    "Rarity": "Uncommon",
+    "MaxStack": 20,
+    "SellPrice": 35,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png",
+    "HealAmount": 45
+  },
+  {
+    "Id": "cuoc_bac",
+    "Name": "Cuốc Bạc",
+    "Description": "Cuốc nâng cấp - cày/tưới/thu hoạch CẢ VÙNG 3x3 quanh điểm ngắm thay vì từng ô.",
+    "Type": "Tool",
+    "Rarity": "Uncommon",
+    "MaxStack": 1,
+    "SellPrice": 60,
+    "BuyPrice": 220,
+    "IconPath": "res://assets/items/cuoc_bac.png"
+  },
+  {
+    "Id": "cuoc_vang",
+    "Name": "Cuốc Vàng",
+    "Description": "Cuốc nâng cấp cao nhất - cày/tưới/thu hoạch CẢ VÙNG 5x5 quanh điểm ngắm.",
+    "Type": "Tool",
+    "Rarity": "Rare",
+    "MaxStack": 1,
+    "SellPrice": 150,
+    "BuyPrice": 600,
+    "IconPath": "res://assets/items/cuoc_vang.png"
+  },
+  {
+    "Id": "pickaxe_bac",
+    "Name": "Cuốc Đá Bạc",
+    "Description": "Cuốc đá nâng cấp - đào quặng mạnh hơn.",
+    "Type": "Tool",
+    "Rarity": "Uncommon",
+    "MaxStack": 1,
+    "SellPrice": 70,
+    "BuyPrice": 240,
+    "IconPath": "res://assets/items/pickaxe_bac.png",
+    "Damage": 24
+  },
+  {
+    "Id": "pickaxe_vang",
+    "Name": "Cuốc Đá Vàng",
+    "Description": "Cuốc đá nâng cấp cao nhất - đào quặng rất mạnh.",
+    "Type": "Tool",
+    "Rarity": "Rare",
+    "MaxStack": 1,
+    "SellPrice": 160,
+    "BuyPrice": 650,
+    "IconPath": "res://assets/items/pickaxe_vang.png",
+    "Damage": 42
+  },
+  {
+    "Id": "may_tuoi_tu_dong",
+    "Name": "Máy Tưới Tự Động",
+    "Description": "Trang bị rồi bấm Space gần ô đất để đặt máy - tự động tưới CÁC Ô ĐẤT quanh nó MỖI NGÀY.",
+    "Type": "Tool",
+    "Rarity": "Rare",
+    "MaxStack": 10,
+    "SellPrice": 80,
+    "BuyPrice": 350,
+    "IconPath": "res://assets/items/may_tuoi_tu_dong.png"
+  },
+  {
+    "Id": "da",
+    "Name": "Đá",
+    "Description": "Vật liệu xây dựng cơ bản - dùng để xây nhà/chuồng qua Bảng Xây Dựng.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 4,
+    "BuyPrice": 12,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "binh_tuoi",
+    "Name": "Bình Tưới Nước",
+    "Description": "Dụng cụ tưới nước chuyên dụng - tưới đều nước hơn cuốc thường, cây trồng khỏe và chất lượng tốt hơn một chút.",
+    "Type": "Tool",
+    "Rarity": "Common",
+    "MaxStack": 1,
+    "SellPrice": 25,
+    "BuyPrice": 60,
+    "IconPath": "res://assets/items/binh_tuoi.png"
+  },
+  {
+    "Id": "xeng",
+    "Name": "Xẻng",
+    "Description": "Xẻng cuốc đất chuyên dụng - cuốc được vùng đất mới rộng 2x2 ô cùng lúc, nhanh hơn Cuốc Đất thường.",
+    "Type": "Tool",
+    "Rarity": "Common",
+    "MaxStack": 1,
+    "SellPrice": 35,
+    "BuyPrice": 90,
+    "IconPath": "res://assets/items/xeng.png"
+  },
+  {
+    "Id": "cao_co",
+    "Name": "Cào Cỏ",
+    "Description": "Cào sạch sâu bệnh trên cây bằng tay - không cần tốn Thuốc Diệt Sâu.",
+    "Type": "Tool",
+    "Rarity": "Common",
+    "MaxStack": 1,
+    "SellPrice": 22,
+    "BuyPrice": 55,
+    "IconPath": "res://assets/items/cao_co.png"
+  }
 ]
