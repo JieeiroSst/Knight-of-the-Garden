@@ -114,7 +114,6 @@ namespace HiepSiVeVuon.UI
                     // O DANG TRANG BI: an nut "Su Dung" (khong the bam de trang bi lai cai da
                     // dang cam) va thay bang chu "Dang dung" - day CHINH la dau hieu de nguoi
                     // choi biet o nao dang cam tren tay, theo dung yeu cau.
-                    GD.Print($"[BackpackUI DEBUG] slot={id} type={def.Type} isCurrentlyEquipped={isCurrentlyEquipped}");
                     if (isCurrentlyEquipped)
                     {
                         cell.AddChild(new Label { Text = Loc.T("backpack.currently_used"), HorizontalAlignment = HorizontalAlignment.Center });

@@ -6223,7 +6223,6 @@ namespace HiepSiVeVuon.Core
 			Backpack.Instance.AddItem("binh_tuoi", 1);
 			Backpack.Instance.AddItem("xeng", 1);
 			Backpack.Instance.AddItem("cao_co", 1);
-			Inventory.Instance.Equip("cao_co"); // TEMP DEBUG - remove after verifying use-button hide logic
 		}
 	}
 }
