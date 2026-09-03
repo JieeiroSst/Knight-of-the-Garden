@@ -154,20 +154,30 @@ namespace HiepSiVeVuon.Core
         // Luoi an toan CUOI CUNG chong "no toa do": mot lan tung ghi nhan Godot bao loi engine
         // "_set_transform: Object went too far away" (vi tri mot PhysicsBody3D vuot qua nguong an
         // toan cua physics server, ~3.16e18 don vi) - da sua 1 nguyen nhan (loi doi don vi x10 o
-        // vung que Phap trong Main.cs) nhung van con xay ra rai rac. DA XAC MINH bang cach gan tam
-        // GuardAgainstRunaway nay + log ten class: nhieu CharacterBody3D KHAC NHAU (FarmWorkerNpc/
-        // StablehandNpc/FarmhandNpc/ScheduledFarmNpc/RepairmanNpc...) thinh thoang bi MoveAndSlide()
-        // "van" tuc thi ra vi tri X/Z rat xa (hang chuc-hang tram nghin don vi) trong DUNG 1 frame,
-        // du huong/toc do dau vao cua code C# o day luon bi gioi han (khong co cho nao trong DoWander/
-        // DoChase/GOAP TargetPos co the tao ra bien thien lon nhu vay chi trong 1 frame - da ra soat
-        // toan bo). Day rat co the la 1 canh hiem cua chinh thuat toan giai quyet va cham/truot cua
-        // Godot (CharacterBody3D.MoveAndSlide) khi bi "ket" giua nhieu hang rao/tuong chong lan (the
-        // gioi ngay cang nhieu vat can qua tung lan mo rong) - ngoai kha nang sua tu phia C#. Goi
-        // NGAY SAU MoveAndSlide() moi noi: neu vi tri vua ra la NaN/Infinity hoac vuot xa bien the
-        // gioi hop ly (rong hon nhieu vung xa nhat hien co, "vung que Phap" ~26000 don vi tu goc),
-        // keo ve lai trong bien (giu huong that neu con dung duoc) thay vi de vat the lech vinh vien
-        // giua vi tri hien (render) va vi tri va cham that (physics server tu choi luon transform
-        // qua nguong 3.16e18, "ket qua" o muc nay chinh la loi da ghi nhan).
+        // vung que Phap trong Main.cs) nhung van con xay ra rai rac. DA XAC MINH nguyen nhan CHINH
+        // qua GuardAgainstRunaway nay (gan tam log ten class de dieu tra): 7 loai NPC (FarmWorkerNpc/
+        // StablehandNpc/FarmhandNpc/EstateWorkerNpc/PoultryKeeperNpc/RepairmanNpc/ScheduledFarmNpc)
+        // THIEU dong "GlobalPosition = HomePos" trong _Ready() (xem ghi chu trong tung file) - moi
+        // NPC nay sinh ra tai vi tri MAC DINH cua scene (~goc toa do) thay vi vi tri that, khien
+        // HANG CHUC NPC (nhieu vai tro) cung dung chong khit hoan toan len nhau + len ca cong trinh
+        // co san TAI GOC TOA DO ngay khi world-gen xong. Rieng cac o ngu trong doanh trai tap trung
+        // (Cam Ve/nhan vien/nguoi cham chuong - xem BuildPalaceGuardBarracks/BuildWorkerDormsAndStaff/
+        // BuildPenCaretakerDorm) CUNG tung dat khoang cach 2 o ngu (20-22 don vi) HEP HON duong kinh
+        // capsule va cham that su cua NPC (CapsuleShape3D radius=12 -> duong kinh 24, xem NPC.tscn) -
+        // gop phan lam nang them van de tuong tu vao moi dem. Godot's CharacterBody3D.MoveAndSlide()
+        // giai quyet va cham/truot giua QUA NHIEU capsule chong lan hoan toan cung luc thinh thoang
+        // tra ve 1 vi tri bi "van" ra rat xa (hang chuc-hang tram nghin don vi) chi trong DUNG 1
+        // frame - da rieng ra toan bo code C# di chuyen (DoWander/DoChase/GOAP TargetPos...) va xac
+        // nhan KHONG co cho nao co the tu tao bien thien lon nhu vay, ket luan day la 1 canh hiem cua
+        // chinh engine truoc qua nhieu capsule trung/gan trung khop nhau cung luc (da sua ca 2 nguyen
+        // nhan goc: them GlobalPosition=HomePos + noi rong khoang cach o ngu). Ham nay la LUOI AN
+        // TOAN CUOI CUNG cho MOI truong hop tuong tu con sot lai/chua luong truoc duoc: goi NGAY SAU
+        // MoveAndSlide() moi noi, neu vi tri vua ra la NaN/Infinity hoac vuot xa bien the gioi hop ly
+        // (rong hon nhieu vung xa nhat hien co, "vung que Phap" ~26000 don vi tu goc) thi KEO VE GOC
+        // TOA DO (khong giu huong/keo ve rin bien nhu ban dau tung lam - vi bien 200000 van la
+        // "khoang khong" khong co san, khien vat the tiep tuc roi vo han + spam canh bao MOI FRAME
+        // thay vi thuc su hoi phuc; goc toa do luon nam trong khu nong trai co san, co san tro lai
+        // duoc ngay).
         private const float MaxSaneDistance = 200_000f;
 
         public static Vector3 GuardAgainstRunaway(Vector3 pos, string debugName = null)
@@ -175,10 +185,9 @@ namespace HiepSiVeVuon.Core
             bool finite = float.IsFinite(pos.X) && float.IsFinite(pos.Y) && float.IsFinite(pos.Z);
             if (finite && pos.LengthSquared() <= MaxSaneDistance * MaxSaneDistance) return pos;
 
-            Vector3 safe = finite ? pos.Normalized() * MaxSaneDistance : Vector3.Zero;
             GD.PushWarning($"SteeringUtil.GuardAgainstRunaway: vi tri bat thuong {pos}" +
-                (debugName != null ? $" ({debugName})" : "") + $" - keo ve {safe}.");
-            return safe;
+                (debugName != null ? $" ({debugName})" : "") + " - keo ve goc toa do.");
+            return Vector3.Up * 20f; // nhinh nhe tren mat dat, tranh ket cung vao san ngay khi roi vao
         }
 
         // Toc do roi toi da (don vi/s) - MOI script vat nuoi/NPC/quai deu tang Velocity.Y THEO

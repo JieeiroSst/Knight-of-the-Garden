@@ -42,6 +42,12 @@ namespace HiepSiVeVuon.Entities
         public override void _Ready()
         {
             base._Ready();
+            // THIEU dong nay tung khien NPC sinh ra tai vi tri MAC DINH cua scene (~goc toa do)
+            // thay vi HomePos that su - hang chuc NPC (nhieu vai tro) cung "goc" chong khit len
+            // nhau + len ca cong trinh co san O DAY, buoc MoveAndSlide() phai giai quyet va cham
+            // giua QUA NHIEU capsule trung khop hoan toan CUNG 1 luc, da xac nhan day la nguyen
+            // nhan chinh gay loi engine "Object went too far away" (xem SteeringUtil.GuardAgainstRunaway).
+            GlobalPosition = HomePos;
 
             _brain.Actions.Add(MakeTendPlotAction());
             _brain.Actions.Add(UtilityPresets.MakeSleep(() => InteriorHomePos));

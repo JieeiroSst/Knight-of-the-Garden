@@ -39,6 +39,9 @@ namespace HiepSiVeVuon.Entities
         public override void _Ready()
         {
             base._Ready();
+            // Bat buoc - xem ghi chu chi tiet trong FarmWorkerNpc.cs (thieu dong nay khien NPC
+            // sinh chong khit len nhau tai goc toa do, gay loi engine "Object went too far away").
+            GlobalPosition = HomePos;
 
             if (DoesFieldWork) _brain.Actions.Add(MakeTendPlotAction());
             _brain.Actions.Add(MakeRestockFeedAction());

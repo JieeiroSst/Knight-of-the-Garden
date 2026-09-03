@@ -4466,8 +4466,14 @@ namespace HiepSiVeVuon.Core
 				npc.WorkPos = r.workPos;
 				npc.FeedPos = r.feedPos;
 				npc.HomePos = dormPos + new Vector3(0, 0, 55);
-				// Lech nho vi tri ngu trong noi that chung de khong chong het len nhau.
-				npc.InteriorHomePos = dormInterior + new Vector3((slot % 5 - 2) * 20f, 0, (slot / 5 - 0.5f) * 20f);
+				// Lech nho vi tri ngu trong noi that chung de khong chong het len nhau. PHAI RONG
+				// HON duong kinh capsule va cham cua NPC (CapsuleShape3D radius=12 -> duong kinh
+				// 24, xem NPC.tscn) - 20 don vi TUNG nho hon 24 khien 2 slot ke nhau LUON de capsule
+				// chong lan that su, buoc MoveAndSlide() phai giai quyet va cham giua HANG CHUC than
+				// the cung luc moi dem (ca khu ngu chung) - nghi la nguyen nhan gop phan gay loi
+				// engine "Object went too far away" (vi tri "van" ra rat xa trong 1 frame, da xac
+				// minh qua SteeringUtil.GuardAgainstRunaway ghi log dung cac NPC khu nay).
+				npc.InteriorHomePos = dormInterior + new Vector3((slot % 5 - 2) * 30f, 0, (slot / 5 - 0.5f) * 30f);
 				_world.AddChild(npc);
 			}
 		}
@@ -4760,7 +4766,14 @@ namespace HiepSiVeVuon.Core
 					guard.HomePos = homeFront;
 
 					int slot = idx % dayShift; // 2 ca dung CHUNG 50 vi tri ngu (xem ghi chu tren)
-					guard.InteriorHomePos = interior + new Vector3((slot % 10 - 4.5f) * 22f, 0, (slot / 10 - 2f) * 22f);
+					// 8 cot (khong phai 10) + 28 don vi/o (khong phai 22) - PHAI rong hon duong kinh
+					// capsule NPC (radius 12 -> duong kinh 24, xem NPC.tscn) de tranh 50 lam cam ve
+					// ngu chung co capsule chong lan that su moi dem (xem ghi chu chi tiet trong
+					// BuildWorkerDormsAndStaff), NHUNG van phai vua trong phong noi that VUONG 260x260
+					// (RoomKind.Village, nua canh 130 - xem BuildRoomForKind/BuildRoom): 10 cot x 30
+					// se VUOT QUA MEP PHONG (4.5*30+12=147 > 130), rieng 8 cot x 28 vua khit ca 2 yeu
+					// cau (~110 <= 130).
+					guard.InteriorHomePos = interior + new Vector3((slot % 8 - 3.5f) * 28f, 0, (slot / 8 - 3f) * 28f);
 					_world.AddChild(guard);
 				}, $"BuildPalaceGuardBarracks[{idx}]");
 			}
@@ -5589,7 +5602,10 @@ namespace HiepSiVeVuon.Core
 			AddBuildingLabelZone(dormPos, 130f, "label.caretaker_dormitory");
 
 			var homeFront = dormPos + new Vector3(0, 0, 90);
-			const int cols = 10;
+			// 8 (khong phai 10) - xem ghi chu day du trong BuildPalaceGuardBarracks: cung 1 rang
+			// buoc kep (capsule NPC duong kinh 24 can khoang cach o > 24, nhung phong noi that
+			// RoomKind.Village chi vuong 260x260 nen 10 cot se day o ngoai cung ra khoi mep phong).
+			const int cols = 8;
 
 			for (int i = 0; i < pens.Count; i++)
 			{
@@ -5597,7 +5613,11 @@ namespace HiepSiVeVuon.Core
 				SafeBuildStep(() =>
 				{
 					var (penPos, spec) = pens[idx];
-					var interiorSlot = interior + new Vector3((idx % cols - 4.5f) * 20f, 0, (idx / cols - 1.5f) * 20f);
+					// 30 (khong phai 22) - PHAI rong hon duong kinh capsule NPC (radius 12 -> duong
+					// kinh 24, xem NPC.tscn), tranh capsule chong lan that su (xem ghi chu chi tiet
+					// trong BuildWorkerDormsAndStaff). Offset cot dung -3.5f (khong phai -4.5f) vi
+					// cols = 8 (khong phai 10, xem ghi chu tren khai bao cols).
+					var interiorSlot = interior + new Vector3((idx % cols - 3.5f) * 30f, 0, (idx / cols - 1.5f) * 30f);
 
 					if (spec.horse > 0)
 					{
