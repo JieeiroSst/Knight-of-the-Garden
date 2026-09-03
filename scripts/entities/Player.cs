@@ -500,10 +500,32 @@ namespace HiepSiVeVuon.Entities
             _ => 0f,
         };
 
+        // Truoc day TryUseTool() KHONG choi hoat canh nao ca (chi co hieu ung logic tuc thi - o
+        // dat lon len/tuoi nuoc... nhung nhan vat dung yen, khong thay dong tac gi) - moi cong cu
+        // NHAM LAN voi nhau vi tat ca deu "vo hinh". Model Farmer.gltf la goi hoat canh CHIEN DAU/
+        // hanh dong CHUNG cua Quaternius (Punch/Kick/Interact/Sword_Slash...), KHONG co san hoat
+        // canh rieng cho tung nong cu (khong co "vung cuoc"/"tuoi nuoc"/"cao co" that su) - danh
+        // gia lai cac hoat canh CO SAN, chon hoat canh GAN DUNG nhat ve tinh chat chuyen dong that
+        // (cuoc/xeng: dong tac tay MANH bam xuong dat -> Punch_Left/Right, phan biet 2 tay de nhin
+        // KHONG GIONG het nhau; cao co: dong tac QUET NHE hon -> Interact; binh tuoi: dong tac
+        // GIO/NGHIENG tay nhe -> Wave, gan voi tu the do nuoc nhat). Neu ban co goi hoat canh nong
+        // trai chuyen dung (vd Quaternius "Universal Animation Library 2" co san hoat canh Farming/
+        // Fishing that su), gui cho toi de gan vao thay the cho chinh xac hon.
+        private static string ToolActionAnim(string toolId) => toolId switch
+        {
+            "hoe" or "cuoc_bac" or "cuoc_vang" => "Punch_Right",
+            "xeng" => "Punch_Left",
+            "cao_co" => "Interact",
+            "binh_tuoi" => "Wave",
+            _ => null,
+        };
+
         private void TryUseTool()
         {
             _lastActionWasAttack = false;
             RefreshHeldItem();
+            var actionAnim = ToolActionAnim(Inventory.Instance.EquippedTool);
+            if (actionAnim != null) PlayAction(actionAnim);
 
             var plots = GetTree().GetNodesInGroup("farm_plots");
             float areaRadius = ToolAreaRadius(Inventory.Instance.EquippedTool);
