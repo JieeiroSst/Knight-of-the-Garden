@@ -219,7 +219,7 @@ namespace HiepSiVeVuon.Entities
             var horizontal = new Vector3(Velocity.X, 0f, Velocity.Z).MoveToward(targetVelocity, rate * dt);
 
             float vy = Velocity.Y;
-            if (!IsOnFloor()) vy -= Gravity * dt;
+            if (!IsOnFloor()) vy = Mathf.Max(vy - Gravity * dt, -SteeringUtil.TerminalFallSpeed);
             else vy = 0f;
 
             Velocity = new Vector3(horizontal.X, vy, horizontal.Z);

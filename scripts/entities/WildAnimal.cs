@@ -291,7 +291,7 @@ namespace HiepSiVeVuon.Entities
             }
             else
             {
-                float vy = IsOnFloor() ? 0f : Velocity.Y - Gravity * dt;
+                float vy = IsOnFloor() ? 0f : Mathf.Max(Velocity.Y - Gravity * dt, -SteeringUtil.TerminalFallSpeed);
                 Velocity = new Vector3(horizontal.X, vy, horizontal.Z);
                 MoveAndSlide();
                 GlobalPosition = SteeringUtil.GuardAgainstRunaway(GlobalPosition, "WildAnimal:" + Name);

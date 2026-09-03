@@ -154,14 +154,20 @@ namespace HiepSiVeVuon.Core
         // Luoi an toan CUOI CUNG chong "no toa do": mot lan tung ghi nhan Godot bao loi engine
         // "_set_transform: Object went too far away" (vi tri mot PhysicsBody3D vuot qua nguong an
         // toan cua physics server, ~3.16e18 don vi) - da sua 1 nguyen nhan (loi doi don vi x10 o
-        // vung que Phap trong Main.cs) nhung van con xay ra rai rac, rat co the la ca canh hiem gap
-        // cua chinh MoveAndSlide() (vd bi "ket" giua nhieu goc tuong/hang rao chong lan luc va cham
-        // giai quyet sai) chu khong phai loi logic o cac ham DoWander/DoChase... (huong/toc do o
-        // moi noi khac deu da bi gioi han). Goi NGAY SAU MoveAndSlide() moi noi: neu vi tri vua ra
-        // la NaN/Infinity hoac vuot xa bien the gioi hop ly (rong hon nhieu vung xa nhat hien co,
-        // "vung que Phap" ~26000 don vi tu goc), keo ve lai trong bien (giu huong that neu con dung
-        // duoc) thay vi de vat the lech vinh vien giua vi tri hien (render) va vi tri va cham that
-        // (physics server tu choi luon transform qua nguong).
+        // vung que Phap trong Main.cs) nhung van con xay ra rai rac. DA XAC MINH bang cach gan tam
+        // GuardAgainstRunaway nay + log ten class: nhieu CharacterBody3D KHAC NHAU (FarmWorkerNpc/
+        // StablehandNpc/FarmhandNpc/ScheduledFarmNpc/RepairmanNpc...) thinh thoang bi MoveAndSlide()
+        // "van" tuc thi ra vi tri X/Z rat xa (hang chuc-hang tram nghin don vi) trong DUNG 1 frame,
+        // du huong/toc do dau vao cua code C# o day luon bi gioi han (khong co cho nao trong DoWander/
+        // DoChase/GOAP TargetPos co the tao ra bien thien lon nhu vay chi trong 1 frame - da ra soat
+        // toan bo). Day rat co the la 1 canh hiem cua chinh thuat toan giai quyet va cham/truot cua
+        // Godot (CharacterBody3D.MoveAndSlide) khi bi "ket" giua nhieu hang rao/tuong chong lan (the
+        // gioi ngay cang nhieu vat can qua tung lan mo rong) - ngoai kha nang sua tu phia C#. Goi
+        // NGAY SAU MoveAndSlide() moi noi: neu vi tri vua ra la NaN/Infinity hoac vuot xa bien the
+        // gioi hop ly (rong hon nhieu vung xa nhat hien co, "vung que Phap" ~26000 don vi tu goc),
+        // keo ve lai trong bien (giu huong that neu con dung duoc) thay vi de vat the lech vinh vien
+        // giua vi tri hien (render) va vi tri va cham that (physics server tu choi luon transform
+        // qua nguong 3.16e18, "ket qua" o muc nay chinh la loi da ghi nhan).
         private const float MaxSaneDistance = 200_000f;
 
         public static Vector3 GuardAgainstRunaway(Vector3 pos, string debugName = null)
@@ -174,5 +180,15 @@ namespace HiepSiVeVuon.Core
                 (debugName != null ? $" ({debugName})" : "") + $" - keo ve {safe}.");
             return safe;
         }
+
+        // Toc do roi toi da (don vi/s) - MOI script vat nuoi/NPC/quai deu tang Velocity.Y THEO
+        // Gravity moi frame khi khong IsOnFloor() ma KHONG HE gioi han (khong co "toc do roi toi
+        // da" giong vat ly that) - neu 1 con vo tinh roi khoi mat dat lau (vd rot qua khe ho dia
+        // hinh, hoac chinh la he qua cua cu "van" toa do o tren khien no bay ra ngoai moi mat san),
+        // Velocity.Y se tang VO HAN theo thoi gian, khien vi tri Y lao xuong cang luc cang xa - gop
+        // phan lam nghiem trong hon (khong phai nguyen nhan goc) hien tuong "no toa do". Gioi han o
+        // day dam bao du roi bao lau, moi frame vi tri chi doi toi da tung nay don vi - khong con
+        // duong nao khien 1 gia tri huu han "roi" thanh vo cung trong huu han thoi gian nua.
+        public const float TerminalFallSpeed = 2000f;
     }
 }

@@ -135,7 +135,7 @@ namespace HiepSiVeVuon.Entities
 			float dt = (float)delta;
 			if (_state == State.Dead || _def == null)
 			{
-				if (!IsOnFloor()) Velocity += Vector3.Down * Gravity * dt;
+				if (!IsOnFloor()) Velocity = new Vector3(Velocity.X, Mathf.Max(Velocity.Y - Gravity * dt, -SteeringUtil.TerminalFallSpeed), Velocity.Z);
 				MoveAndSlide();
 				GlobalPosition = SteeringUtil.GuardAgainstRunaway(GlobalPosition, "Enemy:" + Name);
 				return;
@@ -167,7 +167,7 @@ namespace HiepSiVeVuon.Entities
 					break;
 			}
 
-			float vy = IsOnFloor() ? 0f : Velocity.Y - Gravity * dt;
+			float vy = IsOnFloor() ? 0f : Mathf.Max(Velocity.Y - Gravity * dt, -SteeringUtil.TerminalFallSpeed);
 			Velocity = new Vector3(horizontal.X, vy, horizontal.Z);
 			MoveAndSlide();
 			GlobalPosition = SteeringUtil.GuardAgainstRunaway(GlobalPosition, "Enemy:" + Name);
