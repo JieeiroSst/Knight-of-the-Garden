@@ -4763,9 +4763,15 @@ namespace HiepSiVeVuon.Core
 					guard.WorkEndHour = isDayShift ? 18 : 6;
 					guard.PatrolCenter = FarmWallCenter;
 					guard.PatrolRadius = FarmWallHalfSize * 0.85f;
-					guard.HomePos = homeFront;
-
 					int slot = idx % dayShift; // 2 ca dung CHUNG 50 vi tri ngu (xem ghi chu tren)
+					// Lech nho THEO SLOT (khong dung chung 1 diem "homeFront" tuyet doi cho ca 50
+					// linh/ca) - PalaceGuardNpc.Ready() TELEPORT thang toi HomePos (xem GlobalPosition
+					// = HomePos), nen 50 linh cung ca deu "hien" CHONG KHIT hoan toan len nhau NGAY
+					// frame dau tien neu dung chung 1 diem - dung 1 nguyen nhan tao capsule chong lan
+					// hang loat gay loi engine "Object went too far away" nhu InteriorHomePos (xem
+					// ghi chu SteeringUtil.GuardAgainstRunaway).
+					guard.HomePos = homeFront + new Vector3((slot % 8 - 3.5f) * 5f, 0, (slot / 8 - 3f) * 5f);
+
 					// 8 cot (khong phai 10) + 28 don vi/o (khong phai 22) - PHAI rong hon duong kinh
 					// capsule NPC (radius 12 -> duong kinh 24, xem NPC.tscn) de tranh 50 lam cam ve
 					// ngu chung co capsule chong lan that su moi dem (xem ghi chu chi tiet trong
@@ -5618,6 +5624,12 @@ namespace HiepSiVeVuon.Core
 					// trong BuildWorkerDormsAndStaff). Offset cot dung -3.5f (khong phai -4.5f) vi
 					// cols = 8 (khong phai 10, xem ghi chu tren khai bao cols).
 					var interiorSlot = interior + new Vector3((idx % cols - 3.5f) * 30f, 0, (idx / cols - 1.5f) * 30f);
+					// Lech nho THEO SLOT (khong dung chung 1 diem "homeFront" tuyet doi cho ca
+					// pens.Count NPC) - moi lop NPC nay TELEPORT thang toi HomePos trong _Ready(),
+					// nen tat ca deu "hien" CHONG KHIT hoan toan len nhau NGAY frame dau tien neu
+					// dung chung 1 diem - cung 1 nguyen nhan gay capsule chong lan hang loat nhu
+					// InteriorHomePos (xem ghi chu SteeringUtil.GuardAgainstRunaway).
+					var homeSlot = homeFront + new Vector3((idx % cols - 3.5f) * 5f, 0, (idx / cols - 1.5f) * 5f);
 
 					if (spec.horse > 0)
 					{
@@ -5631,7 +5643,7 @@ namespace HiepSiVeVuon.Core
 						stablehand.DialogueMidEn = new[] { "Every day I come from here to the stable to tend the horses." };
 						stablehand.DialogueHighEn = new[] { "Every horse I care for is healthy and strong." };
 						stablehand.WorkPos = penPos + new Vector3(0, 0, -40);
-						stablehand.HomePos = homeFront;
+						stablehand.HomePos = homeSlot;
 						stablehand.InteriorHomePos = interiorSlot;
 						_world.AddChild(stablehand);
 					}
@@ -5647,7 +5659,7 @@ namespace HiepSiVeVuon.Core
 						keeper.DialogueMidEn = new[] { "Every day I come from here to the coop to collect eggs." };
 						keeper.DialogueHighEn = new[] { "Fresh eggs, still warm - go on and take them." };
 						keeper.WorkPos = penPos + new Vector3(0, 0, -30);
-						keeper.HomePos = homeFront;
+						keeper.HomePos = homeSlot;
 						keeper.InteriorHomePos = interiorSlot;
 						_world.AddChild(keeper);
 					}
@@ -5665,7 +5677,7 @@ namespace HiepSiVeVuon.Core
 						if (spec.sheep > 0 || spec.pig > 0) caretaker.ProduceItemId = "wool";
 						caretaker.WorkPos = penPos + new Vector3(0, 0, -40);
 						caretaker.TroughPos = penPos;
-						caretaker.HomePos = homeFront;
+						caretaker.HomePos = homeSlot;
 						caretaker.InteriorHomePos = interiorSlot;
 						_world.AddChild(caretaker);
 					}
