@@ -4465,7 +4465,12 @@ namespace HiepSiVeVuon.Core
 				npc.DoesFieldWork = r.fieldWork;
 				npc.WorkPos = r.workPos;
 				npc.FeedPos = r.feedPos;
-				npc.HomePos = dormPos + new Vector3(0, 0, 55);
+				// Lech nho THEO SLOT (khong dung chung 1 diem cho ca 10 nguoi/dorm) - ScheduledFarmNpc
+				// TELEPORT thang toi HomePos trong _Ready(), nen ca dorm se "hien" CHONG KHIT hoan
+				// toan len nhau NGAY frame dau tien neu dung chung 1 diem (cung nguyen nhan gay
+				// capsule chong lan hang loat nhu InteriorHomePos ben duoi, xem ghi chu
+				// SteeringUtil.GuardAgainstRunaway).
+				npc.HomePos = dormPos + new Vector3((slot % 5 - 2) * 5f, 0, 55 + (slot / 5 - 0.5f) * 5f);
 				// Lech nho vi tri ngu trong noi that chung de khong chong het len nhau. PHAI RONG
 				// HON duong kinh capsule va cham cua NPC (CapsuleShape3D radius=12 -> duong kinh
 				// 24, xem NPC.tscn) - 20 don vi TUNG nho hon 24 khien 2 slot ke nhau LUON de capsule

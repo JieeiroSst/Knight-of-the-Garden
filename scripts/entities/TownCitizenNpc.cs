@@ -42,7 +42,17 @@ namespace HiepSiVeVuon.Entities
             int hour = GameManager.Instance.Hour;
             bool active = hour >= ActiveStartHour && hour < ActiveEndHour;
             _state = active ? DayState.Wandering : DayState.AtHome;
-            GlobalPosition = active ? WanderCenter : InteriorHomePos + Vector3.Up * 8f;
+            // Nhieu NPC (vd 18 nguoi dan thi tran/nhieu dan lang Phap) dung CHUNG 1 WanderCenter
+            // (VillageAnchor/FrenchRegionCenter) - neu spawn dung TUYET DOI DUNG diem do, tat ca se
+            // "hien" CHONG KHIT hoan toan len nhau ngay frame dau tien (dang hoat dong ban ngay luc
+            // vua vao game), buoc MoveAndSlide() giai quyet va cham giua qua nhieu capsule trung
+            // khop cung luc - da xac nhan day la 1 nguyen nhan gay loi engine "Object went too far
+            // away" (xem SteeringUtil.GuardAgainstRunaway). Rai ngau nhien nho quanh WanderCenter
+            // (con trong pham vi wander binh thuong) de tranh trung diem tuyet doi.
+            var spawnRng = new RandomNumberGenerator();
+            spawnRng.Randomize();
+            Vector3 spawnJitter = new(spawnRng.RandfRange(-40f, 40f), 0f, spawnRng.RandfRange(-40f, 40f));
+            GlobalPosition = active ? WanderCenter + spawnJitter : InteriorHomePos + Vector3.Up * 8f;
             _wanderTarget = GlobalPosition;
 
             GameManager.Instance.HourChanged += OnHourChanged;
