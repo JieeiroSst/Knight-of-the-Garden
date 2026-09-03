@@ -149,7 +149,7 @@ namespace HiepSiVeVuon.Entities
             float vy = IsOnFloor() ? 0f : Velocity.Y - Gravity * dt;
             Velocity = new Vector3(horizontal.X, vy, horizontal.Z);
             MoveAndSlide();
-            GlobalPosition = SteeringUtil.GuardAgainstRunaway(GlobalPosition);
+            GlobalPosition = SteeringUtil.GuardAgainstRunaway(GlobalPosition, "Dog:" + Name);
 
             PlayLoop(state switch { State.Run => AnimRun, State.Walk => AnimWalk, _ => AnimIdle });
         }

@@ -185,7 +185,7 @@ namespace HiepSiVeVuon.Entities
                 Vector3 seatWorldOffset = horseRight * Horse.SeatOffset.X
                     + Vector3.Up * Horse.SeatOffset.Y
                     + _facing * Horse.SeatOffset.Z;
-                GlobalPosition = SteeringUtil.GuardAgainstRunaway(_mountedHorse.GlobalPosition + seatWorldOffset);
+                GlobalPosition = SteeringUtil.GuardAgainstRunaway(_mountedHorse.GlobalPosition + seatWorldOffset, "Player-mounted-horse");
                 // Bo hoan toan viec tu nghieng Basis (thu truoc do lam nhan vat bi xoay gan 90 do,
                 // nam bet xuong dat thay vi ngoi) - giu than nguoi THANG DUNG, chi dua vi tri len
                 // dung tam LUNG NGUA that (gan vai/withers, khong cao hon dinh dau hay thap qua

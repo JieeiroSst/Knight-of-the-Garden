@@ -137,7 +137,7 @@ namespace HiepSiVeVuon.Entities
 			{
 				if (!IsOnFloor()) Velocity += Vector3.Down * Gravity * dt;
 				MoveAndSlide();
-				GlobalPosition = SteeringUtil.GuardAgainstRunaway(GlobalPosition);
+				GlobalPosition = SteeringUtil.GuardAgainstRunaway(GlobalPosition, "Enemy:" + Name);
 				return;
 			}
 			if (_player == null || !IsInstanceValid(_player))
@@ -170,7 +170,7 @@ namespace HiepSiVeVuon.Entities
 			float vy = IsOnFloor() ? 0f : Velocity.Y - Gravity * dt;
 			Velocity = new Vector3(horizontal.X, vy, horizontal.Z);
 			MoveAndSlide();
-			GlobalPosition = SteeringUtil.GuardAgainstRunaway(GlobalPosition);
+			GlobalPosition = SteeringUtil.GuardAgainstRunaway(GlobalPosition, "Enemy:" + Name);
 
 			if (horizontal != Vector3.Zero)
 				FaceDirection(horizontal.Normalized());

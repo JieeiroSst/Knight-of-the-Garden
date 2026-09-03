@@ -180,7 +180,7 @@ namespace HiepSiVeVuon.Entities
             float vy = IsOnFloor() ? 0f : Velocity.Y - Gravity * dt;
             Velocity = new Vector3(horizontal.X, vy, horizontal.Z);
             MoveAndSlide();
-            GlobalPosition = SteeringUtil.GuardAgainstRunaway(GlobalPosition);
+            GlobalPosition = SteeringUtil.GuardAgainstRunaway(GlobalPosition, "Chicken:" + Name);
 
             // Chicken.glb khong co "Walk" - chi co Idle/Idle_Peck/Run, nen dung Run cho moi kieu
             // di chuyen (ga di rat nhanh/hay chay giat cuc, hop voi dang "Run" hon la mo phong
