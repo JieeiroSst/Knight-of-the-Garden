@@ -549,6 +549,22 @@ namespace HiepSiVeVuon.Entities
             }
             if (nearestTree != null) { nearestTree.UseOn(); return; }
 
+            // Canh dong lua mi RIENG (xem WheatPlant.cs/Main.BuildWheatField) - cung la "cay lau
+            // nam" tu moc lai sau khi hai giong FruitTree o tren, nhung KHONG PHAI FruitTree (dung
+            // 3 model rieng cho 3 giai doan thay vi phong to 1 model), nen can quet nhom rieng.
+            var wheatPlants = GetTree().GetNodesInGroup("wheat_plants");
+            WheatPlant nearestWheat = null;
+            float bestWheat = 48f;
+            foreach (var n in wheatPlants)
+            {
+                if (n is WheatPlant w)
+                {
+                    float d = GlobalPosition.DistanceTo(w.GlobalPosition);
+                    if (d < bestWheat) { bestWheat = d; nearestWheat = w; }
+                }
+            }
+            if (nearestWheat != null) { nearestWheat.UseOn(); return; }
+
             // Khong co gi gan de dung - neu dang trang bi Cuoc (bat ky cap nao), thu cuoc dat MOI
             // ngay truoc mat (xem FarmPlot.TryTillFreeform) de mo rong nong trai tu do. Cuoc nang
             // cap (bac/vang) cuoc CA CUM O (3x3/5x5) cung 1 lan thay vi tung o.

@@ -253,6 +253,7 @@ namespace HiepSiVeVuon.Systems
             ["label.sheep_pig_pen"] = ("Chuồng Cừu/Heo", "Sheep/Pig Pen"),
             ["label.orchard"] = ("Vườn Cây Ăn Quả", "Orchard"),
             ["label.vineyard"] = ("Vườn Nho", "Vineyard"),
+            ["label.wheat_field"] = ("Cánh Đồng Lúa Mì", "Wheat Field"),
             ["label.estate_worker_house"] = ("Nhà Người Làm Vườn", "Estate Worker's House"),
             ["label.steward_house"] = ("Nhà Quản Gia", "Steward's House"),
             ["label.repairman_house"] = ("Nhà Thợ Sửa Chữa", "Repairman's House"),

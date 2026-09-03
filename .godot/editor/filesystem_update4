@@ -69,3 +69,4 @@ res://scripts/entities/WildAnimal.cs
 res://scripts/entities/Dog.cs
 res://scripts/entities/Enemy.cs
 res://scripts/entities/GuardNpc.cs
+res://scripts/entities/WheatPlant.cs

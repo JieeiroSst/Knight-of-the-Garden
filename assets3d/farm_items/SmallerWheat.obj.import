@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://m1rgekcemytj"
+path="res://.godot/imported/SmallerWheat.obj-b5fd58a558dd8f9d5bdc053266ec698e.mesh"
+
+[deps]
+
+files=["res://.godot/imported/SmallerWheat.obj-b5fd58a558dd8f9d5bdc053266ec698e.mesh"]
+
+source_file="res://assets3d/farm_items/SmallerWheat.obj"
+dest_files=["res://.godot/imported/SmallerWheat.obj-b5fd58a558dd8f9d5bdc053266ec698e.mesh", "res://.godot/imported/SmallerWheat.obj-b5fd58a558dd8f9d5bdc053266ec698e.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false

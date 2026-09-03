@@ -287,6 +287,7 @@ namespace HiepSiVeVuon.Core
 			// la buoc rieng o day.
 			SafeBuildStep(BuildOrchard, nameof(BuildOrchard));
 			SafeBuildStep(BuildVineyard, nameof(BuildVineyard));
+			SafeBuildStep(BuildWheatField, nameof(BuildWheatField));
 			SafeBuildStep(BuildBeehive, nameof(BuildBeehive));
 			SafeBuildStep(BuildEstateWorker, nameof(BuildEstateWorker));
 			SafeBuildStep(BuildWaterFeatures, nameof(BuildWaterFeatures));
@@ -4118,6 +4119,40 @@ namespace HiepSiVeVuon.Core
 						_world.AddChild(vineTree);
 						vineTree.Init(vine);
 					}
+				}
+			}
+		}
+
+		// Canh dong lua mi RIENG (khac luoi o dat thuong co the trong lua mi lan cac loai cay
+		// khac - o day la 1 khu dat CHUYEN BIET, cay tu moc/lon/chin qua thoi gian giong Vuon
+		// Nho/Vuon Cay, xem WheatPlant.cs). Dung dirt_patch.glb (giong FarmPlot.cs) duoi moi bui
+		// lua de nhin ro la dat da cay xoi, khong phai co moc tu nhien.
+		private static readonly Vector3 WheatFieldCenter = CropsExtensionAnchor + new Vector3(-280, 0, -40);
+		private const string DirtPatchPath = "res://assets3d/quaternius/farm/dirt_patch.glb";
+
+		private void BuildWheatField()
+		{
+			AddBuildingLabelZone(WheatFieldCenter, 150f, "label.wheat_field");
+			var dirtScene = GD.Load<PackedScene>(DirtPatchPath);
+			var rng = new RandomNumberGenerator { Seed = 9003 };
+			for (int row = -2; row <= 2; row++)
+			{
+				for (int col = -3; col <= 3; col++)
+				{
+					var pos = WheatFieldCenter + new Vector3(col * 32f + rng.RandfRange(-4f, 4f), 0, row * 32f + rng.RandfRange(-4f, 4f));
+
+					if (dirtScene != null)
+					{
+						var soil = dirtScene.Instantiate<Node3D>();
+						soil.Position = pos;
+						soil.Scale = Vector3.One * 14f;
+						_world.AddChild(soil);
+					}
+
+					var plant = new WheatPlant { Position = pos, DaysPerStage = 2 };
+					plant.AddChild(new CollisionShape3D { Shape = new CylinderShape3D { Radius = 5f, Height = 30f }, Position = Vector3.Up * 15f });
+					_world.AddChild(plant);
+					plant.Init();
 				}
 			}
 		}

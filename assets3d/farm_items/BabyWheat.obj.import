@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://buc68ost0pft4"
+path="res://.godot/imported/BabyWheat.obj-15d3c1f5057d774957819724a315b848.mesh"
+
+[deps]
+
+files=["res://.godot/imported/BabyWheat.obj-15d3c1f5057d774957819724a315b848.mesh"]
+
+source_file="res://assets3d/farm_items/BabyWheat.obj"
+dest_files=["res://.godot/imported/BabyWheat.obj-15d3c1f5057d774957819724a315b848.mesh", "res://.godot/imported/BabyWheat.obj-15d3c1f5057d774957819724a315b848.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false
