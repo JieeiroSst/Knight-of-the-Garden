@@ -150,5 +150,29 @@ namespace HiepSiVeVuon.Core
                 return dir.LengthSquared() > 1f ? dir.Normalized() : Vector3.Zero;
             }
         }
+
+        // Luoi an toan CUOI CUNG chong "no toa do": mot lan tung ghi nhan Godot bao loi engine
+        // "_set_transform: Object went too far away" (vi tri mot PhysicsBody3D vuot qua nguong an
+        // toan cua physics server, ~3.16e18 don vi) - da sua 1 nguyen nhan (loi doi don vi x10 o
+        // vung que Phap trong Main.cs) nhung van con xay ra rai rac, rat co the la ca canh hiem gap
+        // cua chinh MoveAndSlide() (vd bi "ket" giua nhieu goc tuong/hang rao chong lan luc va cham
+        // giai quyet sai) chu khong phai loi logic o cac ham DoWander/DoChase... (huong/toc do o
+        // moi noi khac deu da bi gioi han). Goi NGAY SAU MoveAndSlide() moi noi: neu vi tri vua ra
+        // la NaN/Infinity hoac vuot xa bien the gioi hop ly (rong hon nhieu vung xa nhat hien co,
+        // "vung que Phap" ~26000 don vi tu goc), keo ve lai trong bien (giu huong that neu con dung
+        // duoc) thay vi de vat the lech vinh vien giua vi tri hien (render) va vi tri va cham that
+        // (physics server tu choi luon transform qua nguong).
+        private const float MaxSaneDistance = 200_000f;
+
+        public static Vector3 GuardAgainstRunaway(Vector3 pos, string debugName = null)
+        {
+            bool finite = float.IsFinite(pos.X) && float.IsFinite(pos.Y) && float.IsFinite(pos.Z);
+            if (finite && pos.LengthSquared() <= MaxSaneDistance * MaxSaneDistance) return pos;
+
+            Vector3 safe = finite ? pos.Normalized() * MaxSaneDistance : Vector3.Zero;
+            GD.PushWarning($"SteeringUtil.GuardAgainstRunaway: vi tri bat thuong {pos}" +
+                (debugName != null ? $" ({debugName})" : "") + $" - keo ve {safe}.");
+            return safe;
+        }
     }
 }

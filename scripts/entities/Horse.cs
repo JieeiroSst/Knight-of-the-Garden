@@ -208,6 +208,7 @@ namespace HiepSiVeVuon.Entities
             float vy = IsOnFloor() ? 0f : Velocity.Y - Gravity * dt;
             Velocity = new Vector3(horizontal.X, vy, horizontal.Z);
             MoveAndSlide();
+            GlobalPosition = SteeringUtil.GuardAgainstRunaway(GlobalPosition);
 
             // Chon dung dang di theo TOC DO THUC TE - truoc day CHI dung "WalkSlow" cho moi toc
             // do (ke ca luc phi nuoc dai 260 don vi/s khi duoc cuoi), khien chan buoc cham nhung

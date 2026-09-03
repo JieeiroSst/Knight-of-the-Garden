@@ -185,7 +185,7 @@ namespace HiepSiVeVuon.Entities
                 Vector3 seatWorldOffset = horseRight * Horse.SeatOffset.X
                     + Vector3.Up * Horse.SeatOffset.Y
                     + _facing * Horse.SeatOffset.Z;
-                GlobalPosition = _mountedHorse.GlobalPosition + seatWorldOffset;
+                GlobalPosition = SteeringUtil.GuardAgainstRunaway(_mountedHorse.GlobalPosition + seatWorldOffset);
                 // Bo hoan toan viec tu nghieng Basis (thu truoc do lam nhan vat bi xoay gan 90 do,
                 // nam bet xuong dat thay vi ngoi) - giu than nguoi THANG DUNG, chi dua vi tri len
                 // dung tam LUNG NGUA that (gan vai/withers, khong cao hon dinh dau hay thap qua
@@ -203,7 +203,7 @@ namespace HiepSiVeVuon.Entities
                 Vector3 seatWorldOffset = boatRight * Boat.SeatOffset.X
                     + Vector3.Up * Boat.SeatOffset.Y
                     + _facing * Boat.SeatOffset.Z;
-                GlobalPosition = _mountedBoat.GlobalPosition + seatWorldOffset;
+                GlobalPosition = SteeringUtil.GuardAgainstRunaway(_mountedBoat.GlobalPosition + seatWorldOffset);
                 UpdateVisuals(dt, 0f);
                 return;
             }
@@ -228,6 +228,7 @@ namespace HiepSiVeVuon.Entities
             // huong khac voi huong dang chay (giong truot bang) khi doi huong gap.
             if (horizontal.Length() > 5f) _facing = horizontal.Normalized();
             MoveAndSlide();
+            GlobalPosition = SteeringUtil.GuardAgainstRunaway(GlobalPosition);
 
             float speedRatio = new Vector2(horizontal.X, horizontal.Z).Length() / Speed;
             UpdateVisuals(dt, speedRatio);

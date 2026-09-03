@@ -286,6 +286,7 @@ namespace HiepSiVeVuon.Entities
             {
                 Velocity = new Vector3(horizontal.X, 0f, horizontal.Z);
                 MoveAndSlide();
+                GlobalPosition = SteeringUtil.GuardAgainstRunaway(GlobalPosition);
                 var p = GlobalPosition; p.Y = WaterSurfaceY; GlobalPosition = p;
             }
             else
@@ -293,6 +294,7 @@ namespace HiepSiVeVuon.Entities
                 float vy = IsOnFloor() ? 0f : Velocity.Y - Gravity * dt;
                 Velocity = new Vector3(horizontal.X, vy, horizontal.Z);
                 MoveAndSlide();
+                GlobalPosition = SteeringUtil.GuardAgainstRunaway(GlobalPosition);
             }
 
             PlayLoop(horizontal.Length() > 3f);
