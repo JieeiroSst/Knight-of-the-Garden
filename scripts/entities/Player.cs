@@ -203,7 +203,7 @@ namespace HiepSiVeVuon.Entities
                 Vector3 seatWorldOffset = boatRight * Boat.SeatOffset.X
                     + Vector3.Up * Boat.SeatOffset.Y
                     + _facing * Boat.SeatOffset.Z;
-                GlobalPosition = SteeringUtil.GuardAgainstRunaway(_mountedBoat.GlobalPosition + seatWorldOffset);
+                GlobalPosition = SteeringUtil.GuardAgainstRunaway(_mountedBoat.GlobalPosition + seatWorldOffset, "Player-mounted-boat");
                 UpdateVisuals(dt, 0f);
                 return;
             }
@@ -228,7 +228,7 @@ namespace HiepSiVeVuon.Entities
             // huong khac voi huong dang chay (giong truot bang) khi doi huong gap.
             if (horizontal.Length() > 5f) _facing = horizontal.Normalized();
             MoveAndSlide();
-            GlobalPosition = SteeringUtil.GuardAgainstRunaway(GlobalPosition);
+            GlobalPosition = SteeringUtil.GuardAgainstRunaway(GlobalPosition, "Player");
 
             float speedRatio = new Vector2(horizontal.X, horizontal.Z).Length() / Speed;
             UpdateVisuals(dt, speedRatio);
