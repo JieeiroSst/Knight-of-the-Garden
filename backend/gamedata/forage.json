@@ -1,0 +1,14 @@
+[
+  { "ItemId": "hanh_rung", "Seasons": ["Spring"], "Weight": 30 },
+  { "ItemId": "rau_ma", "Seasons": ["Spring"], "Weight": 30 },
+  { "ItemId": "hoa_thuy_tien", "Seasons": ["Spring"], "Weight": 15 },
+  { "ItemId": "dau_rung", "Seasons": ["Summer"], "Weight": 30 },
+  { "ItemId": "hoa_huong_duong_dai", "Seasons": ["Summer"], "Weight": 15 },
+  { "ItemId": "thao_duoc_rung", "Seasons": ["Spring", "Summer", "Fall"], "Weight": 15 },
+  { "ItemId": "nam_rung", "Seasons": ["Fall"], "Weight": 30 },
+  { "ItemId": "qua_mam_xoi", "Seasons": ["Fall"], "Weight": 30 },
+  { "ItemId": "chestnut", "Seasons": ["Fall"], "Weight": 15 },
+  { "ItemId": "cu_gung_dai", "Seasons": ["Winter"], "Weight": 30 },
+  { "ItemId": "qua_thong", "Seasons": ["Winter"], "Weight": 30 },
+  { "ItemId": "hoa_tuyet", "Seasons": ["Winter"], "Weight": 10 }
+]

@@ -39,7 +39,10 @@ namespace HiepSiVeVuon.Entities
             var rng = new RandomNumberGenerator();
             rng.Randomize();
             int amount = rng.RandiRange(WoodMin, WoodMax);
-            DroppedItem.Spawn(GetTree().CurrentScene, GlobalPosition, WoodItemId, amount);
+            // Chi nguoi choi chat cay (Player.TryAttack) - cong EXP Hai Luom, co hoi them go.
+            if (rng.Randf() < HiepSiVeVuon.Systems.SkillSystem.Instance.DoubleForageChance) amount *= 2;
+            HiepSiVeVuon.Systems.SkillSystem.Instance.AddXp(HiepSiVeVuon.Data.SkillType.Foraging, 10);
+            DroppedItem.Spawn(GetTree().CurrentScene, GlobalPosition, WoodItemId, amount, "tree");
             QueueFree();
         }
     }

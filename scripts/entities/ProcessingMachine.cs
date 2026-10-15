@@ -21,6 +21,8 @@ namespace HiepSiVeVuon.Entities
         [Export] public string OutputPrefix = "";
         [Export] public string FixedOutputId = "";
         [Export] public int ProcessDays = 2;
+        // Danh sach id nhan vao (vd May Lam Mut: moi loai trai cay) -> ra FixedOutputId. null = khong dung.
+        public string[] AcceptIds;
 
         private string _pendingOutputId = null;
         private int _daysLeft = 0;
@@ -43,7 +45,7 @@ namespace HiepSiVeVuon.Entities
         {
             if (IsDone)
             {
-                Inventory.Instance.AddItem(_pendingOutputId, 1);
+                Inventory.Instance.AddItem(_pendingOutputId, 1, "process");
                 var outDef = ItemDatabase.Instance.GetItem(_pendingOutputId);
                 GD.Print($"{MachineName}: lấy ra {outDef?.Name}.");
                 _pendingOutputId = null;
@@ -55,6 +57,19 @@ namespace HiepSiVeVuon.Entities
                 return;
             }
 
+            if (AcceptIds != null)
+            {
+                string found = null;
+                foreach (var id in AcceptIds) if (Inventory.Instance.CountOf(id) > 0) { found = id; break; }
+                if (found != null && Inventory.Instance.RemoveItem(found, 1))
+                {
+                    _pendingOutputId = FixedOutputId;
+                    _daysLeft = ProcessDays;
+                    HiepSiVeVuon.UI.Notify.Show(string.Format(Loc.T("machine.started_fmt"), MachineName, ItemDatabase.Instance.GetDisplayName(found), ProcessDays));
+                }
+                else HiepSiVeVuon.UI.Notify.Show(string.Format(Loc.T("machine.need_fmt"), MachineName));
+                return;
+            }
             if (AcceptsAnyCrop)
             {
                 // Tim TRUOC (khong sua Slots), roi moi RemoveItem RIENG - goi RemoveItem NGAY

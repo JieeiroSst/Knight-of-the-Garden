@@ -1,0 +1,312 @@
+[
+  {
+    "Id": "first_harvest",
+    "Title": "Vụ Mùa Đầu Tiên",
+    "TitleEn": "First Harvest",
+    "Description": "Thu hoạch 1 nông sản.",
+    "DescriptionEn": "Harvest 1 crop.",
+    "Stat": "crops_harvested",
+    "Target": 1,
+    "RewardGold": 50
+  },
+  {
+    "Id": "farmer_100",
+    "Title": "Nhà Nông Chăm Chỉ",
+    "TitleEn": "Hard-working Farmer",
+    "Description": "Thu hoạch 100 nông sản.",
+    "DescriptionEn": "Harvest 100 crops.",
+    "Stat": "crops_harvested",
+    "Target": 100,
+    "RewardGold": 500
+  },
+  {
+    "Id": "farmer_500",
+    "Title": "Vua Ruộng Đồng",
+    "TitleEn": "King of the Fields",
+    "Description": "Thu hoạch 500 nông sản.",
+    "DescriptionEn": "Harvest 500 crops.",
+    "Stat": "crops_harvested",
+    "Target": 500,
+    "RewardGold": 2000
+  },
+  {
+    "Id": "fish_first",
+    "Title": "Mẻ Cá Đầu Tiên",
+    "TitleEn": "First Catch",
+    "Description": "Câu được 1 con cá.",
+    "DescriptionEn": "Catch 1 fish.",
+    "Stat": "fish_caught",
+    "Target": 1,
+    "RewardGold": 50
+  },
+  {
+    "Id": "fish_50",
+    "Title": "Ngư Phủ",
+    "TitleEn": "Angler",
+    "Description": "Câu được 50 con cá.",
+    "DescriptionEn": "Catch 50 fish.",
+    "Stat": "fish_caught",
+    "Target": 50,
+    "RewardGold": 600
+  },
+  {
+    "Id": "fish_legend",
+    "Title": "Huyền Thoại Mặt Hồ",
+    "TitleEn": "Legend of the Lake",
+    "Description": "Câu được Cá Vàng Huyền Thoại.",
+    "DescriptionEn": "Catch the Legendary Golden Fish.",
+    "Stat": "legend_fish",
+    "Target": 1,
+    "RewardGold": 3000
+  },
+  {
+    "Id": "ship_1000",
+    "Title": "Thương Lái Nhỏ",
+    "TitleEn": "Small Trader",
+    "Description": "Kiếm 1.000 vàng từ thùng giao hàng.",
+    "DescriptionEn": "Earn 1,000 gold from the shipping bin.",
+    "Stat": "gold_shipped",
+    "Target": 1000,
+    "RewardGold": 200
+  },
+  {
+    "Id": "ship_20000",
+    "Title": "Đại Phú Hộ",
+    "TitleEn": "Tycoon",
+    "Description": "Kiếm 20.000 vàng từ thùng giao hàng.",
+    "DescriptionEn": "Earn 20,000 gold from the shipping bin.",
+    "Stat": "gold_shipped",
+    "Target": 20000,
+    "RewardGold": 2500
+  },
+  {
+    "Id": "craft_10",
+    "Title": "Đôi Tay Khéo Léo",
+    "TitleEn": "Handy",
+    "Description": "Chế tạo 10 lần.",
+    "DescriptionEn": "Craft 10 times.",
+    "Stat": "items_crafted",
+    "Target": 10,
+    "RewardGold": 200
+  },
+  {
+    "Id": "cook_10",
+    "Title": "Đầu Bếp Tại Gia",
+    "TitleEn": "Home Cook",
+    "Description": "Nấu 10 món ăn.",
+    "DescriptionEn": "Cook 10 dishes.",
+    "Stat": "dishes_cooked",
+    "Target": 10,
+    "RewardGold": 200
+  },
+  {
+    "Id": "forage_30",
+    "Title": "Con Của Rừng",
+    "TitleEn": "Child of the Forest",
+    "Description": "Hái lượm 30 món đồ.",
+    "DescriptionEn": "Forage 30 items.",
+    "Stat": "forage_collected",
+    "Target": 30,
+    "RewardGold": 300
+  },
+  {
+    "Id": "mine_100",
+    "Title": "Thợ Mỏ",
+    "TitleEn": "Miner",
+    "Description": "Đào 100 mỏ quặng.",
+    "DescriptionEn": "Mine 100 ore nodes.",
+    "Stat": "ores_mined",
+    "Target": 100,
+    "RewardGold": 500
+  },
+  {
+    "Id": "animal_50",
+    "Title": "Người Bạn Của Muông Thú",
+    "TitleEn": "Friend of Animals",
+    "Description": "Thu 50 sản phẩm chăn nuôi.",
+    "DescriptionEn": "Collect 50 animal products.",
+    "Stat": "animal_products",
+    "Target": 50,
+    "RewardGold": 400
+  },
+  {
+    "Id": "gift_10",
+    "Title": "Người Hào Phóng",
+    "TitleEn": "Generous",
+    "Description": "Tặng quà 10 lần.",
+    "DescriptionEn": "Give 10 gifts.",
+    "Stat": "gifts_given",
+    "Target": 10,
+    "RewardGold": 200
+  },
+  {
+    "Id": "best_friend",
+    "Title": "Tri Kỷ",
+    "TitleEn": "Best Friend",
+    "Description": "Đạt 8 tim với một người dân.",
+    "DescriptionEn": "Reach 8 hearts with a villager.",
+    "Stat": "max_hearts",
+    "Target": 8,
+    "RewardGold": 1000
+  },
+  {
+    "Id": "compost_5",
+    "Title": "Nông Nghiệp Xanh",
+    "TitleEn": "Green Farming",
+    "Description": "Ủ xong 5 mẻ phân.",
+    "DescriptionEn": "Finish 5 compost batches.",
+    "Stat": "compost_made",
+    "Target": 5,
+    "RewardGold": 300
+  },
+  {
+    "Id": "skill_5",
+    "Title": "Thành Thạo",
+    "TitleEn": "Skilled",
+    "Description": "Đạt cấp 5 ở một kỹ năng.",
+    "DescriptionEn": "Reach level 5 in any skill.",
+    "Stat": "max_skill_level",
+    "Target": 5,
+    "RewardGold": 500
+  },
+  {
+    "Id": "skill_10",
+    "Title": "Bậc Thầy",
+    "TitleEn": "Master",
+    "Description": "Đạt cấp 10 ở một kỹ năng.",
+    "DescriptionEn": "Reach level 10 in any skill.",
+    "Stat": "max_skill_level",
+    "Target": 10,
+    "RewardGold": 3000
+  },
+  {
+    "Id": "explorer_5",
+    "Title": "Nhà Thám Hiểm",
+    "TitleEn": "Explorer",
+    "Description": "Khám phá 5 vùng đất.",
+    "DescriptionEn": "Discover 5 areas.",
+    "Stat": "regions_discovered",
+    "Target": 5,
+    "RewardGold": 300
+  },
+  {
+    "Id": "explorer_all",
+    "Title": "Người Vẽ Bản Đồ",
+    "TitleEn": "Cartographer",
+    "Description": "Khám phá toàn bộ 11 vùng đất.",
+    "DescriptionEn": "Discover all 11 areas.",
+    "Stat": "regions_discovered",
+    "Target": 11,
+    "RewardGold": 1500
+  },
+  {
+    "Id": "chest_10",
+    "Title": "Thợ Săn Kho Báu",
+    "TitleEn": "Treasure Hunter",
+    "Description": "Mở 10 rương báu.",
+    "DescriptionEn": "Open 10 treasure chests.",
+    "Stat": "chests_opened",
+    "Target": 10,
+    "RewardGold": 500
+  },
+  {
+    "Id": "boss_first",
+    "Title": "Kẻ Diệt Trùm",
+    "TitleEn": "Boss Slayer",
+    "Description": "Hạ gục một con trùm.",
+    "DescriptionEn": "Defeat a boss.",
+    "Stat": "bosses_defeated",
+    "Target": 1,
+    "RewardGold": 500
+  },
+  {
+    "Id": "boss_10",
+    "Title": "Huyền Thoại Chiến Trường",
+    "TitleEn": "Battlefield Legend",
+    "Description": "Hạ gục trùm 10 lần.",
+    "DescriptionEn": "Defeat bosses 10 times.",
+    "Stat": "bosses_defeated",
+    "Target": 10,
+    "RewardGold": 3000
+  },
+  {
+    "Id": "dungeon_5",
+    "Title": "Chinh Phục Hầm Ngục",
+    "TitleEn": "Dungeon Conqueror",
+    "Description": "Xuống tới tầng 5 Hầm Ngục Cổ.",
+    "DescriptionEn": "Reach floor 5 of the Ancient Dungeon.",
+    "Stat": "dungeon_floor",
+    "Target": 5,
+    "RewardGold": 1000
+  },
+  {
+    "Id": "monster_100",
+    "Title": "Hiệp Sĩ Bảo Vệ Làng",
+    "TitleEn": "Village Protector",
+    "Description": "Tiêu diệt 100 quái vật.",
+    "DescriptionEn": "Defeat 100 monsters.",
+    "Stat": "monsters_killed",
+    "Target": 100,
+    "RewardGold": 800
+  },
+  {
+    "Id": "museum_10",
+    "Title": "Nhà Sưu Tầm",
+    "TitleEn": "Collector",
+    "Description": "Quyên góp 10 hiện vật cho bảo tàng.",
+    "DescriptionEn": "Donate 10 items to the museum.",
+    "Stat": "museum_donated",
+    "Target": 10,
+    "RewardGold": 800
+  },
+  {
+    "Id": "festival_4",
+    "Title": "Linh Hồn Lễ Hội",
+    "TitleEn": "Festival Spirit",
+    "Description": "Tham gia 4 lễ hội.",
+    "DescriptionEn": "Take part in 4 festivals.",
+    "Stat": "festivals_completed",
+    "Target": 4,
+    "RewardGold": 1000
+  },
+  {
+    "Id": "giant_crop",
+    "Title": "Nông Sản Khổng Lồ",
+    "TitleEn": "Giant Harvest",
+    "Description": "Thu hoạch một cây khổng lồ.",
+    "DescriptionEn": "Harvest a giant crop.",
+    "Stat": "giant_crops",
+    "Target": 1,
+    "RewardGold": 500
+  },
+  {
+    "Id": "house_max",
+    "Title": "Biệt Thự Đồng Quê",
+    "TitleEn": "Country Manor",
+    "Description": "Nâng cấp nhà lên cấp tối đa.",
+    "DescriptionEn": "Fully upgrade your house.",
+    "Stat": "house_level",
+    "Target": 3,
+    "RewardGold": 2000
+  },
+  {
+    "Id": "mine_500",
+    "Title": "Lão Thợ Mỏ",
+    "TitleEn": "Veteran Miner",
+    "Description": "Đào 500 mỏ quặng.",
+    "DescriptionEn": "Mine 500 ore nodes.",
+    "Stat": "ores_mined",
+    "Target": 500,
+    "RewardGold": 2000
+  },
+  {
+    "Id": "mines_all",
+    "Title": "Chinh Phục Lòng Đất",
+    "TitleEn": "Underground Conqueror",
+    "Description": "Xuống tầng sâu nhất của cả 10 hầm mỏ.",
+    "DescriptionEn": "Reach the deepest floor of all 10 mines.",
+    "Stat": "deep_mines",
+    "Target": 10,
+    "RewardGold": 5000
+  }
+]

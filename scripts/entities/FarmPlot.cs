@@ -38,6 +38,16 @@ namespace HiepSiVeVuon.Entities
         private bool _wasPestDamaged = false; // sau benh tung gay hai chua chua (giu du da diet)
         private float _qualityScore = 0f;     // tich luy trong 1 chu ky trong, phan cap luc Harvest()
         private string _lastCropId = null;    // luan canh: cay lan truoc o o nay la gi
+        private int _regrowDays = 0;          // >0: cay thu hoach nhieu lan (xem ItemDef.RegrowDays)
+        private bool _isGiant = false;        // cay khong lo (xem ItemDef.GiantCapable)
+
+        // Qua/cay khong lo trong ngay - gom thanh 1 thong bao thay vi moi o 1 thong bao.
+        private static int _crowEatenToday = 0;
+        private static int _giantToday = 0;
+        private static int _stormLostToday = 0;
+        private static bool _reportScheduled = false;
+        public const float DailyCrowChance = 0.03f;
+        public const float DailyGiantChance = 0.03f;
 
         private MeshInstance3D _soilMesh;
         private Sprite3D _cropSprite;
@@ -108,6 +118,8 @@ namespace HiepSiVeVuon.Entities
             _swayPhase = (GridX * 7.3f + GridY * 3.7f + FreeformPos.X * 0.1f + FreeformPos.Z * 0.07f) % Mathf.Tau;
 
             GameManager.Instance.DayChanged += OnDayChanged;
+            GameManager.Instance.SeasonChanged += OnSeasonChanged;
+            if (IsVisitTemp) { UpdateVisual(); return; }
             RestoreFromSave();
             UpdateVisual();
         }
@@ -155,6 +167,10 @@ namespace HiepSiVeVuon.Entities
             _pestDays = t.PestDays;
             _wasPestDamaged = t.WasPestDamaged;
             _qualityScore = t.QualityScore;
+            // Truoc day _growDays KHONG duoc luu -> sau khi tai lai moi cay deu chin sau 3 ngay.
+            if (t.GrowDays > 0) _growDays = t.GrowDays;
+            _regrowDays = t.RegrowDays;
+            _isGiant = t.IsGiant;
             if (_cropId != null) _growsInto = _cropId;
             UpdateVisual();
         }
@@ -198,8 +214,23 @@ namespace HiepSiVeVuon.Entities
         // Goi khi nguoi choi dung cong cu (phim Space). Thu tu uu tien khi cay CHUA chin: diet
         // sau (neu dang bi sau VA co thuoc) -> bon phan (neu CHUA bon VA co phan) -> tuoi nuoc -
         // moi lan bam CHI lam DUNG 1 hanh dong, giong quy uoc cu (khong tu dong gop nhieu buoc).
-        public void UseOn()
+        // Lan UseOn() tiep theo co phai viec TON SUC khong (tuoi/bon phan/diet sau) - PHAI khop
+        // dung thu tu nhanh trong UseOn(). Player.cs dung de chi chan viec ton suc khi het the luc,
+        // van cho trong/thu hoach binh thuong.
+        public bool WouldTakeEffort() =>
+            _cropId != null && _growStage < _growDays
+            && ((_pestAfflicted && (Inventory.Instance.EquippedTool == "cao_co" || Inventory.Instance.CountOf(DefaultPesticideId) > 0))
+                || (!_fertilized && Inventory.Instance.CountOf(DefaultFertilizerId) > 0)
+                || !_watered);
+
+        // byPlayer: CHI nguoi choi moi duoc cong EXP/thong ke/bonus ky nang (NPC lam thue cung goi
+        // UseOn()). Tra ve true neu vua lam 1 viec TON SUC (tuoi/bon phan/diet sau) - Player.cs
+        // dung de tru the luc; trong/thu hoach khong ton the luc.
+        public bool UseOn(bool byPlayer = false)
         {
+            // Dang tham nong trai ban: chi tuoi ho (gui server), khong dong vao ruong minh.
+            if (HiepSiVeVuon.Systems.VisitSystem.Active) { if (byPlayer) HiepSiVeVuon.Systems.VisitSystem.Water(this); return false; }
+            bool effort = false;
             if (_cropId == null)
             {
                 // NPC lam thue KHONG BAO GIO goi UseOn() tren o dat trong (loc qua IsEmpty truoc
@@ -209,7 +240,7 @@ namespace HiepSiVeVuon.Entities
             }
             else if (_growStage >= _growDays)
             {
-                Harvest();
+                Harvest(byPlayer);
             }
             else if (_pestAfflicted && (Inventory.Instance.EquippedTool == "cao_co" || Inventory.Instance.CountOf(DefaultPesticideId) > 0))
             {
@@ -220,6 +251,8 @@ namespace HiepSiVeVuon.Entities
                 _pestAfflicted = false;
                 _pestDays = 0;
                 GD.Print("Đã diệt sâu bệnh.");
+                effort = true;
+                if (byPlayer) SkillSystem.Instance.AddXp(SkillType.Farming, 2);
                 UpdateVisual();
             }
             else if (!_fertilized && Inventory.Instance.CountOf(DefaultFertilizerId) > 0)
@@ -232,6 +265,8 @@ namespace HiepSiVeVuon.Entities
                     _qualityScore += fert.FertilizerQualityBonus;
                     _fertilized = true;
                     GD.Print("Đã bón phân.");
+                    effort = true;
+                    if (byPlayer) SkillSystem.Instance.AddXp(SkillType.Farming, 2);
                     UpdateVisual();
                 }
             }
@@ -243,6 +278,8 @@ namespace HiepSiVeVuon.Entities
                 // thong thuong - thuong nho chat luong (giong co che thuong mua/luan canh da co).
                 if (Inventory.Instance.EquippedTool == "binh_tuoi") _qualityScore += 0.04f;
                 GD.Print("Đã tưới nước.");
+                effort = true;
+                if (byPlayer) SkillSystem.Instance.AddXp(SkillType.Farming, 1);
                 UpdateVisual();
             }
             else
@@ -250,6 +287,7 @@ namespace HiepSiVeVuon.Entities
                 GD.Print("Cây đang lớn, chờ thêm ngày.");
             }
             SyncToSave();
+            return effort;
         }
 
         // Player bam Space tren o dat trong -> mo SeedSelectUI (danh sach giong dang co trong
@@ -324,6 +362,8 @@ namespace HiepSiVeVuon.Entities
             };
 
             _growDays = Mathf.Max(1, seed.GrowDays + soilAdjust + rotationDaysAdjust + seasonAdjust);
+            _regrowDays = Mathf.Min(seed.RegrowDays, _growDays);
+            _isGiant = false;
             _growStage = 0;
             _watered = false;
             _fertilized = false;
@@ -339,12 +379,24 @@ namespace HiepSiVeVuon.Entities
             SyncToSave();
         }
 
-        private void Harvest()
+        private void Harvest(bool byPlayer = false)
         {
             if (_growsInto != null)
             {
+                // Ky nang Trong Trot: nang chat luong + co hoi thu them 1 nong san (chi nguoi choi).
+                if (byPlayer) _qualityScore += SkillSystem.Instance.FarmingQualityBonus;
                 string finalId = ResolveHarvestVariant(_growsInto);
-                Inventory.Instance.AddItem(finalId, 1);
+                int amount = byPlayer && GD.Randf() < SkillSystem.Instance.ExtraCropChance ? 2 : 1;
+                if (_isGiant) amount += 5; // cay khong lo = ~6 nong san
+                Inventory.Instance.AddItem(finalId, amount, "harvest");
+                if (amount > 1) FarmStorage.Instance.Add(finalId, amount - 1);
+                if (byPlayer)
+                {
+                    var harvested = ItemDatabase.Instance.GetItem(finalId);
+                    SkillSystem.Instance.AddXp(SkillType.Farming, Mathf.Max(4, (harvested?.SellPrice ?? 0) / 3));
+                    AchievementSystem.Instance.Add("crops_harvested", amount);
+                    HiepSiVeVuon.UI.Notify.Show(string.Format(Loc.T("farm.harvested_fmt"), ItemDatabase.Instance.GetDisplayName(finalId), amount));
+                }
                 // Cung cong don vao kho nong san chung (xem FarmStorage) - de Antoine (nguoi
                 // quan ly kho) co so lieu THAT de bao cao, bat ke ai thu hoach (nguoi choi bam
                 // Space hay NPC lam ruong tu dong qua ScheduledFarmNpc/FarmWorkerNpc).
@@ -353,7 +405,20 @@ namespace HiepSiVeVuon.Entities
                 var def = ItemDatabase.Instance.GetItem(finalId);
                 GD.Print($"Thu hoạch: {def?.Name}!");
                 _lastCropId = _growsInto;
+                if (byPlayer && _isGiant) AchievementSystem.Instance.Add("giant_crops");
             }
+            // Cay thu hoach nhieu lan: giu lai cay, chin lai sau _regrowDays ngay (khong phai trong lai).
+            if (_regrowDays > 0 && !_isGiant && _growsInto != null)
+            {
+                _growStage = Mathf.Max(0, _growDays - _regrowDays);
+                _watered = false;
+                _daysUnwatered = 0;
+                UpdateVisual();
+                SyncToSave();
+                return;
+            }
+            _isGiant = false;
+            _regrowDays = 0;
             _cropId = null;
             _growsInto = null;
             _growStage = 0;
@@ -385,6 +450,7 @@ namespace HiepSiVeVuon.Entities
 
         private void OnDayChanged(int day)
         {
+            if (IsVisitTemp) return;
             if (_cropId == null) return;
 
             // Dat uot ("Wet") tu nhien du am moi ngay - khong can nguoi choi tuoi tay.
@@ -399,10 +465,33 @@ namespace HiepSiVeVuon.Entities
             if (GameManager.Instance.IsRaining) _watered = true;
             // Nha Kinh tu dong tuoi MOI NGAY (khong can nguoi choi/may tuoi tu dong).
             if (IsGreenhouse) _watered = true;
+            // Ngay nguoi choi OFFLINE (dang chay bu, xem GameManager.CatchUpToServerDay): nhan cong
+            // nong trai tuoi + trong coi ho - cay van lon, khong chet kho, khong sau, khong bi qua an.
+            bool offline = GameManager.Instance.IsCatchingUp;
+            if (offline) _watered = true;
+
+            // Thoi tiet (WeatherSystem): tuyet phu dat -> cay ngoai troi khong can tuoi nhung CHI cay mua
+            // dong moi lon; bao -> set danh pha ngau nhien; nang nong -> dat kho them.
+            var weather = WeatherSystem.Instance?.Today ?? WeatherSystem.Kind.Sunny;
+            bool frozen = false;
+            if (!IsGreenhouse && weather == WeatherSystem.Kind.Snow)
+            {
+                _watered = true;
+                var seedDef = ItemDatabase.Instance.GetSeedForCrop(_cropId);
+                frozen = seedDef?.ValidSeasons == null || System.Array.IndexOf(seedDef.ValidSeasons, "Winter") < 0;
+            }
+            if (!offline && !IsGreenhouse && weather == WeatherSystem.Kind.Storm && !_isGiant && GD.Randf() < 0.05f)
+            {
+                _stormLostToday++;
+                ScheduleDailyReport();
+                Wither(silent: true);
+                return;
+            }
+            if (!IsGreenhouse && weather == WeatherSystem.Kind.Heatwave && !_watered) _daysUnwatered++;
 
             // Sau benh: chi phat sinh khi con dang lon (chua chin) va chua dang bi. Mua Xuan
             // nhieu con trung hon - nhan he so vao ty le roll THAY VI bia them 1 co che rieng.
-            if (_growStage < _growDays && !_pestAfflicted)
+            if (_growStage < _growDays && !_pestAfflicted && !offline)
             {
                 float pestMult = GameManager.Instance.CurrentSeason == GameManager.Season.Spring ? 2.5f : 1f;
                 var pestRng = new RandomNumberGenerator();
@@ -421,7 +510,7 @@ namespace HiepSiVeVuon.Entities
 
             if (_watered)
             {
-                if (_growStage < _growDays) _growStage++;
+                if (_growStage < _growDays && !frozen) _growStage++;
                 // Nuoc mua tu nhien: ~35% co them 1 giai doan lon NGAY TRONG NGAY DO (nhanh hon
                 // tuoi tay/may tuoi tu dong ro ret ve lau dai), va cay khoe hon mot chut (+chat
                 // luong nho, tich luy duoc ca chu ky trong nhu fertilizer/luan canh).
@@ -447,15 +536,66 @@ namespace HiepSiVeVuon.Entities
                 }
             }
 
+            // Qua: an mat cay ngoai troi khong duoc Bu Nhin bao ve (cay khong lo qua to, qua bo qua).
+            if (!offline && !IsGreenhouse && !_isGiant && GD.Randf() < DailyCrowChance && !Scarecrow.IsProtected(GetTree(), GlobalPosition))
+            {
+                _crowEatenToday++;
+                ScheduleDailyReport();
+                Wither(silent: true);
+                return;
+            }
+
+            // Cay khong lo: nong san chin, loai cho phep, ngoai troi - hiem.
+            if (!IsGreenhouse && !_isGiant && _growStage >= _growDays && _regrowDays == 0
+                && ItemDatabase.Instance.GetItem(_cropId)?.GiantCapable == true && GD.Randf() < DailyGiantChance)
+            {
+                _isGiant = true;
+                _giantToday++;
+                ScheduleDailyReport();
+            }
+
             UpdateVisual();
             SyncToSave();
         }
 
         // Cay chet vi qua lau khong duoc tuoi (va khong co mua) - mat trang, khong co san pham.
         // KHONG cap nhat _lastCropId: cay chet thi khong tinh la "da thu hoach" cho luan canh.
-        private void Wither()
+        private void ScheduleDailyReport()
         {
-            GD.Print("Cây đã chết vì quá lâu không được tưới nước.");
+            if (_reportScheduled) return;
+            _reportScheduled = true;
+            GetTree().CreateTimer(0.5).Timeout += () =>
+            {
+                if (_crowEatenToday > 0) HiepSiVeVuon.UI.Notify.Show(string.Format(Loc.T("farm.crows_fmt"), _crowEatenToday));
+                if (_giantToday > 0) HiepSiVeVuon.UI.Notify.Show(string.Format(Loc.T("farm.giant_fmt"), _giantToday));
+                if (_stormLostToday > 0) HiepSiVeVuon.UI.Notify.Show(string.Format(Loc.T("weather.storm_damage_fmt"), _stormLostToday));
+                _stormLostToday = 0;
+                _crowEatenToday = 0;
+                _giantToday = 0;
+                _reportScheduled = false;
+            };
+        }
+
+        // Doi mua: cay ngoai troi KHONG hop mua moi se tan (giong nong trai that - het mua).
+        private static int _seasonWitherCount = 0;
+        private void OnSeasonChanged(int season)
+        {
+            if (_cropId == null || IsGreenhouse) return;
+            var seed = ItemDatabase.Instance.GetSeedForCrop(_cropId);
+            if (seed?.ValidSeasons == null || seed.ValidSeasons.Length == 0) return;
+            if (System.Array.IndexOf(seed.ValidSeasons, ((GameManager.Season)season).ToString()) >= 0) return;
+            if (_seasonWitherCount++ == 0)
+                GetTree().CreateTimer(0.5).Timeout += () =>
+                {
+                    HiepSiVeVuon.UI.Notify.Show(string.Format(Loc.T("farm.season_wither_fmt"), _seasonWitherCount));
+                    _seasonWitherCount = 0;
+                };
+            Wither(silent: true);
+        }
+
+        private void Wither(bool silent = false)
+        {
+            if (!silent) GD.Print("Cây đã chết vì quá lâu không được tưới nước.");
             _cropId = null;
             _growsInto = null;
             _growStage = 0;
@@ -466,6 +606,8 @@ namespace HiepSiVeVuon.Entities
             _pestDays = 0;
             _wasPestDamaged = false;
             _qualityScore = 0f;
+            _regrowDays = 0;
+            _isGiant = false;
             UpdateVisual();
             SyncToSave();
         }
@@ -492,7 +634,40 @@ namespace HiepSiVeVuon.Entities
             return _sproutTexCache;
         }
 
+        public void RefreshVisual() => UpdateVisual();
+
+        // O dat TAM hien ruong cua ban khi di tham (khong luu, khong vao FarmState).
+        public bool IsVisitTemp;
+        public static FarmPlot CreateVisitPlot(Vector3 pos, Node parent)
+        {
+            _plotScene ??= GD.Load<PackedScene>("res://scenes/FarmPlot.tscn");
+            var plot = _plotScene.Instantiate<FarmPlot>();
+            plot.GridX = -1;
+            plot.GridY = -1;
+            plot.FreeformPos = pos;
+            plot.Position = pos;
+            plot.IsVisitTemp = true;
+            parent.AddChild(plot);
+            return plot;
+        }
+
         private void UpdateVisual()
+        {
+            if (HiepSiVeVuon.Systems.VisitSystem.Active)
+            {
+                var v = HiepSiVeVuon.Systems.VisitSystem.Get(this);
+                // Tam doi sang trang thai cua ruong ban (hien thi), roi tra lai trang thai that ngay sau.
+                var saved = (_cropId, _growStage, _growDays, _watered, _isGiant, _pestAfflicted);
+                (_cropId, _growStage, _growDays, _watered, _isGiant, _pestAfflicted) =
+                    v == null ? ((string)null, 0, 3, false, false, false) : (v.CropId, v.GrowStage, Mathf.Max(1, v.GrowDays), v.Watered, v.IsGiant, v.Pest);
+                DrawVisual();
+                (_cropId, _growStage, _growDays, _watered, _isGiant, _pestAfflicted) = saved;
+                return;
+            }
+            DrawVisual();
+        }
+
+        private void DrawVisual()
         {
             if (_soilMesh != null)
             {
@@ -550,8 +725,8 @@ namespace HiepSiVeVuon.Entities
                 var tex = ItemDatabase.Instance.GetItemIcon(_cropId);
                 if (tex != null) _cropSprite.Texture = tex;
                 float matureT = (ratio - SproutPhaseEnd) / (1f - SproutPhaseEnd);
-                _cropSprite.Scale = Vector3.One * Mathf.Lerp(0.32f, 0.85f, matureT);
-                _cropSprite.Position = new Vector3(0, Mathf.Lerp(3f, 6f, matureT), 0);
+                _cropSprite.Scale = Vector3.One * Mathf.Lerp(0.32f, 0.85f, matureT) * (_isGiant ? 2.6f : 1f);
+                _cropSprite.Position = new Vector3(0, Mathf.Lerp(3f, 6f, matureT) * (_isGiant ? 2.6f : 1f), 0);
                 _cropSprite.Modulate = _pestAfflicted
                     ? pestTint
                     : _growStage >= _growDays
@@ -575,6 +750,7 @@ namespace HiepSiVeVuon.Entities
         // TryTillFreeform() can luu ngay trang thai "moi cuoc, chua trong" cho o dat tu do.
         public void SyncToSave()
         {
+            if (IsVisitTemp) return;
             if (GridX < 0)
             {
                 // O dat CUOC TU DO: khoa luu la VI TRI (khong phai X/Y, luon la -1/-1 cho moi o
@@ -590,6 +766,7 @@ namespace HiepSiVeVuon.Entities
                     LastCropId = _lastCropId, PestAfflicted = _pestAfflicted,
                     PestDays = _pestDays, WasPestDamaged = _wasPestDamaged,
                     QualityScore = _qualityScore,
+                    GrowDays = _growDays, RegrowDays = _regrowDays, IsGiant = _isGiant,
                 });
                 return;
             }
@@ -608,6 +785,7 @@ namespace HiepSiVeVuon.Entities
                     LastCropId = _lastCropId, PestAfflicted = _pestAfflicted,
                     PestDays = _pestDays, WasPestDamaged = _wasPestDamaged,
                     QualityScore = _qualityScore,
+                    GrowDays = _growDays, RegrowDays = _regrowDays, IsGiant = _isGiant,
                 });
             }
         }

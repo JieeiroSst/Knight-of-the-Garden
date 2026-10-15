@@ -24,35 +24,55 @@ namespace HiepSiVeVuon.Entities
         private Node3D _currentMesh;
         private string _currentItemId = "";
 
-        // Goc cam CHEO (khong dung thang goc/ngang thuan) de dau vu khi/cong cu huong ra truoc-
-        // xuong va lech ra ngoai than mot chut - quy uoc cam vu khi pho bien, doc duoc ro tu goc
-        // camera hoi tren cao cua game (xem ghi chu tren). Cac gia tri nay la UOC LUONG HOP LY
-        // (khong the render/xem truoc trong Godot editor tu day) - co the can chinh lai nhe trong
-        // engine neu nhin chua thuan.
-        private static readonly Vector3 GripRotationDeg = new(-35f, 15f, 12f);
-        // Do dai/vi tri cac kich thuoc/offset trong file nay (vd luoi kiem dai 8.5) duoc THIET KE
-        // theo "don vi the gioi" thong thuong (giong cac vat trang tri khac trong game) - NHUNG
-        // _gripPivot nay nam BEN TRONG model nhan vat da bi PHONG TO qua Player.ModelScale (vd
-        // 22x, xem Player.cs) - moi Position/Scale dat o day deu BI NHAN THEM 22 LAN khi hien ra
-        // man hinh, khien vu khi to gap ~22 lan du kien (vuot qua than nguoi) VA lech xa khoi tay
-        // hang chuc don vi. Phai CHIA NGUOC lai cho modelScale (ca vi tri offset LAN ty le mesh
-        // con) de bu tru dung, nhu vay cac kich thuoc/offset trong MakeSword()... van giu nguyen
-        // "nhin dung ty le" ma khong can tinh toan lai tung so.
-        private static readonly Vector3 RawGripOffset = new(1.3f, -1.1f, 0.4f);
+        // KHUNG NAM TAY (trong khong gian xuong ban tay, da bo scale) - tinh tu chinh vi tri cac
+        // xuong ngon tay cua rig (tools/outfits/heldsim2.py): goc toa do = giua long ban tay noi
+        // ngon tay nam lai; truc Y = truc can (tu phia ngon ut sang phia ngon tro); truc X = nguoc
+        // huong ngon tay duoi thang (luoi cuoc/canh kiem huong ve phia do khi bo xuong); truc Z =
+        // phia long ban tay. Vat pham chi can dat "diem cam" cua no vao goc toa do nay.
+        private record GripFrame(Vector3 X, Vector3 Y, Vector3 Z, Vector3 Origin);
+        private static readonly System.Collections.Generic.Dictionary<string, GripFrame> Grips = new()
+        {
+            // Rig nam Quaternius (Farmer...): xuong Wrist.R, don vi met.
+            ["Wrist.R"] = new(new Vector3(-0.081f, -0.994f, 0.079f), new Vector3(-0.997f, 0.079f, -0.024f), new Vector3(0.018f, -0.081f, -0.997f), new Vector3(0.0059f, 0.1639f, -0.0204f)),
+            // Rig nu (Animated Women): xuong Palm.R (armature scale 100 -> don vi rat nho).
+            ["Palm.R"] = new(new Vector3(-0.002f, -0.998f, -0.069f), new Vector3(-0.977f, 0.016f, -0.214f), new Vector3(0.215f, 0.067f, -0.974f), new Vector3(0.0003f, 0.0018f, -0.0016f)),
+        };
+
+        // Kich thuoc that (nguoi cao ~40 don vi) + diem cam tren vat + cach cam (Upright: xach quai
+        // nhu binh tuoi - voi theo truc nam tay, mieng binh huong ve co tay).
+        private record Hold(float Scale, Vector3 GripPoint, bool Upright = false);
+        private static Hold HoldOf(string itemId) => itemId switch
+        {
+            "sword" => new(1.8f, new Vector3(0, -0.7f, 0)),
+            "hoe" or "cuoc_bac" or "cuoc_vang" => new(3.6f, new Vector3(0, 0.8f, 0)),
+            "xeng" => new(3.2f, new Vector3(0, 0.8f, 0)),
+            "cao_co" => new(2.5f, new Vector3(0, 0.6f, 0)),
+            "pickaxe" or "pickaxe_bac" or "pickaxe_vang" or "pickaxe_kim_cuong" => new(2.4f, new Vector3(0, -0.4f, 0)),
+            "can_cau" => new(3.3f, new Vector3(0, 0.2f, 0)),
+            "binh_tuoi" => new(2.2f, new Vector3(0, 3.5f, -0.2f), true),
+            "may_tuoi_tu_dong" => new(2.5f, new Vector3(0, 1.6f, 0), true),
+            _ => new(2f, Vector3.Zero),
+        };
+
+        // Truc nam tay (truc can) trong khong gian xuong ban tay - ArmPoseModifier cong ngon tay quanh truc nay.
+        public static Vector3? GripAxis(string bone) => Grips.TryGetValue(bone, out var f) ? f.Y : null;
 
         public void Setup(Skeleton3D skeleton, float modelScale)
         {
             if (skeleton == null || modelScale <= 0f) return;
-            int boneIdx = skeleton.FindBone("Wrist.R");
-            if (boneIdx < 0) return;
-            _attachment = new BoneAttachment3D { BoneName = "Wrist.R" };
+            // Rig nam: Wrist.R, rig nu (Animated Women Pack): Palm.R (KHONG gan vao xuong ngon tay -
+            // ngon tay se cong lai nam can, xem ArmPoseModifier.Grip).
+            string bone = System.Array.Find(HiepSiVeVuon.Core.CharacterCatalog.RightHandBones, b => skeleton.FindBone(b) >= 0);
+            if (bone == null) return;
+            _attachment = new BoneAttachment3D { BoneName = bone };
             skeleton.AddChild(_attachment);
 
+            var gf = Grips.TryGetValue(bone, out var f) ? f : new GripFrame(Vector3.Right, Vector3.Up, Vector3.Back, Vector3.Zero);
             _gripPivot = new Node3D
             {
-                Position = RawGripOffset / modelScale, // bu tru scale ke thua tu model
-                RotationDegrees = GripRotationDeg,
-                Scale = Vector3.One / modelScale, // bu tru scale cho TAT CA mesh con (kiem/cuoc/...)
+                Position = gf.Origin,
+                Quaternion = new Basis(gf.X, gf.Y, gf.Z).Orthonormalized().GetRotationQuaternion(),
+                Scale = Vector3.One / modelScale, // tam thoi - FitGripScale do lai theo scale that cua xuong
             };
             _attachment.AddChild(_gripPivot);
         }
@@ -67,8 +87,128 @@ namespace HiepSiVeVuon.Entities
             if (_currentMesh != null) { _currentMesh.QueueFree(); _currentMesh = null; }
             if (itemId == "") return;
             _currentMesh = BuildMesh(itemId);
-            if (_currentMesh != null) _gripPivot.AddChild(_currentMesh);
+            if (_currentMesh != null)
+            {
+                // Dat DIEM CAM cua vat vao giua nam tay, phong to dung kich thuoc that.
+                var hold = HoldOf(itemId);
+                var basis = hold.Upright
+                    ? new Basis(new Vector3(0, 0, 1), new Vector3(1, 0, 0), new Vector3(0, 1, 0)) // Y vat = ve co tay, Z vat (voi) = truc nam tay
+                    : Basis.Identity;
+                _currentMesh.Transform = new Transform3D(basis.Scaled(Vector3.One * hold.Scale), basis * (-hold.GripPoint * hold.Scale));
+                _gripPivot.AddChild(_currentMesh);
+                // Dau vat cam (dinh luoi kiem/luoi cuoc...) + diem giua - de ve vet vung va phun nuoc.
+                var box = HiepSiVeVuon.Core.ModelUtil.LocalAabb(_currentMesh);
+                var c = box.GetCenter();
+                _tipLocal = itemId == "binh_tuoi" ? SpoutLocal : new Vector3(c.X, box.End.Y, c.Z);
+                _baseLocal = new Vector3(c.X, box.Position.Y + box.Size.Y * 0.45f, c.Z);
+            }
         }
+
+        // ==== Vet vung (trail) + nuoc tuoi ====
+        private static readonly Vector3 SpoutLocal = new(0, 2.85f, 2.15f); // dau voi binh tuoi (khong gian vat)
+        private Vector3 _tipLocal, _baseLocal;
+        private MeshInstance3D _trailMesh;
+        private ImmediateMesh _trailIm;
+        private readonly System.Collections.Generic.List<(Vector3 a, Vector3 b, float age)> _trail = new();
+        private float _trailLeft;
+        private Color _trailColor = Colors.White;
+
+        public bool HasItem => _currentMesh != null;
+        public Vector3 TipGlobal => _currentMesh != null ? _currentMesh.ToGlobal(_tipLocal) : GlobalPosition;
+
+        // Ve vet sang theo dau vat cam trong 'seconds' giay (dai luot vung/chem).
+        public void StartTrail(float seconds, Color color)
+        {
+            if (_currentMesh == null) return;
+            _trailLeft = seconds;
+            _trailColor = color;
+            if (_trailMesh == null)
+            {
+                _trailIm = new ImmediateMesh();
+                _trailMesh = new MeshInstance3D
+                {
+                    Mesh = _trailIm, TopLevel = true, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+                    MaterialOverride = new StandardMaterial3D
+                    {
+                        ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, VertexColorUseAsAlbedo = true,
+                        Transparency = BaseMaterial3D.TransparencyEnum.Alpha, BlendMode = BaseMaterial3D.BlendModeEnum.Add,
+                        CullMode = BaseMaterial3D.CullModeEnum.Disabled,
+                    },
+                };
+                AddChild(_trailMesh);
+            }
+        }
+
+        // Tia nuoc tu voi binh tuoi (hat roi theo trong luc) trong 'seconds' giay.
+        public void PourWater(float seconds)
+        {
+            if (_gripPivot == null || _currentItemId != "binh_tuoi") return;
+            var p = new CpuParticles3D
+            {
+                Amount = 40, Lifetime = 0.55f, LocalCoords = false, Emitting = true,
+                Direction = new Vector3(0, 1f, 0), Spread = 12f, // theo voi binh (= truc nam tay) InitialVelocityMin = 18f, InitialVelocityMax = 26f,
+                Gravity = new Vector3(0, -160f, 0), ScaleAmountMin = 0.6f, ScaleAmountMax = 1.1f,
+                Color = new Color(0.55f, 0.75f, 1f, 0.85f),
+                Mesh = new SphereMesh
+                {
+                    Radius = 0.7f, Height = 1.4f, RadialSegments = 5, Rings = 3,
+                    Material = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, VertexColorUseAsAlbedo = true, Transparency = BaseMaterial3D.TransparencyEnum.Alpha },
+                },
+            };
+            _gripPivot.AddChild(p);
+            p.GlobalPosition = TipGlobal;
+            var tw = p.CreateTween();
+            tw.TweenInterval(seconds);
+            tw.TweenCallback(Callable.From(() => p.Emitting = false));
+            tw.TweenInterval(0.7f);
+            tw.TweenCallback(Callable.From(p.QueueFree));
+        }
+
+        // Bu tru scale THAT cua xuong (khong chi Player.ModelScale): rig nu co armature scale 100 ben
+        // trong, neu chi chia cho modelScale thi do cam tay to gap ~100 lan. Do lai moi khung (re).
+        private float _fitScale = -1f;
+        private void FitGripScale()
+        {
+            if (_attachment == null || !_attachment.IsInsideTree()) return;
+            float boneScale = _attachment.GlobalTransform.Basis.Scale.X;
+            float rootScale = GetParent() is Node3D p ? p.GlobalTransform.Basis.Scale.X : 1f;
+            float s = boneScale / Mathf.Max(0.0001f, rootScale);
+            if (s <= 0.0001f || Mathf.Abs(s - _fitScale) < _fitScale * 0.01f) return;
+            _fitScale = s;
+            _gripPivot.Scale = Vector3.One / s;
+        }
+
+        public override void _Process(double delta)
+        {
+            FitGripScale();
+            if (_trailIm == null) return;
+            float dt = (float)delta;
+            for (int i = _trail.Count - 1; i >= 0; i--)
+            {
+                var s = _trail[i];
+                s.age += dt;
+                if (s.age > TrailLife) _trail.RemoveAt(i); else _trail[i] = s;
+            }
+            if (_trailLeft > 0f && _currentMesh != null)
+            {
+                _trailLeft -= dt;
+                _trail.Add((_currentMesh.ToGlobal(_baseLocal), TipGlobal, 0f));
+            }
+            _trailIm.ClearSurfaces();
+            if (_trail.Count < 2) return;
+            _trailIm.SurfaceBegin(Mesh.PrimitiveType.TriangleStrip);
+            foreach (var (a, b, age) in _trail)
+            {
+                float alpha = Mathf.Clamp(1f - age / TrailLife, 0f, 1f) * 0.75f;
+                _trailIm.SurfaceSetColor(new Color(_trailColor, alpha * 0.25f));
+                _trailIm.SurfaceAddVertex(a);
+                _trailIm.SurfaceSetColor(new Color(_trailColor, alpha));
+                _trailIm.SurfaceAddVertex(b);
+            }
+            _trailIm.SurfaceEnd();
+        }
+
+        private const float TrailLife = 0.16f;
 
         private static Node3D BuildMesh(string itemId) => itemId switch
         {
@@ -79,6 +219,7 @@ namespace HiepSiVeVuon.Entities
             "pickaxe" => MakePickaxe(new Color(0.42f, 0.42f, 0.45f)),
             "pickaxe_bac" => MakePickaxe(new Color(0.82f, 0.83f, 0.86f)),
             "pickaxe_vang" => MakePickaxe(new Color(0.85f, 0.68f, 0.2f)),
+            "pickaxe_kim_cuong" => MakePickaxe(new Color(0.6f, 0.9f, 1f)),
             "can_cau" => MakeFishingRod(),
             "may_tuoi_tu_dong" => MakeSprinklerHeld(),
             "binh_tuoi" => MakeWateringCan(),
@@ -204,14 +345,15 @@ namespace HiepSiVeVuon.Entities
             root.AddChild(MakeMesh(new SphereMesh { Radius = 0.22f, Height = 0.44f }, new Vector3(0, 2.85f, 2.15f),
                 darkColor, roughness: 0.5f, metallic: 0.2f)); // dau voi (hoa sen) - nho lai, khong to nhu qua bong
 
-            // Quai cam hinh cung (dang chu U nguoc): 2 tru dung hai ben + 1 thanh ngang noi dinh.
-            root.AddChild(MakeMesh(new CylinderMesh { TopRadius = 0.09f, BottomRadius = 0.09f, Height = 1.3f },
-                new Vector3(-0.75f, 3.3f, -0.35f), canColor, roughness: 0.45f, metallic: 0.35f));
-            root.AddChild(MakeMesh(new CylinderMesh { TopRadius = 0.09f, BottomRadius = 0.09f, Height = 1.3f },
-                new Vector3(0.75f, 3.3f, -0.35f), canColor, roughness: 0.45f, metallic: 0.35f));
-            var handleBar = MakeMesh(new CylinderMesh { TopRadius = 0.09f, BottomRadius = 0.09f, Height = 1.6f },
-                new Vector3(0, 3.95f, -0.35f), canColor, roughness: 0.45f, metallic: 0.35f);
-            handleBar.RotationDegrees = new Vector3(0, 0, 90f);
+            // Quai cam tren dinh chay DOC tu sau ra truoc (cung huong voi voi) - nhu binh tuoi that,
+            // nam tay om tron thanh quai (xem HoldOf: diem cam (0, 3.5, -0.2)).
+            root.AddChild(MakeMesh(new CylinderMesh { TopRadius = 0.09f, BottomRadius = 0.09f, Height = 0.9f },
+                new Vector3(0, 3.1f, -0.85f), canColor, roughness: 0.45f, metallic: 0.35f));
+            root.AddChild(MakeMesh(new CylinderMesh { TopRadius = 0.09f, BottomRadius = 0.09f, Height = 0.9f },
+                new Vector3(0, 3.1f, 0.45f), canColor, roughness: 0.45f, metallic: 0.35f));
+            var handleBar = MakeMesh(new CylinderMesh { TopRadius = 0.1f, BottomRadius = 0.1f, Height = 1.4f },
+                new Vector3(0, 3.5f, -0.2f), canColor, roughness: 0.45f, metallic: 0.35f);
+            handleBar.RotationDegrees = new Vector3(90f, 0, 0);
             root.AddChild(handleBar);
             return root;
         }

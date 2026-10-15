@@ -10,7 +10,23 @@ const { logger } = require("../utils/logger");
 
 const MIGRATIONS_DIR = path.join(__dirname, "..", "..", "db", "migrations");
 
+// Khoa cap database (advisory lock) - khi NHIEU instance API khoi dong cung luc (scale ngang/trien
+// khai ban moi), chi 1 instance chay migration, cac instance khac doi xong roi moi kiem tra lai.
+// Khong co khoa, 2 instance cung chay "CREATE TABLE IF NOT EXISTS" se dung loi trung khoa catalog.
+const MIGRATION_LOCK_ID = 74210931;
+
 async function runMigrations() {
+  const lockClient = await pool.connect();
+  try {
+    await lockClient.query("SELECT pg_advisory_lock($1)", [MIGRATION_LOCK_ID]);
+    await applyPending();
+  } finally {
+    await lockClient.query("SELECT pg_advisory_unlock($1)", [MIGRATION_LOCK_ID]).catch(() => {});
+    lockClient.release();
+  }
+}
+
+async function applyPending() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
       filename TEXT PRIMARY KEY,

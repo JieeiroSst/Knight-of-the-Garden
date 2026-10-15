@@ -1,0 +1,698 @@
+[
+  {
+    "Id": "r_fertilizer",
+    "OutputId": "fertilizer_basic",
+    "OutputCount": 2,
+    "Ingredients": [
+      {
+        "ItemId": "rong",
+        "Count": 2
+      },
+      {
+        "ItemId": "wood",
+        "Count": 1
+      }
+    ]
+  },
+  {
+    "Id": "r_pesticide",
+    "OutputId": "pesticide",
+    "OutputCount": 2,
+    "Ingredients": [
+      {
+        "ItemId": "thao_duoc_rung",
+        "Count": 2
+      },
+      {
+        "ItemId": "thao_duoc_dam_lay",
+        "Count": 1
+      }
+    ]
+  },
+  {
+    "Id": "r_feed",
+    "OutputId": "thucan_giasuc",
+    "OutputCount": 5,
+    "Ingredients": [
+      {
+        "ItemId": "wheat",
+        "Count": 2
+      }
+    ],
+    "UnlockSkill": "Animal",
+    "UnlockLevel": 1
+  },
+  {
+    "Id": "r_bait",
+    "OutputId": "moi_cau",
+    "OutputCount": 5,
+    "Ingredients": [
+      {
+        "ItemId": "xuong",
+        "Count": 1
+      },
+      {
+        "ItemId": "rong",
+        "Count": 1
+      }
+    ],
+    "UnlockSkill": "Fishing",
+    "UnlockLevel": 2
+  },
+  {
+    "Id": "r_tea",
+    "OutputId": "tra_thao_moc",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "thao_duoc_rung",
+        "Count": 2
+      },
+      {
+        "ItemId": "honey",
+        "Count": 1
+      }
+    ],
+    "UnlockSkill": "Foraging",
+    "UnlockLevel": 1
+  },
+  {
+    "Id": "r_energy_bar",
+    "OutputId": "banh_nang_luong",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "wheat",
+        "Count": 2
+      },
+      {
+        "ItemId": "mat_ong",
+        "Count": 1
+      }
+    ],
+    "UnlockSkill": "Farming",
+    "UnlockLevel": 3
+  },
+  {
+    "Id": "r_wild_salad",
+    "OutputId": "salad_rau_rung",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "rau_ma",
+        "Count": 1
+      },
+      {
+        "ItemId": "hanh_rung",
+        "Count": 1
+      }
+    ],
+    "UnlockSkill": "Foraging",
+    "UnlockLevel": 2
+  },
+  {
+    "Id": "r_sprinkler",
+    "OutputId": "may_tuoi_tu_dong",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "sat_tho",
+        "Count": 3
+      },
+      {
+        "ItemId": "dong_tho",
+        "Count": 2
+      },
+      {
+        "ItemId": "wood",
+        "Count": 5
+      }
+    ],
+    "UnlockSkill": "Farming",
+    "UnlockLevel": 4
+  },
+  {
+    "Id": "r_hoe_silver",
+    "OutputId": "cuoc_bac",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "hoe",
+        "Count": 1
+      },
+      {
+        "ItemId": "sat_tho",
+        "Count": 5
+      },
+      {
+        "ItemId": "wood",
+        "Count": 10
+      }
+    ],
+    "UnlockSkill": "Farming",
+    "UnlockLevel": 2
+  },
+  {
+    "Id": "r_hoe_gold",
+    "OutputId": "cuoc_vang",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "cuoc_bac",
+        "Count": 1
+      },
+      {
+        "ItemId": "da_quy",
+        "Count": 3
+      },
+      {
+        "ItemId": "quang_hang",
+        "Count": 5
+      }
+    ],
+    "UnlockSkill": "Farming",
+    "UnlockLevel": 6
+  },
+  {
+    "Id": "r_pick_silver",
+    "OutputId": "pickaxe_bac",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "pickaxe",
+        "Count": 1
+      },
+      {
+        "ItemId": "sat_tho",
+        "Count": 5
+      }
+    ],
+    "UnlockSkill": "Mining",
+    "UnlockLevel": 2
+  },
+  {
+    "Id": "r_pick_gold",
+    "OutputId": "pickaxe_vang",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "pickaxe_bac",
+        "Count": 1
+      },
+      {
+        "ItemId": "da_quy",
+        "Count": 3
+      },
+      {
+        "ItemId": "quang_nui",
+        "Count": 10
+      }
+    ],
+    "UnlockSkill": "Mining",
+    "UnlockLevel": 5
+  },
+  {
+    "Id": "r_potion",
+    "OutputId": "potion",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "thao_duoc_dam_lay",
+        "Count": 2
+      },
+      {
+        "ItemId": "sen",
+        "Count": 1
+      }
+    ],
+    "UnlockSkill": "Foraging",
+    "UnlockLevel": 3
+  },
+  {
+    "Id": "r_scarecrow",
+    "OutputId": "bu_nhin",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "wood",
+        "Count": 6
+      },
+      {
+        "ItemId": "wheat",
+        "Count": 2
+      }
+    ],
+    "UnlockSkill": "Farming",
+    "UnlockLevel": 1
+  },
+  {
+    "Id": "r_bar_copper",
+    "OutputId": "thoi_dong",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "dong_tho",
+        "Count": 3
+      },
+      {
+        "ItemId": "than_da",
+        "Count": 1
+      }
+    ],
+    "UnlockSkill": "Mining",
+    "UnlockLevel": 1
+  },
+  {
+    "Id": "r_bar_iron",
+    "OutputId": "thoi_sat",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "sat_tho",
+        "Count": 3
+      },
+      {
+        "ItemId": "than_da",
+        "Count": 1
+      }
+    ],
+    "UnlockSkill": "Mining",
+    "UnlockLevel": 2
+  },
+  {
+    "Id": "r_bar_silver",
+    "OutputId": "thoi_bac",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "bac_tho",
+        "Count": 3
+      },
+      {
+        "ItemId": "than_da",
+        "Count": 2
+      }
+    ],
+    "UnlockSkill": "Mining",
+    "UnlockLevel": 3
+  },
+  {
+    "Id": "r_bar_gold",
+    "OutputId": "thoi_vang",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "vang_tho",
+        "Count": 3
+      },
+      {
+        "ItemId": "than_da",
+        "Count": 2
+      }
+    ],
+    "UnlockSkill": "Mining",
+    "UnlockLevel": 5
+  },
+  {
+    "Id": "r_pick_diamond",
+    "OutputId": "pickaxe_kim_cuong",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "pickaxe_vang",
+        "Count": 1
+      },
+      {
+        "ItemId": "thoi_vang",
+        "Count": 3
+      },
+      {
+        "ItemId": "kim_cuong",
+        "Count": 2
+      }
+    ],
+    "UnlockSkill": "Mining",
+    "UnlockLevel": 7
+  },
+  {
+    "Id": "f_kiem_dong",
+    "OutputId": "kiem_dong",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "thoi_dong",
+        "Count": 3
+      },
+      {
+        "ItemId": "wood",
+        "Count": 2
+      }
+    ],
+    "UnlockSkill": "Mining",
+    "UnlockLevel": 1,
+    "Station": "forge"
+  },
+  {
+    "Id": "f_kiem_sat",
+    "OutputId": "kiem_sat",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "thoi_sat",
+        "Count": 3
+      },
+      {
+        "ItemId": "wood",
+        "Count": 2
+      }
+    ],
+    "UnlockSkill": "Mining",
+    "UnlockLevel": 2,
+    "Station": "forge"
+  },
+  {
+    "Id": "f_kiem_bac",
+    "OutputId": "kiem_bac",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "thoi_bac",
+        "Count": 3
+      },
+      {
+        "ItemId": "thoi_sat",
+        "Count": 1
+      }
+    ],
+    "UnlockSkill": "Mining",
+    "UnlockLevel": 4,
+    "Station": "forge"
+  },
+  {
+    "Id": "f_kiem_vang",
+    "OutputId": "kiem_vang",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "thoi_vang",
+        "Count": 3
+      },
+      {
+        "ItemId": "thoi_bac",
+        "Count": 1
+      },
+      {
+        "ItemId": "hong_ngoc",
+        "Count": 1
+      }
+    ],
+    "UnlockSkill": "Mining",
+    "UnlockLevel": 6,
+    "Station": "forge"
+  },
+  {
+    "Id": "f_giap_da",
+    "OutputId": "giap_da",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "wool",
+        "Count": 4
+      },
+      {
+        "ItemId": "thoi_dong",
+        "Count": 1
+      }
+    ],
+    "UnlockSkill": "Mining",
+    "UnlockLevel": 1,
+    "Station": "forge"
+  },
+  {
+    "Id": "f_giap_sat",
+    "OutputId": "giap_sat",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "thoi_sat",
+        "Count": 5
+      }
+    ],
+    "UnlockSkill": "Mining",
+    "UnlockLevel": 3,
+    "Station": "forge"
+  },
+  {
+    "Id": "f_giap_bac",
+    "OutputId": "giap_bac",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "thoi_bac",
+        "Count": 5
+      }
+    ],
+    "UnlockSkill": "Mining",
+    "UnlockLevel": 5,
+    "Station": "forge"
+  },
+  {
+    "Id": "f_giap_vang",
+    "OutputId": "giap_vang",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "thoi_vang",
+        "Count": 5
+      },
+      {
+        "ItemId": "kim_cuong",
+        "Count": 1
+      }
+    ],
+    "UnlockSkill": "Mining",
+    "UnlockLevel": 7,
+    "Station": "forge"
+  },
+  {
+    "Id": "r_to_ong",
+    "OutputId": "to_ong",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "wood",
+        "Count": 10
+      },
+      {
+        "ItemId": "beeswax",
+        "Count": 2
+      }
+    ],
+    "UnlockSkill": "Farming",
+    "UnlockLevel": 2
+  },
+  {
+    "Id": "r_may_lam_mut",
+    "OutputId": "may_lam_mut",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "wood",
+        "Count": 8
+      },
+      {
+        "ItemId": "thoi_dong",
+        "Count": 2
+      }
+    ],
+    "UnlockSkill": "Farming",
+    "UnlockLevel": 3
+  },
+  {
+    "Id": "r_may_ep_nuoc",
+    "OutputId": "may_ep_nuoc",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "wood",
+        "Count": 6
+      },
+      {
+        "ItemId": "thoi_sat",
+        "Count": 2
+      }
+    ],
+    "UnlockSkill": "Farming",
+    "UnlockLevel": 3
+  },
+  {
+    "Id": "r_bay_cua",
+    "OutputId": "bay_cua",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "wood",
+        "Count": 5
+      },
+      {
+        "ItemId": "thoi_dong",
+        "Count": 1
+      }
+    ],
+    "UnlockSkill": "Fishing",
+    "UnlockLevel": 2
+  },
+  {
+    "Id": "r_ho_ca_canh",
+    "OutputId": "ho_ca_canh",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "da",
+        "Count": 30
+      },
+      {
+        "ItemId": "thoi_sat",
+        "Count": 2
+      }
+    ],
+    "UnlockSkill": "Fishing",
+    "UnlockLevel": 3
+  },
+  {
+    "Id": "f_giap_thap_tu",
+    "OutputId": "giap_thap_tu",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "thoi_bac",
+        "Count": 4
+      },
+      {
+        "ItemId": "thoi_sat",
+        "Count": 2
+      },
+      {
+        "ItemId": "vai",
+        "Count": 3
+      }
+    ],
+    "UnlockSkill": "Mining",
+    "UnlockLevel": 6,
+    "Station": "forge"
+  },
+  {
+    "Id": "f_giap_hac_ky_si",
+    "OutputId": "giap_hac_ky_si",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "da_hac_dien",
+        "Count": 4
+      },
+      {
+        "ItemId": "thoi_vang",
+        "Count": 3
+      },
+      {
+        "ItemId": "thoi_sat",
+        "Count": 3
+      }
+    ],
+    "UnlockSkill": "Mining",
+    "UnlockLevel": 8,
+    "Station": "forge"
+  },
+  {
+    "Id": "t_do_yem_nong_dan",
+    "OutputId": "do_yem_nong_dan",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "vai",
+        "Count": 3
+      },
+      {
+        "ItemId": "viet_quat",
+        "Count": 2
+      }
+    ],
+    "Station": "tailor"
+  },
+  {
+    "Id": "t_do_tho_vuon",
+    "OutputId": "do_tho_vuon",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "vai",
+        "Count": 3
+      },
+      {
+        "ItemId": "wood",
+        "Count": 5
+      },
+      {
+        "ItemId": "thoi_dong",
+        "Count": 1
+      }
+    ],
+    "Station": "tailor"
+  },
+  {
+    "Id": "t_do_tham_hiem",
+    "OutputId": "do_tham_hiem",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "vai",
+        "Count": 4
+      },
+      {
+        "ItemId": "thao_duoc_rung",
+        "Count": 3
+      }
+    ],
+    "UnlockSkill": "Foraging",
+    "UnlockLevel": 3,
+    "Station": "tailor"
+  },
+  {
+    "Id": "t_do_thuong_ngay",
+    "OutputId": "do_thuong_ngay",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "vai",
+        "Count": 2
+      },
+      {
+        "ItemId": "dau_tay",
+        "Count": 2
+      }
+    ],
+    "Station": "tailor"
+  },
+  {
+    "Id": "t_do_le_hoi",
+    "OutputId": "do_le_hoi",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "vai",
+        "Count": 5
+      },
+      {
+        "ItemId": "honey",
+        "Count": 1
+      },
+      {
+        "ItemId": "hong_ngoc",
+        "Count": 1
+      }
+    ],
+    "UnlockSkill": "Animal",
+    "UnlockLevel": 4,
+    "Station": "tailor"
+  }
+]

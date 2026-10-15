@@ -1,0 +1,112 @@
+[
+  {
+    "ItemId": "ca",
+    "Weight": 40,
+    "Difficulty": 1.0,
+    "Xp": 6
+  },
+  {
+    "ItemId": "ca_chep",
+    "Weight": 30,
+    "Difficulty": 1.2,
+    "Xp": 8
+  },
+  {
+    "ItemId": "ca_ro_phi",
+    "Seasons": [
+      "Summer"
+    ],
+    "Weight": 25,
+    "Difficulty": 1.4,
+    "Xp": 10
+  },
+  {
+    "ItemId": "ca_tre",
+    "Seasons": [
+      "Spring",
+      "Fall"
+    ],
+    "RainOnly": true,
+    "Weight": 20,
+    "Difficulty": 1.8,
+    "Xp": 16
+  },
+  {
+    "ItemId": "ca_hoi",
+    "Seasons": [
+      "Fall"
+    ],
+    "HourMin": 6,
+    "HourMax": 19,
+    "MinFishingLevel": 2,
+    "Weight": 18,
+    "Difficulty": 2.0,
+    "Xp": 20
+  },
+  {
+    "ItemId": "ca_trich",
+    "Seasons": [
+      "Winter"
+    ],
+    "Weight": 25,
+    "Difficulty": 1.5,
+    "Xp": 12
+  },
+  {
+    "ItemId": "ca_loc",
+    "HourMin": 19,
+    "HourMax": 5,
+    "MinFishingLevel": 3,
+    "Weight": 12,
+    "Difficulty": 2.4,
+    "Xp": 28
+  },
+  {
+    "ItemId": "ca_vang",
+    "RainOnly": true,
+    "MinFishingLevel": 8,
+    "Weight": 2,
+    "Difficulty": 3.0,
+    "Xp": 120
+  },
+  {
+    "ItemId": "ca_than_xuan",
+    "Seasons": [
+      "Spring"
+    ],
+    "MinFishingLevel": 6,
+    "Difficulty": 2.8,
+    "Weight": 2,
+    "Xp": 150
+  },
+  {
+    "ItemId": "ca_than_ha",
+    "Seasons": [
+      "Summer"
+    ],
+    "MinFishingLevel": 6,
+    "Difficulty": 2.8,
+    "Weight": 2,
+    "Xp": 150
+  },
+  {
+    "ItemId": "ca_than_thu",
+    "Seasons": [
+      "Fall"
+    ],
+    "MinFishingLevel": 6,
+    "Difficulty": 2.8,
+    "Weight": 2,
+    "Xp": 150
+  },
+  {
+    "ItemId": "ca_than_dong",
+    "Seasons": [
+      "Winter"
+    ],
+    "MinFishingLevel": 6,
+    "Difficulty": 2.8,
+    "Weight": 2,
+    "Xp": 150
+  }
+]

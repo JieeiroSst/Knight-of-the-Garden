@@ -8,6 +8,10 @@ namespace HiepSiVeVuon.Entities
     {
         public string ItemId;
         public int Amount = 1;
+        // Do hai luom moc tu nhien (xem ForageSpawner.cs) - nhat duoc cong EXP Hai Luom.
+        public bool IsForage = false;
+        // Nguon roi do cho server kiem tra (loot/tree/animal/forage/festival - xem EconomyClient).
+        public string Source = "loot";
         private Sprite3D _sprite;
 
         public override void _Ready()
@@ -48,19 +52,32 @@ namespace HiepSiVeVuon.Entities
 
         public void PickUp()
         {
-            if (Inventory.Instance.AddItem(ItemId, Amount))
+            int amount = Amount;
+            if (IsForage && GD.Randf() < SkillSystem.Instance.DoubleForageChance) amount *= 2;
+            // Dan vat nuoi vui ve -> co hoi nhan them 1 san pham (xem HomeSystem.AnimalBonusChance).
+            if (!IsForage && SkillSystem.IsAnimalProduct(ItemId) && GD.Randf() < HomeSystem.Instance.AnimalBonusChance) amount += 1;
+            if (Inventory.Instance.AddItem(ItemId, amount, Source))
             {
                 QuestSystem.Instance.OnItemCollected(ItemId);
-                var def = ItemDatabase.Instance.GetItem(ItemId);
-                GD.Print($"Nhặt được: {def?.Name} x{Amount}");
+                if (IsForage)
+                {
+                    SkillSystem.Instance.AddXp(Data.SkillType.Foraging, 7);
+                    AchievementSystem.Instance.Add("forage_collected", amount);
+                }
+                else if (SkillSystem.IsAnimalProduct(ItemId))
+                {
+                    SkillSystem.Instance.AddXp(Data.SkillType.Animal, 5 * amount);
+                    AchievementSystem.Instance.Add("animal_products", amount);
+                }
+                HiepSiVeVuon.UI.Notify.Show(string.Format(Loc.T("pickup.got_fmt"), ItemDatabase.Instance.GetDisplayName(ItemId), amount));
                 QueueFree();
             }
         }
 
         // Helper de spawn tu code (vd tu Enemy khi chet)
-        public static void Spawn(Node parent, Vector3 pos, string itemId, int amount)
+        public static void Spawn(Node parent, Vector3 pos, string itemId, int amount, string source = "loot")
         {
-            var drop = new DroppedItem { ItemId = itemId, Amount = amount };
+            var drop = new DroppedItem { ItemId = itemId, Amount = amount, Source = source };
             // PHAI AddChild TRUOC roi moi gan GlobalPosition - GlobalPosition can node dang o
             // TRONG scene tree de tinh (doc transform cha), gan luc con "mo coi" (chua co cha)
             // nem loi "!is_inside_tree()" va vi tri KHONG duoc ap dung (con o goc toa do (0,0,0)).

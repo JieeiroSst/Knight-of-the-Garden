@@ -103,12 +103,13 @@ namespace HiepSiVeVuon.Entities
                 GD.Print("Cây chưa có quả chín, chờ thêm ngày.");
                 return;
             }
-            Inventory.Instance.AddItem(FruitItemId, 1);
+            Inventory.Instance.AddItem(FruitItemId, 1, "harvest");
             // Cung cong don vao kho nong san chung (xem FarmStorage), giong FarmPlot.Harvest().
             FarmStorage.Instance.Add(FruitItemId, 1);
             QuestSystem.Instance.OnItemCollected(FruitItemId);
-            var def = ItemDatabase.Instance.GetItem(FruitItemId);
-            GD.Print($"Hái được: {def?.Name}!");
+            SkillSystem.Instance.AddXp(Data.SkillType.Farming, 5);
+            AchievementSystem.Instance.Add("crops_harvested");
+            HiepSiVeVuon.UI.Notify.Show(string.Format(Loc.T("farm.harvested_fmt"), ItemDatabase.Instance.GetDisplayName(FruitItemId), 1));
 
             _ripe = false;
             _growStage = 0;

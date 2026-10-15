@@ -82,7 +82,7 @@ namespace HiepSiVeVuon.Systems
 
                 if (FarmStorage.Instance.TryRemove(def.ItemId, def.AmountPerDelivery))
                 {
-                    GameManager.Instance.AddGold(def.RewardGold);
+                    EconomyClient.Instance.GrantGold(def.RewardGold, "reward", $"contract_{kv.Key}_{prog.DeliveriesDone + 1}_{prog.NextDueDay}");
                     prog.DeliveriesDone++;
                     GD.Print($"Đã giao hợp đồng '{def.Title}' ({prog.DeliveriesDone}/{def.TotalDeliveries}).");
                 }

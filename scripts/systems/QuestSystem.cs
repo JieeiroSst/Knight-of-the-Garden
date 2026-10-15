@@ -71,9 +71,9 @@ namespace HiepSiVeVuon.Systems
             if (def == null) return;
 
             // Trao thuong
-            if (def.RewardGold > 0) GameManager.Instance.AddGold(def.RewardGold);
+            if (def.RewardGold > 0) EconomyClient.Instance.GrantGold(def.RewardGold, "reward", $"quest_{def.Id}#g");
             if (!string.IsNullOrEmpty(def.RewardItemId))
-                Inventory.Instance.AddItem(def.RewardItemId, def.RewardItemCount);
+                EconomyClient.Instance.GrantReward(def.RewardItemId, def.RewardItemCount, "reward", $"quest_{def.Id}#i");
 
             Active.Remove(questId);
             Completed.Add(questId);

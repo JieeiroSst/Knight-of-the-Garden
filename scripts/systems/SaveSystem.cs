@@ -21,6 +21,10 @@ namespace HiepSiVeVuon.Systems
         // Cong trinh nguoi choi tu xay (xem BuildMenuUI.cs/PlacedBuilding.cs) - (BuildingId, X, Z).
         public List<(string id, Vector2 pos)> PlacedBuildings = new();
 
+        // true = nguoi choi da co ban luu tren server (nguoi choi cu) - quyet dinh co "chay bu" cac
+        // ngay offline hay nhay thang toi ngay hom nay (xem GameManager.CatchUpToServerDay).
+        public bool LoadedExistingSave { get; private set; }
+
         public override void _EnterTree()
         {
             Instance = this;
@@ -40,6 +44,8 @@ namespace HiepSiVeVuon.Systems
             public string EquippedWeapon { get; set; }
             public string EquippedArmor { get; set; }
             public string EquippedTool { get; set; }
+            public string EquippedOutfit { get; set; }
+            public bool ShowArmor { get; set; } = true;
 
             // Balo - tui do THU HAI, 50 o (xem Backpack.cs) - cung mau SavedStack voi Inventory.
             public List<SavedStack> Backpack { get; set; } = new();
@@ -78,6 +84,47 @@ namespace HiepSiVeVuon.Systems
             public List<float> BuildingX { get; set; } = new();
             public List<float> BuildingZ { get; set; } = new();
 
+            // ==== He thong nong trai mo rong ====
+            // Moi field co gia tri mac dinh an toan cho ban luu CU (thieu field -> giu initializer).
+            // Stamina nullable: ban luu cu khong co -> day the luc, thay vi 0.
+            public float? Stamina { get; set; }
+            public Dictionary<string, int> SkillXp { get; set; } = new();
+            public Dictionary<string, int> FriendPoints { get; set; } = new();
+            public Dictionary<string, int> FriendTalkDay { get; set; } = new();
+            public Dictionary<string, int> FriendGiftDay { get; set; } = new();
+            public Dictionary<string, int> AchievementStats { get; set; } = new();
+            public List<string> AchievementsUnlocked { get; set; } = new();
+            public List<MailSystem.Letter> Letters { get; set; } = new();
+            public List<string> MailSentKeys { get; set; } = new();
+            public List<ShippingSystem.Entry> ShippingBin { get; set; } = new();
+            public int CompostFilled { get; set; }
+            public int CompostDaysLeft { get; set; }
+            public bool CompostReady { get; set; }
+
+            // ==== Phieu luu / nha / le hoi ====
+            public List<string> RegionsDiscovered { get; set; } = new();
+            public List<string> ChestsOpened { get; set; } = new();
+            public List<string> WaystonesActive { get; set; } = new();
+            public Dictionary<string, int> BossDefeatDay { get; set; } = new();
+            public int DeepestDungeonFloor { get; set; }
+            public List<string> MuseumDonated { get; set; } = new();
+            public int MuseumRewardsClaimed { get; set; }
+            public int HouseLevel { get; set; }
+            public float? HerdHappiness { get; set; }
+            public List<ShippingSystem.Entry> HomeChest { get; set; } = new();
+            public List<float> ScarecrowX { get; set; } = new();
+            public List<float> ScarecrowZ { get; set; } = new();
+            public List<string> FestivalsCompleted { get; set; } = new();
+            public string SecretFriendId { get; set; }
+            public int SecretFriendDay { get; set; } = -1;
+            // Khoi quang da dao -> ngay game moc lai (xem OreRegistry).
+            public Dictionary<string, int> OreRegrowDay { get; set; } = new();
+            // Thu cung + do tu dat (trang tri/to ong/cay/may/bay cua/ho ca).
+            public List<string> PetsOwned { get; set; } = new();
+            public Dictionary<string, int> PetXp { get; set; } = new();
+            public string PetActive { get; set; }
+            public List<PlacementSystem.Entry> Placed { get; set; } = new();
+
             // Trang thai may che bien (xem ProcessingMachine.cs) KHONG duoc luu - don gian hoa co
             // y: may reset ve trong moi lan nap lai save, nguoi choi mat toi da vai ngay che bien
             // dang do dang (chap nhan duoc, tranh phai gan ID on dinh cho tung may + doi chieu lai
@@ -107,6 +154,11 @@ namespace HiepSiVeVuon.Systems
             // FarmPlot.TryTillFreeform): Freeform=true dung PosX/PosZ (vi tri THAT trong the
             // gioi) lam khoa thay vi X/Y (luon la -1/-1, khong dung). Mac dinh Freeform=false cho
             // ban luu CU (System.Text.Json tu dien false/0 khi thieu field).
+            // Mo rong (cay nhieu lan thu hoach / cay khong lo / sua loi mat GrowDays khi tai lai).
+            public int GrowDays { get; set; }
+            public int RegrowDays { get; set; }
+            public bool IsGiant { get; set; }
+
             public bool Freeform { get; set; }
             public float PosX { get; set; }
             public float PosZ { get; set; }
@@ -126,6 +178,8 @@ namespace HiepSiVeVuon.Systems
                 EquippedWeapon = Inventory.Instance.EquippedWeapon,
                 EquippedArmor = Inventory.Instance.EquippedArmor,
                 EquippedTool = Inventory.Instance.EquippedTool,
+                EquippedOutfit = Inventory.Instance.EquippedOutfit,
+                ShowArmor = Inventory.Instance.ShowArmor,
                 Farm = FarmState
             };
 
@@ -174,6 +228,42 @@ namespace HiepSiVeVuon.Systems
                 }
             }
 
+            data.Stamina = gm.Stamina;
+            foreach (var kv in SkillSystem.Instance.Xp) data.SkillXp[kv.Key.ToString()] = kv.Value;
+            data.FriendPoints = new Dictionary<string, int>(FriendshipSystem.Instance.Points);
+            data.FriendTalkDay = new Dictionary<string, int>(FriendshipSystem.Instance.LastTalkDay);
+            data.FriendGiftDay = new Dictionary<string, int>(FriendshipSystem.Instance.LastGiftDay);
+            data.AchievementStats = new Dictionary<string, int>(AchievementSystem.Instance.Stats);
+            data.AchievementsUnlocked = new List<string>(AchievementSystem.Instance.Unlocked);
+            data.Letters = MailSystem.Instance.Letters;
+            data.MailSentKeys = new List<string>(MailSystem.Instance.SentKeys);
+            data.ShippingBin = ShippingSystem.Instance.Bin;
+            data.CompostFilled = HiepSiVeVuon.Entities.CompostBin.Filled;
+            data.CompostDaysLeft = HiepSiVeVuon.Entities.CompostBin.DaysLeft;
+            data.CompostReady = HiepSiVeVuon.Entities.CompostBin.IsReady;
+
+            var adv = AdventureSystem.Instance;
+            data.RegionsDiscovered = new List<string>(adv.Discovered);
+            data.ChestsOpened = new List<string>(adv.OpenedChests);
+            data.WaystonesActive = new List<string>(adv.Waystones);
+            data.BossDefeatDay = new Dictionary<string, int>(adv.BossDefeatDay);
+            data.DeepestDungeonFloor = adv.DeepestDungeonFloor;
+            data.MuseumDonated = new List<string>(adv.MuseumDonated);
+            data.MuseumRewardsClaimed = adv.MuseumRewardsClaimed;
+            var home = HomeSystem.Instance;
+            data.HouseLevel = home.HouseLevel;
+            data.HerdHappiness = home.HerdHappiness;
+            data.HomeChest = home.Chest;
+            foreach (var p in home.ScarecrowPositions) { data.ScarecrowX.Add(p.X); data.ScarecrowZ.Add(p.Y); }
+            data.FestivalsCompleted = new List<string>(FestivalSystem.Instance.Completed);
+            data.SecretFriendId = FestivalSystem.Instance.SecretFriendId;
+            data.SecretFriendDay = FestivalSystem.Instance.SecretFriendDay;
+            data.OreRegrowDay = OreRegistry.Export();
+            data.PetsOwned = new List<string>(PetSystem.Instance.Owned);
+            data.PetXp = new Dictionary<string, int>(PetSystem.Instance.Xp);
+            data.PetActive = PetSystem.Instance.Active;
+            data.Placed = PlacementSystem.Instance.Entries;
+
             string json = JsonSerializer.Serialize(data);
             BackendClient.Instance.PushSave(json, (ok, err) =>
             {
@@ -196,6 +286,7 @@ namespace HiepSiVeVuon.Systems
 
             BackendClient.Instance.FetchSave((found, json) =>
             {
+                LoadedExistingSave = found && !string.IsNullOrEmpty(json);
                 if (found && !string.IsNullOrEmpty(json))
                 {
                     var data = JsonSerializer.Deserialize<SaveData>(json);
@@ -221,6 +312,9 @@ namespace HiepSiVeVuon.Systems
             GameManager.Instance.ApplyLoadedStats(
                 data.Hp, data.MaxHp, data.Level, data.Exp, data.ExpToNext, data.Gold, data.Day);
 
+            // Ban luu chi giu CACH SAP XEP tui do - so luong chinh thuc do server quyet dinh (anh chup
+            // kinh te se dieu chinh lai ngay sau, xem EconomyClient.Reconcile). Khong tao op khi nap.
+            using var suppress = EconomyClient.Suppress();
             Inventory.Instance.Clear();
             foreach (var s in data.Inventory) Inventory.Instance.AddItem(s.Id, s.Count);
             Backpack.Instance.Clear();
@@ -228,6 +322,8 @@ namespace HiepSiVeVuon.Systems
             if (!string.IsNullOrEmpty(data.EquippedWeapon)) Inventory.Instance.Equip(data.EquippedWeapon);
             if (!string.IsNullOrEmpty(data.EquippedArmor)) Inventory.Instance.Equip(data.EquippedArmor);
             if (!string.IsNullOrEmpty(data.EquippedTool)) Inventory.Instance.Equip(data.EquippedTool);
+            if (!string.IsNullOrEmpty(data.EquippedOutfit)) Inventory.Instance.Equip(data.EquippedOutfit);
+            Inventory.Instance.SetShowArmor(data.ShowArmor);
 
             QuestSystem.Instance.Reset();
             for (int i = 0; i < data.ActiveQuests.Count; i++)
@@ -265,7 +361,81 @@ namespace HiepSiVeVuon.Systems
             for (int i = 0; i < data.BuildingIds.Count && i < data.BuildingX.Count && i < data.BuildingZ.Count; i++)
                 PlacedBuildings.Add((data.BuildingIds[i], new Vector2(data.BuildingX[i], data.BuildingZ[i])));
 
+            ApplyFarmLife(data);
             GD.Print("Đã nạp game.");
+        }
+
+        private static void ApplyFarmLife(SaveData data)
+        {
+            SkillSystem.Instance.Reset();
+            if (data.SkillXp != null)
+                foreach (var kv in data.SkillXp)
+                    if (Enum.TryParse<HiepSiVeVuon.Data.SkillType>(kv.Key, out var skill))
+                        SkillSystem.Instance.Xp[skill] = kv.Value;
+
+            var gm = GameManager.Instance;
+            gm.Stamina = data.Stamina.HasValue ? Mathf.Clamp(data.Stamina.Value, 0f, gm.MaxStamina) : gm.MaxStamina;
+
+            var fs = FriendshipSystem.Instance;
+            fs.Reset();
+            if (data.FriendPoints != null) foreach (var kv in data.FriendPoints) fs.Points[kv.Key] = kv.Value;
+            if (data.FriendTalkDay != null) foreach (var kv in data.FriendTalkDay) fs.LastTalkDay[kv.Key] = kv.Value;
+            if (data.FriendGiftDay != null) foreach (var kv in data.FriendGiftDay) fs.LastGiftDay[kv.Key] = kv.Value;
+
+            var ach = AchievementSystem.Instance;
+            ach.Reset();
+            if (data.AchievementStats != null) foreach (var kv in data.AchievementStats) ach.Stats[kv.Key] = kv.Value;
+            if (data.AchievementsUnlocked != null) foreach (var id in data.AchievementsUnlocked) ach.Unlocked.Add(id);
+
+            var mail = MailSystem.Instance;
+            mail.Reset();
+            if (data.Letters != null) mail.Letters.AddRange(data.Letters);
+            if (data.MailSentKeys != null) foreach (var k in data.MailSentKeys) mail.SentKeys.Add(k);
+            mail.EmitSignal(MailSystem.SignalName.MailChanged);
+
+            ShippingSystem.Instance.Reset();
+            // Thung giao hang nay nam tren server (xem ShippingSystem) - bo qua ban sao cu trong ban luu.
+
+            HiepSiVeVuon.Entities.CompostBin.Filled = data.CompostFilled;
+            HiepSiVeVuon.Entities.CompostBin.DaysLeft = data.CompostDaysLeft;
+            HiepSiVeVuon.Entities.CompostBin.IsReady = data.CompostReady;
+
+            var adv = AdventureSystem.Instance;
+            adv.Reset();
+            if (data.RegionsDiscovered != null) adv.Discovered.UnionWith(data.RegionsDiscovered);
+            if (data.ChestsOpened != null) adv.OpenedChests.UnionWith(data.ChestsOpened);
+            if (data.WaystonesActive != null) adv.Waystones.UnionWith(data.WaystonesActive);
+            adv.Waystones.Add("ws_farm"); // cot o nong trai luon kich hoat san
+            if (data.BossDefeatDay != null) foreach (var kv in data.BossDefeatDay) adv.BossDefeatDay[kv.Key] = kv.Value;
+            adv.DeepestDungeonFloor = data.DeepestDungeonFloor;
+            if (data.MuseumDonated != null) adv.MuseumDonated.UnionWith(data.MuseumDonated);
+            adv.MuseumRewardsClaimed = data.MuseumRewardsClaimed;
+
+            var home = HomeSystem.Instance;
+            home.Reset();
+            home.HouseLevel = Mathf.Clamp(data.HouseLevel, 0, HomeSystem.MaxHouseLevel);
+            home.HerdHappiness = data.HerdHappiness ?? 60f;
+            if (data.HomeChest != null) home.Chest.AddRange(data.HomeChest);
+            for (int i = 0; data.ScarecrowX != null && data.ScarecrowZ != null && i < data.ScarecrowX.Count && i < data.ScarecrowZ.Count; i++)
+                home.ScarecrowPositions.Add(new Vector2(data.ScarecrowX[i], data.ScarecrowZ[i]));
+
+            var fest = FestivalSystem.Instance;
+            fest.Reset();
+            if (data.FestivalsCompleted != null) fest.Completed.UnionWith(data.FestivalsCompleted);
+            fest.SecretFriendId = data.SecretFriendId;
+            fest.SecretFriendDay = data.SecretFriendDay;
+            OreRegistry.Import(data.OreRegrowDay);
+            var pets = PetSystem.Instance;
+            pets.Reset();
+            if (data.PetsOwned != null) pets.Owned.UnionWith(data.PetsOwned);
+            if (data.PetXp != null) foreach (var kv in data.PetXp) pets.Xp[kv.Key] = kv.Value;
+            pets.Active = data.PetActive != null && pets.Owned.Contains(data.PetActive) ? data.PetActive : null;
+            PlacementSystem.Instance.Reset();
+            if (data.Placed != null) PlacementSystem.Instance.Entries.AddRange(data.Placed);
+
+            // The luc nap TRUOC khi HouseLevel duoc ap -> kep lai theo MaxStamina day du.
+            gm.Stamina = data.Stamina.HasValue ? Mathf.Clamp(data.Stamina.Value, 0f, gm.MaxStamina) : gm.MaxStamina;
+            gm.EmitSignal(GameManager.SignalName.StatsChanged);
         }
     }
 }

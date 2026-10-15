@@ -1,0 +1,8 @@
+[
+  { "Id": "c_sup_rau", "OutputId": "sup_rau", "OutputCount": 1, "Ingredients": [ { "ItemId": "carrot", "Count": 1 }, { "ItemId": "cabbage", "Count": 1 } ] },
+  { "Id": "c_trung_chien", "OutputId": "trung_chien", "OutputCount": 1, "Ingredients": [ { "ItemId": "egg", "Count": 2 } ] },
+  { "Id": "c_banh_bi_ngo", "OutputId": "banh_bi_ngo", "OutputCount": 1, "Ingredients": [ { "ItemId": "pumpkin", "Count": 1 }, { "ItemId": "milk", "Count": 1 } ] },
+  { "Id": "c_salad_ca_chua", "OutputId": "salad_ca_chua", "OutputCount": 1, "Ingredients": [ { "ItemId": "tomato", "Count": 2 }, { "ItemId": "pho_mai", "Count": 1 } ] },
+  { "Id": "c_banh_mi_trung", "OutputId": "banh_mi_trung", "OutputCount": 1, "Ingredients": [ { "ItemId": "wheat", "Count": 1 }, { "ItemId": "egg", "Count": 1 } ] },
+  { "Id": "c_sup_ca", "OutputId": "sup_ca", "OutputCount": 1, "Ingredients": [ { "ItemId": "ca", "Count": 1 }, { "ItemId": "carrot", "Count": 1 } ] }
+]

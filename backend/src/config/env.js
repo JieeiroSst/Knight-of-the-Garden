@@ -16,6 +16,20 @@ const envSchema = z.object({
   PG_CONN_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
   RATE_LIMIT_GENERAL: z.coerce.number().int().positive().default(120),
   RATE_LIMIT_AUTH: z.coerce.number().int().positive().default(20),
+
+  // ==== Game online ====
+  // Lich game theo thoi gian thuc (xem game/calendar.js): ngay 1 = GAME_EPOCH, mui gio game.
+  GAME_EPOCH: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).default("2026-01-01"),
+  GAME_TZ_OFFSET_MIN: z.coerce.number().int().min(-720).max(840).default(420),
+  // Vai tro process: "api" (REST), "gateway" (WebSocket), "all" (ca 2 - chay 1 may/dev).
+  ROLE: z.enum(["api", "gateway", "all"]).default("all"),
+  // Redis cho pub/sub giua cac gateway + bang dem kenh. Bo trong = bus trong bo nho (CHI 1 process).
+  REDIS_URL: z.string().optional(),
+  CHANNEL_CAPACITY: z.coerce.number().int().min(2).max(500).default(80),
+  WS_TICK_MS: z.coerce.number().int().min(50).max(1000).default(200),
+  WS_MAX_CONNECTIONS: z.coerce.number().int().positive().default(50000),
+  MARKET_TAX_PERCENT: z.coerce.number().min(0).max(50).default(5),
+  MARKET_LISTING_DAYS: z.coerce.number().int().positive().default(7),
 });
 
 const parsed = envSchema.safeParse(process.env);

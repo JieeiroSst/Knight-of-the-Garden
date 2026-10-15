@@ -8,7 +8,10 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "migrate": "node -e \"require('./src/db/migrate').runMigrations().then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1)})\"",
-    "test": "node --test tests/"
+    "test": "node --test tests/",
+    "sync-gamedata": "node scripts/sync-gamedata.js",
+    "gateway": "ROLE=gateway node src/index.js",
+    "loadtest": "node scripts/loadtest.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -17,9 +20,11 @@
     "express": "^4.19.2",
     "express-rate-limit": "^7.4.0",
     "helmet": "^7.1.0",
+    "ioredis": "^5.11.1",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.12.0",
     "pino": "^9.4.0",
+    "ws": "^8.22.0",
     "zod": "^3.23.8"
   }
 }

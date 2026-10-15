@@ -44,7 +44,11 @@ namespace HiepSiVeVuon.Systems
         // ban dich), tra ve CHINH cai khoa (de nhan ra NGAY co cho nao thieu ban dich thay vi
         // man hinh trong khong ro ly do).
         public static string T(string key) =>
-            Strings.TryGetValue(key, out var pair) ? (Current == Lang.VI ? pair.vi : pair.en) : key;
+            Strings.TryGetValue(key, out var pair) || LocFarm.Strings.TryGetValue(key, out pair)
+                || LocAdventure.Strings.TryGetValue(key, out pair)
+                || LocOnline.Strings.TryGetValue(key, out pair)
+                || LocMore.Strings.TryGetValue(key, out pair)
+                ? (Current == Lang.VI ? pair.vi : pair.en) : key;
 
         private static void LoadSaved()
         {
@@ -78,11 +82,11 @@ namespace HiepSiVeVuon.Systems
             ["settings.ctrl.move"] = ("Di chuyển", "Move"),
             ["settings.ctrl.attack"] = ("Tấn công", "Attack"),
             ["settings.ctrl.tool"] = (
-                "Dùng công cụ (cuốc đất mới/trồng/tưới/thu hoạch/cuốc quặng/câu cá/đặt máy tưới tự động - cuốc bạc/vàng tác động cả vùng)",
-                "Use tool (till new soil/plant/water/harvest/mine ore/fish/place auto-sprinkler - silver/gold hoe affects an area)"),
+                "Dùng công cụ (cuốc đất mới/trồng/tưới/thu hoạch/cuốc quặng/câu cá - bấm lại khi cá cắn câu/đặt máy tưới tự động - cuốc bạc/vàng tác động cả vùng; tốn thể lực)",
+                "Use tool (till new soil/plant/water/harvest/mine ore/fish - press again when a fish bites/place auto-sprinkler - silver/gold hoe affects an area; uses stamina)"),
             ["settings.ctrl.interact"] = (
-                "Tương tác / Mở cửa / Cầu thang / Sửa tháp nước / Cho vịt ăn / Máy chế biến / Bếp / Cổng Nhà Kính",
-                "Interact / Open door / Stairs / Repair water tower / Feed ducks / Processing machine / Kitchen / Greenhouse gate"),
+                "Tương tác / Mở cửa / Cầu thang / Sửa tháp nước / Cho vịt ăn / Máy chế biến / Bếp / Cổng Nhà Kính / Thùng giao hàng / Hộp thư / Bàn chế tạo / Giường ngủ / Thùng ủ phân / Vuốt ve vật nuôi",
+                "Interact / Open door / Stairs / Repair water tower / Feed ducks / Processing machine / Kitchen / Greenhouse gate / Shipping bin / Mailbox / Crafting bench / Bed / Compost bin / Pet animals"),
             ["settings.ctrl.mount"] = ("Cưỡi / Xuống ngựa hoặc thuyền", "Mount / dismount horse or boat"),
             ["settings.ctrl.inventory"] = ("Túi đồ", "Inventory"),
             ["settings.ctrl.backpack"] = (
@@ -94,6 +98,7 @@ namespace HiepSiVeVuon.Systems
             ["settings.ctrl.map"] = ("Bản đồ thế giới", "World map"),
             ["settings.ctrl.settings"] = ("Cài đặt / Hướng dẫn (màn hình này)", "Settings / Help (this screen)"),
             ["settings.ctrl.save"] = ("Lưu game", "Save game"),
+            ["settings.ctrl.chat"] = ("Chat (/w Tên = nhắn riêng, /kenh 2 = đổi kênh)", "Chat (/w Name = whisper, /ch 2 = switch channel)"),
 
             // ---- HUD ----
             ["hud.quest_header"] = ("-- Nhiệm vụ --", "-- Quests --"),

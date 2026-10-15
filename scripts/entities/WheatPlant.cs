@@ -60,10 +60,12 @@ namespace HiepSiVeVuon.Entities
                 GD.Print("Lúa mì chưa chín, chờ thêm ngày.");
                 return;
             }
-            Inventory.Instance.AddItem("wheat", 1);
+            Inventory.Instance.AddItem("wheat", 1, "harvest");
             FarmStorage.Instance.Add("wheat", 1);
             QuestSystem.Instance.OnItemCollected("wheat");
-            GD.Print("Đã gặt được Bó Lúa Mì!");
+            SkillSystem.Instance.AddXp(Data.SkillType.Farming, 4);
+            AchievementSystem.Instance.Add("crops_harvested");
+            HiepSiVeVuon.UI.Notify.Show(string.Format(Loc.T("farm.harvested_fmt"), ItemDatabase.Instance.GetDisplayName("wheat"), 1));
 
             // Cay lau nam - VE LAI mam non thay vi bien mat, tu moc lai cho vu sau (dung yeu cau
             // "tu lon lai" giong Vuon Nho/Vuon Cay, khong phai trong lai tu dau).

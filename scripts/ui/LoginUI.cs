@@ -291,10 +291,46 @@ namespace HiepSiVeVuon.UI
             SetBusy(true);
             _status.Text = Loc.T("login.connecting");
 
-            async void OnDone(bool ok, string tokenOrError)
+            void OnDone(bool ok, string tokenOrError)
             {
                 if (!IsInstanceValid(this)) return; // scene co the da doi truoc khi callback ve
                 if (ok)
+                {
+                    // Game online: dong bo dong ho game theo server, roi kiem tra nhan vat - chua co
+                    // (tai khoan moi) thi mo man hinh TAO NHAN VAT truoc khi vao the gioi.
+                    _status.Text = Loc.T("login.loading_character");
+                    BackendClient.Instance.SyncTime();
+                    BackendClient.Instance.GetJson("/api/character", (cok, status, text) =>
+                    {
+                        if (!IsInstanceValid(this)) return;
+                        if (cok && status == 200)
+                        {
+                            using var doc = System.Text.Json.JsonDocument.Parse(text);
+                            HiepSiVeVuon.Core.CharacterProfile.Current = HiepSiVeVuon.Core.CharacterProfile.FromJson(doc.RootElement);
+                            EnterWorld();
+                        }
+                        else if (cok && status == 404)
+                        {
+                            var creator = new CharacterCreatorUI();
+                            creator.Saved += _ => EnterWorld();
+                            AddChild(creator);
+                        }
+                        else
+                        {
+                            SetBusy(false);
+                            _status.Text = Loc.T("net.no_connection");
+                        }
+                    });
+                }
+                else
+                {
+                    SetBusy(false);
+                    _status.Text = tokenOrError ?? Loc.T("login.unknown_error");
+                }
+            }
+
+            async void EnterWorld()
+            {
                 {
                     // Main.tscn._Ready() dung san CA THE GIOI (64 buoc, ~2s) HOAN TOAN DONG BO
                     // tren main thread - ChangeSceneToFile() goi truc tiep se lam man hinh "dong
@@ -310,11 +346,6 @@ namespace HiepSiVeVuon.UI
                     await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
                     if (!IsInstanceValid(this)) return;
                     GetTree().ChangeSceneToFile("res://scenes/Main.tscn");
-                }
-                else
-                {
-                    SetBusy(false);
-                    _status.Text = tokenOrError ?? Loc.T("login.unknown_error");
                 }
             }
 

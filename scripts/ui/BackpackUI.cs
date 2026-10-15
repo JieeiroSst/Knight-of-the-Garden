@@ -95,20 +95,14 @@ namespace HiepSiVeVuon.UI
                 // doi hoi vat pham phai nam trong Inventory.Slots, nen trang bi thang tu Balo an
                 // toan, khong can di chuyen vat pham qua lai. Cac loai con lai (nguyen lieu/nong
                 // san/hat giong/do dung) van RUT ra Tui Do nhu quy uoc cu.
-                if (def != null && (def.Type == ItemType.Weapon || def.Type == ItemType.Armor || def.Type == ItemType.Tool))
+                if (Inventory.IsEquippable(def))
                 {
                     btn.Pressed += () => EquipFromBackpack(id);
                     // Them han 1 nut chu "Su Dung" duoi icon - bam thang vao icon van trang bi
                     // duoc (giu nguyen tien loi cu), nhung nut co chu ro rang de nguoi choi khong
                     // phai doan "bam vao icon la lam gi" (theo dung yeu cau, thay vi chi co icon
                     // tran khong nhan biet duoc hanh dong).
-                    bool isCurrentlyEquipped = def.Type switch
-                    {
-                        ItemType.Weapon => id == Inventory.Instance.EquippedWeapon,
-                        ItemType.Armor => id == Inventory.Instance.EquippedArmor,
-                        ItemType.Tool => id == Inventory.Instance.EquippedTool,
-                        _ => false,
-                    };
+                    bool isCurrentlyEquipped = Inventory.Instance.IsEquipped(id);
                     var cell = new VBoxContainer();
                     cell.AddChild(btn);
                     // O DANG TRANG BI: an nut "Su Dung" (khong the bam de trang bi lai cai da
@@ -161,12 +155,15 @@ namespace HiepSiVeVuon.UI
         // (bo truoc, them sau) va noi den vua luc day, vat pham se BIEN MAT khoi ca 2 tui.
         private void DepositToBackpack(string itemId)
         {
+            // Tui/balo la 1 kho chung tren server -> chuyen qua lai khong tao op kinh te.
+            using var _ = EconomyClient.Suppress();
             if (!Backpack.Instance.AddItem(itemId, 1)) { _info.Text = Loc.T("backpack.full"); return; }
             Inventory.Instance.RemoveItem(itemId, 1);
         }
 
         private void WithdrawFromBackpack(string itemId)
         {
+            using var _ = EconomyClient.Suppress();
             if (!Inventory.Instance.AddItem(itemId, 1)) { _info.Text = Loc.T("backpack.inventory_full"); return; }
             Backpack.Instance.RemoveItem(itemId, 1);
         }

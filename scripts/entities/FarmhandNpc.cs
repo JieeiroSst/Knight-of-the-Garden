@@ -101,7 +101,7 @@ namespace HiepSiVeVuon.Entities
                         Execute = (ctx, t) =>
                         {
                             var jitter = new Vector3((float)GD.RandRange(-14, 14), 0f, (float)GD.RandRange(-14, 14));
-                            DroppedItem.Spawn(GetTree().CurrentScene, TroughPos + jitter, ProduceItemId, 1);
+                            DroppedItem.Spawn(GetTree().CurrentScene, TroughPos + jitter, ProduceItemId, 1, "animal");
                             FarmStorage.Instance.Add(ProduceItemId, 1);
                         },
                     },

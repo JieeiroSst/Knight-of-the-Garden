@@ -207,7 +207,7 @@ namespace HiepSiVeVuon.Entities
             }
             else
             {
-                DroppedItem.Spawn(GetTree().CurrentScene, GlobalPosition, "egg", 1);
+                DroppedItem.Spawn(GetTree().CurrentScene, GlobalPosition, "egg", 1, "animal");
             }
             _eggCooldownLeft = rng.RandfRange((float)EggLayIntervalMinSec, (float)EggLayIntervalMaxSec);
         }

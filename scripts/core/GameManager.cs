@@ -18,18 +18,100 @@ namespace HiepSiVeVuon.Core
         public int Gold = 50;
         public int Day = 1;
 
+        // ==== The luc (Stamina) ====
+        // Dung cong cu/cau ca/dao quang/chat cay ton the luc (xem Player.cs). Hoi phuc: tu nhien
+        // cham theo thoi gian, an mon an (ItemDef.StaminaAmount), ngu tren giuong (Bed.cs).
+        // Toi da = 120 + 3 moi cap ky nang (xem SkillSystem.TotalLevels) - tinh dong, khong luu.
+        public const float BaseMaxStamina = 120f;
+        public const float StaminaRegenPerSec = 1f / 6f; // ~12 phut thuc hoi day tu 0
+        public float Stamina = BaseMaxStamina;
+        public float MaxStamina => BaseMaxStamina + 3f * (HiepSiVeVuon.Systems.SkillSystem.Instance?.TotalLevels ?? 0)
+            + (HiepSiVeVuon.Systems.HomeSystem.Instance?.StaminaBonus ?? 0f);
+        // Duoi 10% = kiet suc: di cham hon (xem Player._PhysicsProcess).
+        public bool IsExhausted => Stamina < MaxStamina * 0.1f;
+        private int _lastStaminaInt = -1;
+
         // Da tra vang mo khoa Nha Kinh chua (xem GreenhouseGate.cs) - mo 1 LAN DUY NHAT, luu qua
         // SaveSystem de khong phai tra lai moi lan choi.
         public bool GreenhouseUnlocked = false;
 
-        // ==== Thoi gian thuc: dong bo hoan toan theo dong ho/lich may tinh ====
-        // 1 ngay trong game = 1 ngay thuc (24h that), khong con bo dem gia lap.
-        public float DayProgress => (float)(System.DateTime.Now.TimeOfDay.TotalSeconds / 86400.0);
-        public int Hour => System.DateTime.Now.Hour;
-        public int RealDay => System.DateTime.Now.Day;
-        public int RealMonth => System.DateTime.Now.Month;
-        public int RealYear => System.DateTime.Now.Year;
+        // ==== Thoi gian thuc DONG BO THEO SERVER (game online) ====
+        // 1 ngay game = 1 ngay that, LICH CHUNG cho moi nguoi choi (backend game/calendar.js: ngay 1
+        // = GAME_EPOCH, mui gio game). Client lay gio server qua /api/time (va moi lan dong bo kinh te)
+        // roi tu chay tiep bang dong ho may + do lech - doi gio may tinh KHONG lam cay lon nhanh hon.
+        // Truoc khi dong bo (man hinh dang nhap/mat mang) tam dung dong ho may.
+        private bool _timeSynced;
+        private double _serverOffsetMs;          // serverNow - dong ho may luc dong bo
+        private int _tzOffsetMin = 420;
+        private long _nextDayAtMs;
+        public int ServerDay { get; private set; }
+        public bool TimeSynced => _timeSynced;
+
+        private static double LocalUnixMs => Time.GetUnixTimeFromSystem() * 1000.0;
+        public double ServerNowMs => LocalUnixMs + _serverOffsetMs;
+        // Gio dia phuong CUA GAME (theo mui gio game, khong phai mui gio may nguoi choi).
+        public System.DateTime GameNow => _timeSynced
+            ? System.DateTimeOffset.FromUnixTimeMilliseconds((long)ServerNowMs).UtcDateTime.AddMinutes(_tzOffsetMin)
+            : System.DateTime.Now;
+
+        public float DayProgress => (float)(GameNow.TimeOfDay.TotalSeconds / 86400.0);
+        public int Hour => GameNow.Hour;
+        public int RealDay => GameNow.Day;
+        public int RealMonth => GameNow.Month;
+        public int RealYear => GameNow.Year;
         public bool IsNight => Hour < 6 || Hour >= 19;
+
+        // Dang "chay bu" nhung ngay nguoi choi offline (xem CatchUpToServerDay) - nhan cong cham ho
+        // cay trong (FarmPlot), bo qua sinh quai/sinh san hang loat (Main).
+        public bool IsCatchingUp { get; private set; }
+        public const int MaxCatchUpDays = 28;
+
+        // root: JSON tu /api/time hoac truong "time" cua anh chup kinh te.
+        public void ApplyServerTime(System.Text.Json.JsonElement root)
+        {
+            double serverNow = root.GetProperty("serverNow").GetDouble();
+            _serverOffsetMs = serverNow - LocalUnixMs;
+            _tzOffsetMin = root.GetProperty("tzOffsetMin").GetInt32();
+            ServerDay = root.GetProperty("day").GetInt32();
+            _nextDayAtMs = root.GetProperty("nextDayAt").GetInt64();
+            _timeSynced = true;
+            // Nap save xong TRUOC khi dong ho kip dong bo -> chay bu ngay bay gio.
+            if (_pendingCatchUp != 0)
+            {
+                bool newPlayer = _pendingCatchUp == 1;
+                _pendingCatchUp = 0;
+                CatchUpToServerDay(newPlayer);
+            }
+        }
+
+        private int _pendingCatchUp; // 0 = khong, 1 = nguoi moi, 2 = nguoi cu
+
+        // Goi sau khi nap save: tien ngay game toi ngay server. newPlayer=true (chua co ban luu) ->
+        // nhay thang toi hom nay, khong mo phong gi. Nguoi choi cu -> chay bu tung ngay (toi da
+        // MaxCatchUpDays ngay gan nhat) de cay lon/may che bien chay/hang giao duoc ban dung thuc te.
+        public void CatchUpToServerDay(bool newPlayer)
+        {
+            if (!_timeSynced)
+            {
+                _pendingCatchUp = newPlayer ? 1 : 2;
+                return;
+            }
+            if (ServerDay <= Day) return;
+            if (newPlayer || Day <= 0)
+            {
+                Day = ServerDay;
+                RollWeather();
+                _lastSeason = CurrentSeason;
+                EmitSignal(SignalName.StatsChanged);
+                return;
+            }
+            if (ServerDay - Day > MaxCatchUpDays) Day = ServerDay - MaxCatchUpDays;
+            int gap = ServerDay - Day;
+            IsCatchingUp = true;
+            try { while (Day < ServerDay) NextDay(); }
+            finally { IsCatchingUp = false; }
+            HiepSiVeVuon.UI.Notify.Show(string.Format(HiepSiVeVuon.Systems.Loc.T("time.caught_up_fmt"), gap));
+        }
 
         // Thoi tiet don gian: 1 co "co dang mua" hay khong, doi MOI NGAY THAT (khong doi giua
         // ngay), tinh xac dinh theo Day (cung 1 ngay luon cho cung 1 ket qua) - dung cho Henri
@@ -52,11 +134,13 @@ namespace HiepSiVeVuon.Core
         private Season _lastSeason;
 
         private System.DateTime _lastDate = System.DateTime.Now.Date;
-        private int _lastHour = System.DateTime.Now.Hour;
+        private int _lastHour = -1;
 
         // Su kien de UI lang nghe
         [Signal] public delegate void StatsChangedEventHandler();
         [Signal] public delegate void PlayerDiedEventHandler();
+        // Nguoi choi trung don (Player.cs choi hoat canh giat minh, rung camera, so sat thuong).
+        [Signal] public delegate void PlayerHurtEventHandler(int dmg);
         [Signal] public delegate void DayChangedEventHandler(int day);
         [Signal] public delegate void HourChangedEventHandler(int hour);
 
@@ -67,14 +151,31 @@ namespace HiepSiVeVuon.Core
             _lastSeason = CurrentSeason;
         }
 
+        // Thoi tiet chi tiet do WeatherSystem quyet dinh; o day chi giu co "dang mua" cho code cu.
+        public void SetRaining(bool raining)
+        {
+            if (IsRaining == raining) return;
+            IsRaining = raining;
+            EmitSignal(SignalName.WeatherChanged, raining);
+        }
+
         private void RollWeather()
         {
+            if (HiepSiVeVuon.Systems.WeatherSystem.Instance != null) { HiepSiVeVuon.Systems.WeatherSystem.Instance.Recompute(announce: false); return; }
             var rng = new RandomNumberGenerator { Seed = (ulong)Day };
             IsRaining = rng.Randf() < 0.3f; // ~30% so ngay la ngay mua
         }
 
         public override void _Process(double delta)
         {
+            if (Stamina < MaxStamina)
+            {
+                Stamina = Mathf.Min(MaxStamina, Stamina + StaminaRegenPerSec * (float)delta);
+                // Chi bao UI khi phan nguyen thay doi - tranh phat StatsChanged moi frame.
+                int si = (int)Stamina;
+                if (si != _lastStaminaInt) { _lastStaminaInt = si; EmitSignal(SignalName.StatsChanged); }
+            }
+
             int hour = Hour;
             if (hour != _lastHour)
             {
@@ -82,6 +183,17 @@ namespace HiepSiVeVuon.Core
                 EmitSignal(SignalName.HourChanged, hour);
             }
 
+            if (_timeSynced)
+            {
+                // Qua 00:00 gio game (theo dong ho server) -> sang ngay moi chung cho moi nguoi.
+                if (ServerNowMs >= _nextDayAtMs)
+                {
+                    _nextDayAtMs += 86400000;
+                    ServerDay++;
+                    if (Day < ServerDay) NextDay();
+                }
+                return;
+            }
             var today = System.DateTime.Now.Date;
             if (today != _lastDate)
             {
@@ -90,10 +202,13 @@ namespace HiepSiVeVuon.Core
             }
         }
 
-        public void AddGold(int amount)
+        // source/key: nguon vang cho server kiem tra (kill/chest/reward... - xem EconomyClient).
+        public void AddGold(int amount, string source = null, string key = null)
         {
+            int before = Gold;
             Gold += amount;
             if (Gold < 0) Gold = 0;
+            HiepSiVeVuon.Systems.EconomyClient.Instance?.OnGoldDelta(Gold - before, source, key);
             EmitSignal(SignalName.StatsChanged);
         }
 
@@ -101,13 +216,20 @@ namespace HiepSiVeVuon.Core
         {
             if (Gold < amount) return false;
             Gold -= amount;
+            HiepSiVeVuon.Systems.EconomyClient.Instance?.OnGoldDelta(-amount, null, null);
             EmitSignal(SignalName.StatsChanged);
             return true;
         }
 
+        // Mien sat thuong ngan (ky nang Luot) - tinh theo dong ho may.
+        private ulong _invulnUntil;
+        public void SetInvulnerable(double seconds) => _invulnUntil = Time.GetTicksMsec() + (ulong)(seconds * 1000);
+
         public void TakeDamage(int dmg)
         {
+            if (Time.GetTicksMsec() < _invulnUntil || Hp <= 0) return;
             Hp -= dmg;
+            EmitSignal(SignalName.PlayerHurt, dmg);
             if (Hp <= 0)
             {
                 Hp = 0;
@@ -119,6 +241,23 @@ namespace HiepSiVeVuon.Core
         public void Heal(int amount)
         {
             Hp = Mathf.Min(MaxHp, Hp + amount);
+            EmitSignal(SignalName.StatsChanged);
+        }
+
+        // Tru the luc cho 1 hanh dong - tra false (va KHONG tru) neu khong du, de noi goi bo qua
+        // hanh dong do.
+        public bool UseStamina(float cost)
+        {
+            if (cost <= 0f) return true;
+            if (Stamina < cost) return false;
+            Stamina -= cost;
+            EmitSignal(SignalName.StatsChanged);
+            return true;
+        }
+
+        public void RestoreStamina(float amount)
+        {
+            Stamina = Mathf.Min(MaxStamina, Stamina + amount);
             EmitSignal(SignalName.StatsChanged);
         }
 
@@ -178,6 +317,7 @@ namespace HiepSiVeVuon.Core
             if (CurrentSeason == Season.Fall && def.Type == ItemType.Crop) mult += 0.3f;
             if (CurrentSeason == Season.Winter && System.Array.IndexOf(LivestockProduceIds, def.Id) >= 0) mult += 0.2f;
             if (IsFestivalDay) mult += 0.2f;
+            mult += HiepSiVeVuon.Systems.SkillSystem.Instance?.PriceBonus(def) ?? 0f;
             return mult;
         }
 

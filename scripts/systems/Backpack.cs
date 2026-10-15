@@ -24,7 +24,18 @@ namespace HiepSiVeVuon.Systems
             Instance = this;
         }
 
-        public bool AddItem(string itemId, int count = 1)
+        // source/key: nguon nhan do cho server kiem tra (harvest/fish/loot/... - xem backend
+        // economyRules), key = ma phan thuong 1 lan (ruong/thu/nhiem vu). Bao so luong THUC TE da them
+        // (tui day co the chi them duoc 1 phan) cho EconomyClient.
+        public bool AddItem(string itemId, int count = 1, string source = null, string key = null)
+        {
+        	int before = CountOf(itemId);
+        	bool ok = AddItemCore(itemId, count);
+        	EconomyClient.Instance?.OnItemDelta(itemId, CountOf(itemId) - before, source, key);
+        	return ok;
+        }
+
+        private bool AddItemCore(string itemId, int count)
         {
             var def = ItemDatabase.Instance.GetItem(itemId);
             if (def == null)
@@ -62,6 +73,13 @@ namespace HiepSiVeVuon.Systems
         }
 
         public bool RemoveItem(string itemId, int count = 1)
+        {
+        	bool ok = RemoveItemCore(itemId, count);
+        	if (ok) EconomyClient.Instance?.OnItemDelta(itemId, -count, null, null);
+        	return ok;
+        }
+
+        private bool RemoveItemCore(string itemId, int count)
         {
             if (CountOf(itemId) < count) return false;
             for (int i = Slots.Count - 1; i >= 0 && count > 0; i--)

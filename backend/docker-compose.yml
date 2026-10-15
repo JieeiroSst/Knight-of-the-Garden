@@ -1,3 +1,6 @@
+# Chay thu toan bo he thong online tren 1 may (giong kien truc that, quy mo nho):
+#   nginx (cong 3000) -> api x2 (REST) + gateway x2 (WebSocket /ws) -> Postgres + Redis
+#   docker compose up -d --build --scale api=2 --scale gateway=2
 services:
   db:
     image: postgres:16-alpine
@@ -6,40 +9,76 @@ services:
       POSTGRES_USER: hsvv
       POSTGRES_PASSWORD: hsvv_password
       POSTGRES_DB: hsvv
+    command: ["postgres", "-c", "max_connections=300"]
     volumes:
       - hsvv_pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U hsvv"]
       interval: 5s
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   api:
     build: .
     restart: unless-stopped
     depends_on:
-      db:
-        condition: service_healthy
-    environment:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment: &appenv
       NODE_ENV: production
       PORT: 3000
+      ROLE: api
       DATABASE_URL: postgres://hsvv:hsvv_password@db:5432/hsvv
+      REDIS_URL: redis://redis:6379
       JWT_SECRET: doi-chuoi-nay-thanh-1-chuoi-bi-mat-dai-ngau-nhien-that
       JWT_EXPIRES_IN: 30d
-      PG_POOL_MAX: 10
-      PG_IDLE_TIMEOUT_MS: 30000
-      PG_CONN_TIMEOUT_MS: 5000
-      RATE_LIMIT_GENERAL: 120
+      PG_POOL_MAX: 20
+      RATE_LIMIT_GENERAL: 600
       RATE_LIMIT_AUTH: 20
-    ports:
-      - "3000:3000"
+      GAME_EPOCH: "2026-01-01"
+      GAME_TZ_OFFSET_MIN: 420
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  gateway:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      api: { condition: service_started }
+    environment:
+      <<: *appenv
+      ROLE: gateway
+      PG_POOL_MAX: 5
+      CHANNEL_CAPACITY: 80
+      WS_TICK_MS: 200
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on: [api, gateway]
+    ports:
+      - "3000:80"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/nginx.conf:ro
 
 volumes:
   hsvv_pgdata:

@@ -9,15 +9,9 @@ namespace HiepSiVeVuon.UI
     // lieu THU HOACH/SAN BAT duoc thanh mon an hoi phuc sinh luc, khac voi thuoc (potion) mua san.
     public partial class CookingUI : CanvasLayer
     {
-        private static readonly (string outputId, (string ing, int qty)[] ingredients)[] Recipes =
-        {
-            ("sup_rau", new[] { ("carrot", 1), ("cabbage", 1) }),
-            ("trung_chien", new[] { ("egg", 2) }),
-            ("banh_bi_ngo", new[] { ("pumpkin", 1), ("milk", 1) }),
-            ("salad_ca_chua", new[] { ("tomato", 2), ("pho_mai", 1) }),
-            ("banh_mi_trung", new[] { ("wheat", 1), ("egg", 1) }),
-            ("sup_ca", new[] { ("ca", 1), ("carrot", 1) }),
-        };
+        // Cong thuc nau an nap tu data/cooking.json (dung CHUNG voi backend de server kiem tra
+        // nguyen lieu khi nau - xem EconomyClient/backend economyService).
+        private static System.Collections.Generic.IEnumerable<RecipeDef> Recipes => ItemDatabase.Instance.Cooking;
 
         private VBoxContainer _list;
         private readonly LocalizedLabelSet _loc = new();
@@ -86,20 +80,17 @@ namespace HiepSiVeVuon.UI
 
             foreach (var recipe in Recipes)
             {
-                var outDef = ItemDatabase.Instance.GetItem(recipe.outputId);
+                var outDef = ItemDatabase.Instance.GetItem(recipe.OutputId);
                 if (outDef == null) continue;
 
-                bool canCook = recipe.ingredients.All(ing => Inventory.Instance.CountOf(ing.ing) >= ing.qty);
-                string ingText = string.Join(", ", recipe.ingredients.Select(ing =>
-                {
-                    var d = ItemDatabase.Instance.GetItem(ing.ing);
-                    return $"{(d != null ? ItemDatabase.Instance.GetDisplayName(ing.ing) : ing.ing)} x{ing.qty}";
-                }));
+                bool canCook = recipe.Ingredients.All(ing => Inventory.Instance.CountOf(ing.ItemId) >= ing.Count);
+                string ingText = string.Join(", ", recipe.Ingredients.Select(ing => $"{ItemDatabase.Instance.GetDisplayName(ing.ItemId)} x{ing.Count}"));
 
                 var row = new VBoxContainer();
                 _list.AddChild(row);
 
-                var nameLabel = new Label { Text = string.Format(Loc.T("cooking.dish_fmt"), ItemDatabase.Instance.GetDisplayName(recipe.outputId), outDef.HealAmount) };
+                var nameLabel = new Label { Text = string.Format(Loc.T("cooking.dish_fmt"), ItemDatabase.Instance.GetDisplayName(recipe.OutputId), outDef.HealAmount)
+                    + (outDef.StaminaAmount > 0 ? string.Format(Loc.T("cooking.stamina_fmt"), outDef.StaminaAmount) : "") };
                 nameLabel.AddThemeColorOverride("font_color", canCook ? new Color(0.95f, 0.92f, 0.85f) : new Color(0.6f, 0.58f, 0.55f));
                 row.AddChild(nameLabel);
 
@@ -117,17 +108,12 @@ namespace HiepSiVeVuon.UI
             }
         }
 
-        private void Cook((string outputId, (string ing, int qty)[] ingredients) recipe)
+        private void Cook(RecipeDef recipe)
         {
-            foreach (var ing in recipe.ingredients)
-                if (Inventory.Instance.CountOf(ing.ing) < ing.qty) { Refresh(); return; }
-
-            foreach (var ing in recipe.ingredients)
-                Inventory.Instance.RemoveItem(ing.ing, ing.qty);
-            Inventory.Instance.AddItem(recipe.outputId, 1);
-
-            var def = ItemDatabase.Instance.GetItem(recipe.outputId);
-            GD.Print(string.Format(Loc.T("cooking.cooked_fmt"), def != null ? ItemDatabase.Instance.GetDisplayName(recipe.outputId) : null));
+            // Server kiem tra nguyen lieu theo cooking.json (xem EconomyClient.Craft).
+            if (!EconomyClient.Instance.Craft(recipe, cooking: true)) { Refresh(); return; }
+            AchievementSystem.Instance.Add("dishes_cooked");
+            GD.Print(string.Format(Loc.T("cooking.cooked_fmt"), ItemDatabase.Instance.GetDisplayName(recipe.OutputId)));
             Refresh();
         }
     }

@@ -1,0 +1,75 @@
+# Trien khai tren Kubernetes (khung tham khao - can dien Secret/Ingress theo ha tang that).
+# api va gateway la 2 Deployment rieng, tu dong scale theo CPU (HPA). Postgres/Redis nen dung dich
+# vu quan ly (Cloud SQL/Aurora/Citus + Memorystore/ElastiCache Redis Cluster) thay vi tu chay.
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: hsvv-api }
+spec:
+  replicas: 3
+  selector: { matchLabels: { app: hsvv-api } }
+  template:
+    metadata: { labels: { app: hsvv-api } }
+    spec:
+      containers:
+        - name: api
+          image: REGISTRY/hsvv-backend:TAG
+          env:
+            - { name: ROLE, value: api }
+            - { name: NODE_ENV, value: production }
+            - { name: PG_POOL_MAX, value: "10" }
+          envFrom: [{ secretRef: { name: hsvv-secrets } }]   # DATABASE_URL (qua PgBouncer), REDIS_URL, JWT_SECRET
+          ports: [{ containerPort: 3000 }]
+          readinessProbe: { httpGet: { path: /health/ready, port: 3000 }, periodSeconds: 5 }
+          livenessProbe: { httpGet: { path: /health, port: 3000 }, periodSeconds: 10 }
+          resources: { requests: { cpu: 500m, memory: 256Mi }, limits: { cpu: "1", memory: 512Mi } }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: hsvv-api }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: hsvv-api }
+  minReplicas: 3
+  maxReplicas: 300
+  metrics: [{ type: Resource, resource: { name: cpu, target: { type: Utilization, averageUtilization: 60 } } }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: hsvv-gateway }
+spec:
+  replicas: 4
+  selector: { matchLabels: { app: hsvv-gateway } }
+  template:
+    metadata: { labels: { app: hsvv-gateway } }
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: gateway
+          image: REGISTRY/hsvv-backend:TAG
+          env:
+            - { name: ROLE, value: gateway }
+            - { name: NODE_ENV, value: production }
+            - { name: PG_POOL_MAX, value: "4" }
+            - { name: WS_MAX_CONNECTIONS, value: "2000" }   # ~2000 nguoi/1 nhan CPU (do bang scripts/loadtest.js)
+          envFrom: [{ secretRef: { name: hsvv-secrets } }]
+          ports: [{ containerPort: 3000 }]
+          readinessProbe: { httpGet: { path: /health, port: 3000 }, periodSeconds: 5 }
+          resources: { requests: { cpu: "1", memory: 512Mi }, limits: { cpu: "1", memory: 1Gi } }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: hsvv-gateway }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: hsvv-gateway }
+  minReplicas: 4
+  maxReplicas: 800
+  metrics: [{ type: Resource, resource: { name: cpu, target: { type: Utilization, averageUtilization: 55 } } }]
+---
+apiVersion: v1
+kind: Service
+metadata: { name: hsvv-api }
+spec: { selector: { app: hsvv-api }, ports: [{ port: 80, targetPort: 3000 }] }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: hsvv-gateway }
+spec: { selector: { app: hsvv-gateway }, ports: [{ port: 80, targetPort: 3000 }] }

@@ -2,6 +2,7 @@ using Godot;
 using HiepSiVeVuon.Core;
 using HiepSiVeVuon.Systems;
 using HiepSiVeVuon.Data;
+using HiepSiVeVuon.UI;
 
 namespace HiepSiVeVuon.Entities
 {
@@ -21,6 +22,14 @@ namespace HiepSiVeVuon.Entities
         [Export] public string ModelPath = "res://assets3d/quaternius/characters/Farmer.gltf";
 
         private ulong _lastAttackTime = 0;
+        private System.Collections.Generic.Dictionary<string, string> _anims = new();
+        // Ten hoat canh that theo vai tro (rig nam/nu dat ten khac nhau - xem CharacterCatalog).
+        private string A(string role) => _anims.TryGetValue(role, out var n) ? n : role;
+
+        // Cho NetworkClient gui len gateway: 0 dung, 1 di, 2 chay, 3 chem, 4 dung cong cu, 5 tuong tac.
+        public int NetAnimCode { get; private set; }
+        private ulong _netActionUntil;
+        public float Yaw => Mathf.Atan2(_facing.X, _facing.Z);
         private Vector3 _facing = Vector3.Back;
         // public: BuildMenuUI.cs can dung de dat cong trinh MOI truoc mat nguoi choi.
         public Vector3 Facing => _facing;
@@ -53,6 +62,7 @@ namespace HiepSiVeVuon.Entities
         // dieu khien, khien nhin nhu nguoi choi "nhap" vao than ngua thay vi ngoi tren.
         [Export] public float MountRange = 55f;
         [Export] public float SwimSpeedMult = 0.55f;
+        [Export] public float ExhaustedSpeedMult = 0.7f;
         private Horse _mountedHorse;
         // Thuyen (xem Boat.cs) - dung CHUNG phim [R] voi cuoi ngua (mount_horse), coi nhu "len
         // phuong tien gan nhat" thay vi rieng cho ngua.
@@ -62,10 +72,21 @@ namespace HiepSiVeVuon.Entities
         {
             _model = GetNodeOrNull<Node3D>("Model");
             _interactArea = GetNodeOrNull<Area3D>("InteractArea");
+            // Nguoi choi khac (RemotePlayer, lop va cham 8) - bam [E] de giao dich/nhan rieng, nhung
+            // than nguoi KHONG chan nhau (mask cua than Player khong co lop 8).
+            _interactArea?.SetCollisionMaskValue(RemotePlayer.NetLayer, true);
+            // Nhan vat tu tao (CharacterCreatorUI) thay cho model Farmer mac dinh.
+            var look = CharacterProfile.Current?.Look;
+            var modelDef = CharacterCatalog.Get(look?.ModelId ?? "Farmer");
+            ModelPath = modelDef.Path;
+            ModelScale = modelDef.Scale;
             _camera = GetNodeOrNull<Camera3D>("Camera3D");
             if (_model != null)
             {
-                _animPlayer = CharacterRig.Attach(_model, ModelPath, ModelScale);
+                _animPlayer = CharacterCatalog.AttachModel(_model, modelDef);
+                if (look != null) CharacterCatalog.ApplyColors(_model, look);
+                _anims = CharacterCatalog.ResolveAnims(_animPlayer);
+                _outfitRig = new OutfitRig(_model, look?.Gender ?? "male");
                 if (_animPlayer != null)
                 {
                     _animPlayer.AnimationFinished += _ => _actionPlaying = false;
@@ -76,7 +97,7 @@ namespace HiepSiVeVuon.Entities
                     // vat van dang di chuyen - ep LoopMode = Linear TRUC TIEP bang code, khong phu
                     // thuoc vao cai dat import (co the sai/khong nhat quan giua cac model), de dam
                     // bao buoc chan luon lap muot ma tu nhien nhu that.
-                    foreach (var loopAnim in new[] { "Idle", "Walk", "Run" })
+                    foreach (var loopAnim in new[] { A("Idle"), A("Walk"), A("Run"), A("Idle_Sword") })
                     {
                         if (!_animPlayer.HasAnimation(loopAnim)) continue;
                         var anim = _animPlayer.GetAnimation(loopAnim);
@@ -93,16 +114,24 @@ namespace HiepSiVeVuon.Entities
                     AddChild(_heldItem);
                     _heldItem.Setup(skeleton, ModelScale);
                     RefreshHeldItem();
+                    // Lop dong tac vung tay (cuoc, tuoi, quet liem, quang can...) chay sau AnimationPlayer.
+                    _armPose = new ArmPoseModifier { Name = "ArmPose" };
+                    skeleton.AddChild(_armPose);
+                    _armPose.Setup(skeleton, _model);
                 }
             }
             Inventory.Instance.InventoryChanged += OnInventoryChanged;
+            RefreshOutfit();
             GameManager.Instance.PlayerDied += OnDied;
+            AddChild(new PlayerAbilities { Name = "Abilities" });
             SetupFade();
+            SetupActionFeel();
         }
 
         public override void _ExitTree()
         {
             Inventory.Instance.InventoryChanged -= OnInventoryChanged;
+            CleanupActionFeel();
         }
 
         // Uu tien hien vat pham THUOC LOAI HANH DONG vua thuc hien gan day nhat (tan cong ->
@@ -124,6 +153,18 @@ namespace HiepSiVeVuon.Entities
             if (justEquipped == ItemType.Weapon) _lastActionWasAttack = true;
             else if (justEquipped == ItemType.Tool) _lastActionWasAttack = false;
             RefreshHeldItem();
+            RefreshOutfit();
+        }
+
+        // Trang phuc/bo giap tren nguoi (xem OutfitCatalog) - chi dung lai khi thuc su doi.
+        private OutfitRig _outfitRig;
+        private void RefreshOutfit()
+        {
+            if (_outfitRig == null) return;
+            string want = Inventory.Instance.VisualOutfit;
+            if (want == _outfitRig.Current) return;
+            _outfitRig.Apply(CharacterProfile.Current?.Look, want);
+            NetworkClient.Instance?.SendOutfit(want);
         }
 
         private void RefreshHeldItem()
@@ -208,12 +249,29 @@ namespace HiepSiVeVuon.Entities
                 return;
             }
 
-            var input2 = Input.GetVector("move_left", "move_right", "move_up", "move_down");
+            if (_dying)
+            {
+                // Dang guc: chi chiu trong luc, khong dieu khien duoc.
+                Velocity = new Vector3(0f, IsOnFloor() ? 0f : Mathf.Max(Velocity.Y - Gravity * dt, -SteeringUtil.TerminalFallSpeed), 0f);
+                MoveAndSlide();
+                NetAnimCode = 8;
+                UpdateVisuals(dt, 0f);
+                UpdateDust(0f);
+                return;
+            }
+
+            // Dang go chat -> phim WASD la chu, khong phai di chuyen.
+            var input2 = ChatUI.IsTyping ? Vector2.Zero : Input.GetVector("move_left", "move_right", "move_up", "move_down");
             var dir = new Vector3(input2.X, 0f, input2.Y);
 
             // Boi qua ho: cham hon di tren dat (khong co animation/trang thai rieng - chi giam
             // toc do di chuyen khi dang o trong pham vi ho, xem WaterEcosystem.IsNearLake).
             float moveSpeed = WaterEcosystem.Instance.IsNearLake(GlobalPosition) ? Speed * SwimSpeedMult : Speed;
+            if (GameManager.Instance.IsExhausted) moveSpeed *= ExhaustedSpeedMult; // kiet suc - di cham lai
+            moveSpeed *= Inventory.Instance.OutfitSpeedMult(); // vd Do Tham Hiem: chay nhanh hon
+            // Dang vung don/dung cong cu/lan: buoc chan cham lai (nhan vat "dung tan" khi ra don).
+            bool locked = ActionLocked;
+            if (locked) moveSpeed *= _lockMoveMult;
             var targetVelocity = dir * moveSpeed;
             float rate = dir != Vector3.Zero ? Acceleration : Friction;
             var horizontal = new Vector3(Velocity.X, 0f, Velocity.Z).MoveToward(targetVelocity, rate * dt);
@@ -226,23 +284,38 @@ namespace HiepSiVeVuon.Entities
             // Huong mat luon khop dung huong dang DI CHUYEN THAT (van toc da lam muot qua gia
             // toc), khong phai huong phim bam tuc thi - neu khong nhan vat co the "truot" theo
             // huong khac voi huong dang chay (giong truot bang) khi doi huong gap.
-            if (horizontal.Length() > 5f) _facing = horizontal.Normalized();
+            // Trong luc ra don: giu nguyen huong (khong bi xoay theo phim di chuyen giua nhat chem).
+            if (horizontal.Length() > 5f && !locked) _facing = horizontal.Normalized();
             MoveAndSlide();
             GlobalPosition = SteeringUtil.GuardAgainstRunaway(GlobalPosition, "Player");
 
             float speedRatio = new Vector2(horizontal.X, horizontal.Z).Length() / Speed;
+            if (Time.GetTicksMsec() > _netActionUntil)
+                NetAnimCode = speedRatio < 0.08f ? (InStance ? 12 : 0) : speedRatio >= 0.65f ? 2 : 1;
+            PollAttack();
+            if (_armPose != null)
+            {
+                _armPose.Carry = _heldItem != null && _heldItem.HasItem && !_dying && !_actionPlaying;
+                _armPose.Grip = _heldItem != null && _heldItem.HasItem && !_dying;
+                _armPose.MoveRatio = speedRatio;
+            }
             UpdateVisuals(dt, speedRatio);
+            UpdateDust(speedRatio);
         }
 
         private void UpdateVisuals(float dt, float speedRatio)
         {
+            UpdateShake(dt);
             if (_model != null && _facing != Vector3.Zero)
             {
                 var lookDir = FlipModelFacing ? -_facing : _facing;
                 var targetBasis = Basis.LookingAt(lookDir, Vector3.Up);
-                _model.Basis = _model.Basis.Orthonormalized().Slerp(targetBasis, Mathf.Clamp(TurnSpeed * dt, 0f, 1f));
+                float spin = SpinAngle(dt);
+                if (spin > 0f) _model.Basis = new Basis(Vector3.Up, spin) * targetBasis;
+                else _model.Basis = _model.Basis.Orthonormalized().Slerp(targetBasis, Mathf.Clamp(TurnSpeed * dt, 0f, 1f));
             }
 
+            if (_dying) return; // giu tu the nga, khong quay lai Idle
             if (_actionPlaying) return; // dang choi hoat canh tan cong/tuong tac, khong ghi de
             if (_animPlayer == null) return;
 
@@ -259,33 +332,48 @@ namespace HiepSiVeVuon.Entities
                 "Walk" => speedRatio < 0.08f ? "Idle" : speedRatio >= 0.65f ? "Run" : "Walk",
                 _ => speedRatio < 0.12f ? "Idle" : speedRatio >= 0.65f ? "Run" : "Walk",
             };
-            if (!_animPlayer.HasAnimation(anim)) anim = "Idle";
+            // Vua danh xong (co vu khi) -> dung the thu kiem vai giay roi moi tha long.
+            if (anim == "Idle" && InStance && HasAnim("Idle_Sword")) anim = "Idle_Sword";
+            if (!_animPlayer.HasAnimation(A(anim))) anim = "Idle";
 
             if (_currentAnim != anim)
             {
-                // Chuyen muot (blend 0.15s) thay vi cat cung tuc thi - neu khong chan se "nhay"
-                // sang tu the khac ngay giua chung buoc, nhin may moc/khong tu nhien.
-                _animPlayer.Play(anim, 0.15);
+                // Chuyen muot thay vi cat cung tuc thi - neu khong chan se "nhay" sang tu the
+                // khac ngay giua chung buoc. Tu the thu -> dung thuong tha long cham hon.
+                _animPlayer.Play(A(anim), _currentAnim == "Idle_Sword" ? 0.4 : 0.15);
                 _currentAnim = anim;
             }
-            _animPlayer.SpeedScale = anim == "Idle" ? 1f : Mathf.Lerp(0.8f, 1.3f, speedRatio);
+            _animPlayer.SpeedScale = anim is "Idle" or "Idle_Sword" ? 1f : Mathf.Lerp(0.8f, 1.3f, speedRatio);
         }
 
-        private void PlayAction(string anim)
+        private bool InStance => Time.GetTicksMsec() < _stanceUntil && Inventory.Instance.EquippedWeapon != null;
+
+        private void PlayAction(string anim, float speed = 1f, float blend = 0.1f)
         {
-            if (_animPlayer == null || !_animPlayer.HasAnimation(anim)) return;
-            _animPlayer.SpeedScale = 1f;
-            _animPlayer.Play(anim);
+            // Hoat canh moi (lan, trung don, nga...) cat ngang dong tac nong cu dang vung.
+            if (_armPose != null && _armPose.Busy && _armPose.CurrentMotion != "TwistSlash") _armPose.Stop();
+            int code = System.Array.IndexOf(NetAnimRoles, anim);
+            NetAnimCode = code > 2 ? code : 5;
+            float len = AnimLength(anim, 0.6f) / Mathf.Max(0.1f, speed);
+            _netActionUntil = Time.GetTicksMsec() + (ulong)(Mathf.Clamp(len, 0.3f, 1.5f) * 1000f);
+            if (_animPlayer == null || !_animPlayer.HasAnimation(A(anim))) return;
+            _actionSpeed = speed;
+            _animPlayer.SpeedScale = speed;
+            // Phat lai tu dau ca khi trung hoat canh dang chay (2 nhat chem lien tiep).
+            _animPlayer.Play(A(anim), blend);
+            _animPlayer.Seek(0, true);
             _currentAnim = anim;
             _actionPlaying = true;
         }
 
         public override void _UnhandledInput(InputEvent e)
         {
-            if (e.IsActionPressed("attack")) TryAttack();
+            if (_dying) return;
+            if (e.IsActionPressed("attack")) PressAttack();
             else if (e.IsActionPressed("interact")) TryInteract();
-            else if (e.IsActionPressed("use_tool")) TryUseTool();
+            else if (e.IsActionPressed("use_tool")) { _useHeld = true; TryUseTool(); }
             else if (e.IsActionPressed("mount_horse")) TryToggleRide();
+            else if (e.IsActionPressed("give_gift")) TryGiveGift();
         }
 
         private void TryToggleRide()
@@ -361,89 +449,25 @@ namespace HiepSiVeVuon.Entities
             if (_model != null) _model.Scale = Vector3.One;
         }
 
-        private void TryAttack()
-        {
-            ulong now = Time.GetTicksMsec();
-            if (now - _lastAttackTime < (ulong)AttackCooldownMs) return;
-            _lastAttackTime = now;
-
-            _lastActionWasAttack = true;
-            RefreshHeldItem();
-
-            int dmg = Inventory.Instance.GetWeaponDamage();
-            // Tim quai trong ban kinh tan cong theo huong dang nhin
-            var enemies = GetTree().GetNodesInGroup("enemies");
-            foreach (var node in enemies)
-            {
-                if (node is Enemy enemy && IsInstanceValid(enemy))
-                {
-                    float dist = GlobalPosition.DistanceTo(enemy.GlobalPosition);
-                    Vector3 toEnemy = (enemy.GlobalPosition - GlobalPosition).Normalized();
-                    if (dist <= AttackRange && _facing.Dot(toEnemy) > 0.3f)
-                        enemy.TakeDamage(dmg);
-                }
-            }
-            // Chat cay trong tam neu co (lay go)
-            var trees = GetTree().GetNodesInGroup("choppable_trees");
-            foreach (var node in trees)
-            {
-                if (node is Tree tree && IsInstanceValid(tree))
-                {
-                    float dist = GlobalPosition.DistanceTo(tree.GlobalPosition);
-                    Vector3 toTree = (tree.GlobalPosition - GlobalPosition).Normalized();
-                    if (dist <= AttackRange && _facing.Dot(toTree) > 0.3f)
-                        tree.Chop(dmg);
-                }
-            }
-            // Dao quang trong ham mo neu co (xem OreNode.cs) - dung suc Cuoc (Pickaxe) rieng,
-            // KHONG phai sat thuong vu khi (mo phong dung mau chat cay o tren).
-            int pickPower = Inventory.Instance.GetToolPower();
-            var oreNodes = GetTree().GetNodesInGroup("ore_nodes");
-            foreach (var node in oreNodes)
-            {
-                if (node is OreNode ore && IsInstanceValid(ore))
-                {
-                    float dist = GlobalPosition.DistanceTo(ore.GlobalPosition);
-                    Vector3 toOre = (ore.GlobalPosition - GlobalPosition).Normalized();
-                    if (dist <= AttackRange && _facing.Dot(toOre) > 0.3f)
-                        ore.Mine(pickPower);
-                }
-            }
-            SpawnSlash();
-            PlayAction("Sword_Slash");
-        }
-
-        private void SpawnSlash()
-        {
-            var slash = new Sprite3D();
-            AddChild(slash);
-            slash.Position = _facing * 24f + Vector3.Up * 16f;
-            slash.Billboard = BaseMaterial3D.BillboardModeEnum.Enabled;
-            slash.PixelSize = 0.5f;
-            slash.Modulate = new Color(1, 1, 1, 0.7f);
-            var tex = GD.Load<Texture2D>("res://assets/items/sword.png");
-            if (tex != null) slash.Texture = tex;
-            var tw = CreateTween();
-            tw.TweenProperty(slash, "modulate:a", 0f, 0.2f);
-            tw.TweenCallback(Callable.From(slash.QueueFree));
-        }
-
         private void TryInteract()
         {
             if (_interactArea == null) return;
             foreach (var body in _interactArea.GetOverlappingBodies())
             {
-                if (body is NPC npc) { npc.Interact(); PlayAction("Interact"); return; }
-                if (body is DroppedItem drop) { drop.PickUp(); return; }
+                if (body is NPC npc) { FaceToward(npc); npc.Interact(); PlayEmote("Interact"); return; }
+                if (body is DroppedItem drop) { FaceToward(drop); drop.PickUp(); PlayEmote("Interact"); return; }
                 if (body is WaterTower tower) { tower.Interact(); return; }
                 if (body is WildAnimal wild && wild.SpeciesId == "duck") { TryFeedDuck(); return; }
                 if (body is ProcessingMachine machine) { machine.Interact(); return; }
                 if (body is CookingStation cooking) { cooking.Interact(); return; }
                 if (body is GreenhouseGate gate) { gate.Interact(); return; }
+                if (body is FarmFacility facility) { FaceToward(facility); facility.Interact(); PlayEmote("Interact"); return; }
+                if (body is IHungryAnimal && body is Node3D animal) { PetAnimal(animal); return; }
+                if (body is RemotePlayer other) { (GetTree().GetFirstNodeInGroup("player_actions_ui") as PlayerActionsUI)?.Open(other); return; }
             }
             foreach (var area in _interactArea.GetOverlappingAreas())
             {
-                if (area is DroppedItem d2) { d2.PickUp(); return; }
+                if (area is DroppedItem d2) { FaceToward(d2); d2.PickUp(); PlayEmote("Interact"); return; }
                 if (area is BuildingDoor door)
                 {
                     if (door.IsExit) ExitBuilding();
@@ -511,35 +535,61 @@ namespace HiepSiVeVuon.Entities
         // GIO/NGHIENG tay nhe -> Wave, gan voi tu the do nuoc nhat). Neu ban co goi hoat canh nong
         // trai chuyen dung (vd Quaternius "Universal Animation Library 2" co san hoat canh Farming/
         // Fishing that su), gui cho toi de gan vao thay the cho chinh xac hon.
-        private static string ToolActionAnim(string toolId) => toolId switch
+        // Dong tac vung tay cho tung nong cu (xem ArmPoseModifier/Motions) - thay cho viec muon tam
+        // hoat canh dam/vay tay truoc day (goi Quaternius khong co hoat canh nong trai rieng).
+        private static ArmPoseModifier.Motion ToolMotion(string toolId) => toolId switch
         {
-            "hoe" or "cuoc_bac" or "cuoc_vang" => "Punch_Right",
-            "xeng" => "Punch_Left",
-            "cao_co" => "Interact",
-            "binh_tuoi" => "Wave",
-            _ => null,
+            "hoe" or "cuoc_bac" or "cuoc_vang" => Motions.Overhead,
+            "pickaxe" or "pickaxe_bac" or "pickaxe_vang" or "pickaxe_kim_cuong" => Motions.Overhead,
+            "xeng" => Motions.Dig,
+            "cao_co" => Motions.Sweep,
+            "binh_tuoi" => Motions.Pour,
+            "can_cau" => Motions.Cast,
+            _ => Motions.Bend,
         };
 
+        // Bam [Space]: vung nong cu - ket qua (cuoc dat, tuoi, gieo, cau ca...) xay ra DUNG luc luoi
+        // cuoc cham dat / nuoc bat dau chay, khong phai ngay luc bam phim.
         private void TryUseTool()
         {
+            if (_dying) return;
+            if (_armPose != null && _armPose.Busy) return; // dang vung do - khong spam
             _lastActionWasAttack = false;
             RefreshHeldItem();
-            var actionAnim = ToolActionAnim(Inventory.Instance.EquippedTool);
-            if (actionAnim != null) PlayAction(actionAnim);
+            string tool = Inventory.Instance.EquippedTool;
+            if (tool == "can_cau" && (GetTree().GetFirstNodeInGroup("fishing_ui") as FishingUI)?.IsActive == true) return;
+            if (_armPose == null || _mountedHorse != null || _mountedBoat != null) { DoUseTool(); return; }
+            var motion = ToolMotion(tool);
+            AimAtFarmTarget();
+            float speed = motion == Motions.Pour ? 1.25f : motion == Motions.Bend ? 1.15f : 1f;
+            StartMotion(motion, speed, () => { DoUseTool(); ToolImpactFx(tool, motion); });
+            if (motion != Motions.Pour && motion != Motions.Bend && motion != Motions.Cast)
+                _heldItem?.StartTrail(motion.Duration * motion.Impact + 0.05f, new Color(1f, 0.95f, 0.8f));
+        }
 
+        private void DoUseTool()
+        {
             var plots = GetTree().GetNodesInGroup("farm_plots");
             float areaRadius = ToolAreaRadius(Inventory.Instance.EquippedTool);
 
             if (areaRadius > 0f)
             {
-                // Cuoc nang cap: dung TAT CA o dat trong ban kinh (khong chi 1 o gan nhat).
-                bool didAny = false;
+                // Cuoc nang cap: dung TAT CA o dat trong ban kinh (khong chi 1 o gan nhat). The luc
+                // tinh 1 LAN cho ca vung (khong nhan theo so o) - kiem tra du TRUOC, tru SAU neu
+                // that su co o nao ton suc.
+                // Het the luc: van trong/thu hoach duoc, chi bo qua cac o can lam viec ton suc.
+                bool canWork = GameManager.Instance.Stamina >= SkillSystem.Instance.StaminaCost(SkillType.Farming, AreaToolStamina);
+                bool didAny = false, effort = false, skippedTired = false;
                 foreach (var n in plots)
                     if (n is FarmPlot ap && GlobalPosition.DistanceTo(ap.GlobalPosition) <= areaRadius)
                     {
-                        ap.UseOn();
+                        if (!canWork && ap.WouldTakeEffort()) { skippedTired = true; continue; }
+                        effort |= ap.UseOn(true);
                         didAny = true;
                     }
+                if (effort) SpendStamina(SkillType.Farming, AreaToolStamina);
+                if (skippedTired) NotifyTooTired();
+                if (skippedTired && !didAny) return;
                 if (didAny) return;
             }
 
@@ -554,7 +604,12 @@ namespace HiepSiVeVuon.Entities
                     if (d < best) { best = d; nearest = p; }
                 }
             }
-            if (nearest != null) { nearest.UseOn(); return; }
+            if (nearest != null)
+            {
+                if (nearest.WouldTakeEffort() && !HasStamina(SkillType.Farming, PlotToolStamina)) return;
+                if (nearest.UseOn(true)) SpendStamina(SkillType.Farming, PlotToolStamina);
+                return;
+            }
 
             // Khong co o dat nao gan - thu tim CAY LAU NAM gan nhat (vuon cay/vuon nho NHO, xem
             // FruitTree.cs) de hai neu da chin. Nhanh RIENG, khong anh huong toi logic FarmPlot
@@ -588,6 +643,10 @@ namespace HiepSiVeVuon.Entities
             }
             if (nearestWheat != null) { nearestWheat.UseOn(); return; }
 
+            // Cay an qua nguoi choi tu trong (PlacedFruitTree) - hai bang Space nhu cay trong.
+            foreach (Node n in GetTree().GetNodesInGroup("fruit_trees_placed"))
+                if (n is PlacedFruitTree pt && GlobalPosition.DistanceTo(pt.GlobalPosition) < 60f) { pt.Interact(); return; }
+
             // Khong co gi gan de dung - neu dang trang bi Cuoc (bat ky cap nao), thu cuoc dat MOI
             // ngay truoc mat (xem FarmPlot.TryTillFreeform) de mo rong nong trai tu do. Cuoc nang
             // cap (bac/vang) cuoc CA CUM O (3x3/5x5) cung 1 lan thay vi tung o.
@@ -599,6 +658,9 @@ namespace HiepSiVeVuon.Entities
                 // ma khong can nang cap len Cuoc Bac (van khong co AOE tuoi/thu hoach - xem
                 // ToolAreaRadius, giu Cuoc Bac/Vang la lua chon toan dien hon).
                 int tilesPerSide = tool switch { "xeng" => 2, "cuoc_bac" => 3, "cuoc_vang" => 5, _ => 1 };
+                // Cuoc dat ton the luc: 3 + 1/2 moi o (cuoc vang 5x5 = ~15, re hon cuoc tung o).
+                float tillCost = 3f + tilesPerSide * tilesPerSide / 2f;
+                if (!HasStamina(SkillType.Farming, tillCost)) return;
                 int half = tilesPerSide / 2;
                 Vector3 center = GlobalPosition + _facing * 42f;
                 Vector3 right = _facing.Cross(Vector3.Up).Normalized();
@@ -611,7 +673,12 @@ namespace HiepSiVeVuon.Entities
                         if (FarmPlot.TryTillFreeform(spot, GetTree().CurrentScene) != null) tilled++;
                     }
                 }
-                GD.Print(tilled > 0 ? $"Đã cuốc {tilled} ô đất mới." : "Không thể cuốc đất ở đây.");
+                if (tilled > 0)
+                {
+                    SpendStamina(SkillType.Farming, tillCost);
+                    SkillSystem.Instance.AddXp(SkillType.Farming, tilled);
+                }
+                Notify.Show(tilled > 0 ? string.Format(Loc.T("farm.tilled_fmt"), tilled) : Loc.T("farm.cannot_till"));
             }
             else if (tool == "can_cau")
             {
@@ -621,40 +688,135 @@ namespace HiepSiVeVuon.Entities
             {
                 TryPlaceSprinkler();
             }
+            else if (tool == "bu_nhin")
+            {
+                TryPlaceScarecrow();
+            }
+            else if (tool != null && PlacementSystem.KindOf(tool) is string kind && kind != "decor")
+            {
+                // To ong / cay giong / may lam mut / may ep / bay cua / ho ca canh.
+                var pos = GlobalPosition + _facing * 60f;
+                pos.Y = GlobalPosition.Y;
+                PlacementSystem.Instance.Place(tool, pos, Mathf.RadToDeg(Yaw), GetTree().CurrentScene);
+                if (Inventory.Instance.CountOf(tool) == 0 && Inventory.Instance.EquippedTool == tool) Inventory.Instance.EquippedTool = null;
+            }
         }
 
-        [Export] public float FishCooldownSec = 1.5f;
-        private ulong _lastFishTime = 0;
 
         private void TryFish()
         {
+            var ui = GetTree().GetFirstNodeInGroup("fishing_ui") as FishingUI;
+            if (ui == null || ui.IsActive) return;
             if (!WaterEcosystem.Instance.IsNearLake(GlobalPosition, 220f))
             {
-                GD.Print("Cần ở gần hồ/sông để câu cá.");
+                Notify.Show(Loc.T("fish.need_water"));
                 return;
             }
-            ulong now = Time.GetTicksMsec();
-            if (now - _lastFishTime < (ulong)(FishCooldownSec * 1000)) return;
-            _lastFishTime = now;
-
             if (WaterEcosystem.Instance.Get("fish") < 5f)
             {
-                GD.Print("Khu vực này không còn cá để câu, chờ quần thể phục hồi.");
+                Notify.Show(Loc.T("fish.depleted"));
                 return;
             }
-            var rng = new RandomNumberGenerator();
-            rng.Randomize();
-            if (rng.Randf() < 0.6f)
+            if (!SpendStamina(SkillType.Fishing, FishStamina)) return;
+            ui.Start(this);
+        }
+
+        // ==== The luc ====
+        private const float PlotToolStamina = 2f;
+        private const float AreaToolStamina = 5f;
+        private const float FishStamina = 4f;
+
+        private bool HasStamina(SkillType skill, float baseCost)
+        {
+            if (GameManager.Instance.Stamina >= SkillSystem.Instance.StaminaCost(skill, baseCost)) return true;
+            NotifyTooTired();
+            return false;
+        }
+
+        private bool SpendStamina(SkillType skill, float baseCost)
+        {
+            if (GameManager.Instance.UseStamina(SkillSystem.Instance.StaminaCost(skill, baseCost))) return true;
+            NotifyTooTired();
+            return false;
+        }
+
+        // Tranh spam thong bao khi giu phim lien tuc.
+        private ulong _lastTiredMsg = 0;
+        private void NotifyTooTired()
+        {
+            ulong now = Time.GetTicksMsec();
+            if (now - _lastTiredMsg < 2000) return;
+            _lastTiredMsg = now;
+            Notify.Show(Loc.T("stamina.too_tired"));
+        }
+
+        // ==== Tang qua / vuot ve vat nuoi ====
+        private void TryGiveGift()
+        {
+            if (_interactArea == null) return;
+            foreach (var body in _interactArea.GetOverlappingBodies())
             {
-                Inventory.Instance.AddItem("ca", 1);
-                FarmStorage.Instance.Add("ca", 1);
-                WaterEcosystem.Instance.OnPlayerCatch("fish", 3f);
-                GD.Print("Câu được 1 con cá!");
+                if (body is NPC npc)
+                {
+                    FaceToward(npc);
+                    PlayEmote("Wave");
+                    (GetTree().GetFirstNodeInGroup("gift_ui") as GiftUI)?.Open(npc);
+                    return;
+                }
             }
-            else
+            Notify.Show(Loc.T("gift.no_npc"));
+        }
+
+        // Moi con vat 1 lan/ngay: +EXP Chan Nuoi (khong luu - reset khi tai lai game la chap nhan duoc).
+        private readonly System.Collections.Generic.Dictionary<ulong, int> _pettedDay = new();
+        private void PetAnimal(Node3D animal)
+        {
+            PlayAction("Interact");
+            int day = GameManager.Instance.Day;
+            ulong id = animal.GetInstanceId();
+            if (_pettedDay.TryGetValue(id, out var d) && d == day)
             {
-                GD.Print("Cá chưa cắn, thử lại sau.");
+                Notify.Show(Loc.T("animal.already_petted"));
+                return;
             }
+            _pettedDay[id] = day;
+            SkillSystem.Instance.AddXp(SkillType.Animal, 5);
+            HomeSystem.Instance.OnAnimalPetted();
+            Notify.Show(Loc.T("animal.petted"));
+            // Chu "Vui!" bay len tren dau con vat.
+            var pop = new Label3D
+            {
+                Text = Loc.T("animal.happy_pop"), Billboard = BaseMaterial3D.BillboardModeEnum.Enabled, PixelSize = 0.3f,
+                Modulate = new Color(1f, 0.45f, 0.6f), OutlineSize = 8, NoDepthTest = true, Position = Vector3.Up * 40f,
+            };
+            animal.AddChild(pop);
+            var tw = pop.CreateTween();
+            tw.TweenProperty(pop, "position:y", 65f, 0.9f);
+            tw.Parallel().TweenProperty(pop, "modulate:a", 0f, 0.9f);
+            tw.TweenCallback(Callable.From(pop.QueueFree));
+        }
+
+        // Cam Bu Nhin truoc mat (xem Scarecrow.cs) - vi tri luu qua HomeSystem.ScarecrowPositions.
+        private void TryPlaceScarecrow()
+        {
+            if (!Inventory.Instance.RemoveItem("bu_nhin", 1)) return;
+            var pos = GlobalPosition + _facing * 50f;
+            pos.Y = 0f;
+            GetTree().CurrentScene.AddChild(new Scarecrow { Position = pos });
+            HomeSystem.Instance.ScarecrowPositions.Add(new Vector2(pos.X, pos.Z));
+            if (Inventory.Instance.CountOf("bu_nhin") == 0 && Inventory.Instance.EquippedTool == "bu_nhin") Inventory.Instance.EquippedTool = null;
+            Notify.Show(Loc.T("farm.scarecrow_placed"));
+        }
+
+        // Dich chuyen nhanh qua Cot Da (xem WaystoneUI) - xuong ngua/thuyen, ra khoi nha neu dang
+        // o trong, man hinh toi dan nhu qua cua.
+        public void FastTravel(Vector3 dest)
+        {
+            if (_mountedHorse != null) DismountHorse();
+            if (_mountedBoat != null) DismountBoat();
+            _indoors = false;
+            if (_camera != null) _camera.Position = OutdoorCameraOffset;
+            TeleportWithFade(dest + Vector3.Up * 8f);
         }
 
         private static PackedScene _sprinklerScene;
@@ -684,14 +846,6 @@ namespace HiepSiVeVuon.Entities
             {
                 GD.Print("Cần thức ăn gia súc để cho vịt ăn.");
             }
-        }
-
-        private void OnDied()
-        {
-            GD.Print("Người chơi đã gục ngã! Hồi sinh tại nhà.");
-            GameManager.Instance.Hp = GameManager.Instance.MaxHp / 2;
-            GlobalPosition = Vector3.Zero;
-            GameManager.Instance.EmitSignal(GameManager.SignalName.StatsChanged);
         }
     }
 }

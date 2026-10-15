@@ -16,6 +16,16 @@ namespace HiepSiVeVuon.Systems
         public Dictionary<string, EnemyDef> Enemies = new();
         public Dictionary<string, QuestDef> Quests = new();
 
+        // He thong nong trai mo rong - xem GameData.cs (RecipeDef/FishDef/NpcGiftDef/ForageDef/
+        // AchievementDef) va cac System tuong ung.
+        public List<RecipeDef> Recipes = new();
+        public List<RecipeDef> Cooking = new();
+        public List<FishDef> Fish = new();
+        public Dictionary<string, NpcGiftDef> NpcGifts = new();
+        public List<ForageDef> Forage = new();
+        public List<AchievementDef> Achievements = new();
+        public List<HouseUpgradeDef> HouseUpgrades = new();
+
         private static readonly JsonSerializerOptions JsonOpts = new()
         {
             PropertyNameCaseInsensitive = true,
@@ -39,6 +49,21 @@ namespace HiepSiVeVuon.Systems
             LoadItems();
             LoadEnemies();
             LoadQuests();
+            Recipes = LoadList<RecipeDef>("res://data/recipes.json");
+            Cooking = LoadList<RecipeDef>("res://data/cooking.json");
+            Fish = LoadList<FishDef>("res://data/fish.json");
+            foreach (var g in LoadList<NpcGiftDef>("res://data/npc_gifts.json")) NpcGifts[g.NpcId] = g;
+            Forage = LoadList<ForageDef>("res://data/forage.json");
+            Achievements = LoadList<AchievementDef>("res://data/achievements.json");
+            HouseUpgrades = LoadList<HouseUpgradeDef>("res://data/house.json");
+            GD.Print($"Đã nạp {Recipes.Count} công thức, {Fish.Count} loài cá, {NpcGifts.Count} sở thích NPC, {Forage.Count} đồ hái lượm, {Achievements.Count} thành tựu.");
+        }
+
+        private List<T> LoadList<T>(string path)
+        {
+            var text = ReadFile(path);
+            if (text == null) return new List<T>();
+            return JsonSerializer.Deserialize<List<T>>(text, JsonOpts) ?? new List<T>();
         }
 
         private string ReadFile(string path)
@@ -79,12 +104,28 @@ namespace HiepSiVeVuon.Systems
             GD.Print($"Đã nạp {Quests.Count} nhiệm vụ.");
         }
 
+        // Tra nguoc: nong san -> hat giong trong ra no (cache) - dung cho kiem tra mua cua cay dang trong.
+        private Dictionary<string, ItemDef> _seedForCrop;
+        public ItemDef GetSeedForCrop(string cropId)
+        {
+            if (_seedForCrop == null)
+            {
+                _seedForCrop = new();
+                foreach (var d in Items.Values)
+                    if (d.Type == ItemType.Seed && !string.IsNullOrEmpty(d.GrowsIntoCropId) && !_seedForCrop.ContainsKey(d.GrowsIntoCropId))
+                        _seedForCrop[d.GrowsIntoCropId] = d;
+            }
+            return cropId != null && _seedForCrop.TryGetValue(cropId, out var s) ? s : null;
+        }
+
         public ItemDef GetItem(string id) => Items.TryGetValue(id, out var v) ? v : null;
         public EnemyDef GetEnemy(string id) => Enemies.TryGetValue(id, out var v) ? v : null;
         public QuestDef GetQuest(string id) => Quests.TryGetValue(id, out var v) ? v : null;
 
         public Texture2D GetItemIcon(string id)
         {
+            // Icon ve tu model 3D (quang/thoi/da quy/cuoc chim - xem IconRenderer) uu tien hon PNG.
+            if (IconRenderer.Instance?.TryGet(id) is Texture2D rendered) return rendered;
             var def = GetItem(id);
             if (def == null || string.IsNullOrEmpty(def.IconPath)) return null;
             return GD.Load<Texture2D>(def.IconPath);

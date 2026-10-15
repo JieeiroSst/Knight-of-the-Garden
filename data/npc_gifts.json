@@ -1,0 +1,411 @@
+[
+  {
+    "NpcId": "elder",
+    "Loved": [
+      "wine",
+      "banh_bi_ngo",
+      "co_vat"
+    ],
+    "Liked": [
+      "honey",
+      "tra_thao_moc",
+      "sup_rau",
+      "chestnut"
+    ],
+    "Disliked": [
+      "da",
+      "rong",
+      "mud_core"
+    ],
+    "BirthdaySeason": "Spring",
+    "BirthdayDay": 4
+  },
+  {
+    "NpcId": "merchant",
+    "Loved": [
+      "da_quy",
+      "ruou_pumpkin",
+      "ca_vang"
+    ],
+    "Liked": [
+      "wine",
+      "cheese",
+      "pho_mai",
+      "mayonnaise"
+    ],
+    "Disliked": [
+      "rong",
+      "xuong",
+      "da"
+    ],
+    "BirthdaySeason": "Summer",
+    "BirthdayDay": 9
+  },
+  {
+    "NpcId": "blacksmith",
+    "Loved": [
+      "quang_hang",
+      "sat_tho",
+      "da_quy"
+    ],
+    "Liked": [
+      "dong_tho",
+      "quang_nui",
+      "banh_nang_luong"
+    ],
+    "Disliked": [
+      "hoa_thuy_tien",
+      "hoa_tuyet",
+      "dau_rung"
+    ],
+    "BirthdaySeason": "Fall",
+    "BirthdayDay": 14
+  },
+  {
+    "NpcId": "herbalist",
+    "Loved": [
+      "hoa_tuyet",
+      "thao_duoc_dam_lay",
+      "tra_thao_moc"
+    ],
+    "Liked": [
+      "thao_duoc_rung",
+      "nam_rung",
+      "cu_gung_dai",
+      "sen"
+    ],
+    "Disliked": [
+      "quang_nui",
+      "sat_tho",
+      "mud_core"
+    ],
+    "BirthdaySeason": "Spring",
+    "BirthdayDay": 18
+  },
+  {
+    "NpcId": "ranger",
+    "Loved": [
+      "nam_rung",
+      "ca_hoi",
+      "qua_thong"
+    ],
+    "Liked": [
+      "hanh_rung",
+      "qua_mam_xoi",
+      "sup_ca",
+      "wood"
+    ],
+    "Disliked": [
+      "wine",
+      "mayonnaise"
+    ],
+    "BirthdaySeason": "Winter",
+    "BirthdayDay": 7
+  },
+  {
+    "NpcId": "innkeeper",
+    "Loved": [
+      "wine",
+      "banh_bi_ngo",
+      "sup_ca"
+    ],
+    "Liked": [
+      "cheese",
+      "egg",
+      "milk",
+      "trung_chien"
+    ],
+    "Disliked": [
+      "xuong",
+      "mud_core"
+    ],
+    "BirthdaySeason": "Summer",
+    "BirthdayDay": 21
+  },
+  {
+    "NpcId": "carpenter",
+    "Loved": [
+      "wood",
+      "qua_thong",
+      "chestnut"
+    ],
+    "Liked": [
+      "apple",
+      "pear",
+      "banh_mi_trung"
+    ],
+    "Disliked": [
+      "rong",
+      "spike_shard"
+    ],
+    "BirthdaySeason": "Fall",
+    "BirthdayDay": 3
+  },
+  {
+    "NpcId": "scholar",
+    "Loved": [
+      "co_vat",
+      "hoa_tuyet",
+      "da_quy"
+    ],
+    "Liked": [
+      "tra_thao_moc",
+      "hoa_thuy_tien",
+      "honey"
+    ],
+    "Disliked": [
+      "egg",
+      "rong",
+      "wheat"
+    ],
+    "BirthdaySeason": "Winter",
+    "BirthdayDay": 19
+  },
+  {
+    "NpcId": "tailor",
+    "Loved": [
+      "vai",
+      "wool",
+      "hoa_huong_duong_dai"
+    ],
+    "Liked": [
+      "hoa_thuy_tien",
+      "cherry",
+      "peach"
+    ],
+    "Disliked": [
+      "xuong",
+      "quang_nui"
+    ],
+    "BirthdaySeason": "Spring",
+    "BirthdayDay": 25
+  },
+  {
+    "NpcId": "shepherd",
+    "Loved": [
+      "wool",
+      "cheese",
+      "salad_rau_rung"
+    ],
+    "Liked": [
+      "thucan_giasuc",
+      "milk",
+      "apple"
+    ],
+    "Disliked": [
+      "ca",
+      "ca_tre"
+    ],
+    "BirthdaySeason": "Summer",
+    "BirthdayDay": 2
+  },
+  {
+    "NpcId": "cowherd",
+    "Loved": [
+      "milk",
+      "pho_mai",
+      "banh_bi_ngo"
+    ],
+    "Liked": [
+      "thucan_giasuc",
+      "cheese",
+      "carrot"
+    ],
+    "Disliked": [
+      "da",
+      "spike_shard"
+    ],
+    "BirthdaySeason": "Fall",
+    "BirthdayDay": 23
+  },
+  {
+    "NpcId": "stablehand",
+    "Loved": [
+      "apple",
+      "carrot_premium",
+      "banh_nang_luong"
+    ],
+    "Liked": [
+      "carrot",
+      "wheat",
+      "pear"
+    ],
+    "Disliked": [
+      "ca",
+      "rong"
+    ],
+    "BirthdaySeason": "Winter",
+    "BirthdayDay": 12
+  },
+  {
+    "NpcId": "poultrykeeper",
+    "Loved": [
+      "mayonnaise",
+      "wheat_premium",
+      "trung_chien"
+    ],
+    "Liked": [
+      "egg",
+      "wheat",
+      "dau_rung"
+    ],
+    "Disliked": [
+      "mud_core",
+      "xuong"
+    ],
+    "BirthdaySeason": "Spring",
+    "BirthdayDay": 11
+  },
+  {
+    "NpcId": "farmworker",
+    "Loved": [
+      "banh_nang_luong",
+      "sup_rau",
+      "tomato_premium"
+    ],
+    "Liked": [
+      "tomato",
+      "potato",
+      "cabbage",
+      "tra_thao_moc"
+    ],
+    "Disliked": [
+      "hoa_tuyet",
+      "co_vat"
+    ],
+    "BirthdaySeason": "Summer",
+    "BirthdayDay": 16
+  },
+  {
+    "NpcId": "estateworker",
+    "Loved": [
+      "grape",
+      "wine",
+      "honey"
+    ],
+    "Liked": [
+      "apple",
+      "cherry",
+      "peach",
+      "salad_ca_chua"
+    ],
+    "Disliked": [
+      "mud_core",
+      "spike_shard"
+    ],
+    "BirthdaySeason": "Fall",
+    "BirthdayDay": 8
+  },
+  {
+    "NpcId": "jean_steward",
+    "Loved": [
+      "wine",
+      "co_vat",
+      "pho_mai"
+    ],
+    "Liked": [
+      "cheese",
+      "honey",
+      "banh_bi_ngo"
+    ],
+    "Disliked": [
+      "rong",
+      "da"
+    ],
+    "BirthdaySeason": "Winter",
+    "BirthdayDay": 3
+  },
+  {
+    "NpcId": "marcel_repairman",
+    "Loved": [
+      "sat_tho",
+      "dong_tho",
+      "banh_mi_trung"
+    ],
+    "Liked": [
+      "wood",
+      "da",
+      "quang_nui"
+    ],
+    "Disliked": [
+      "hoa_thuy_tien",
+      "hoa_huong_duong_dai"
+    ],
+    "BirthdaySeason": "Spring",
+    "BirthdayDay": 27
+  },
+  {
+    "NpcId": "antoine_warehouse",
+    "Loved": [
+      "ruou_cabbage",
+      "pumpkin_premium",
+      "mat_ong"
+    ],
+    "Liked": [
+      "pumpkin",
+      "cabbage",
+      "potato"
+    ],
+    "Disliked": [
+      "rong",
+      "mud_core"
+    ],
+    "BirthdaySeason": "Summer",
+    "BirthdayDay": 26
+  },
+  {
+    "NpcId": "henri_guard",
+    "Loved": [
+      "sup_ca",
+      "banh_nang_luong",
+      "sword"
+    ],
+    "Liked": [
+      "trung_chien",
+      "banh_mi_trung",
+      "ca_loc"
+    ],
+    "Disliked": [
+      "hoa_thuy_tien",
+      "rong"
+    ],
+    "BirthdaySeason": "Fall",
+    "BirthdayDay": 19
+  },
+  {
+    "NpcId": "greenhouse_keeper",
+    "Loved": [
+      "hoa_tuyet",
+      "hoa_thuy_tien",
+      "fertilizer_basic"
+    ],
+    "Liked": [
+      "tomato",
+      "cherry",
+      "tra_thao_moc"
+    ],
+    "Disliked": [
+      "mud_core",
+      "quang_nui"
+    ],
+    "BirthdaySeason": "Winter",
+    "BirthdayDay": 24
+  },
+  {
+    "NpcId": "town_guard",
+    "Loved": [
+      "sup_ca",
+      "wine"
+    ],
+    "Liked": [
+      "trung_chien",
+      "coins"
+    ],
+    "Disliked": [
+      "rong",
+      "xuong"
+    ],
+    "BirthdaySeason": "Summer",
+    "BirthdayDay": 5
+  }
+]

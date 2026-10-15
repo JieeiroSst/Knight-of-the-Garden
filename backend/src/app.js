@@ -10,7 +10,7 @@ const { requestLogger } = require("./middleware/requestLogger");
 const { notFound } = require("./middleware/notFound");
 const { errorHandler } = require("./middleware/errorHandler");
 
-function createApp() {
+function createApp({ apiEnabled = true } = {}) {
   const app = express();
 
   // Sau reverse proxy/load balancer khi chay that (xem README) - neu khong bat, req.ip luon la
@@ -23,7 +23,8 @@ function createApp() {
   app.use(requestLogger);
   app.use("/api", generalLimiter);
 
-  app.use(routes);
+  // Gateway-only van giu /health cho load balancer, khong mo REST API.
+  app.use(apiEnabled ? routes : require("./routes/healthOnly"));
 
   app.use(notFound);
   app.use(errorHandler); // PHAI dat SAU CUNG - Express nhan dien middleware xu ly loi qua so tham so (err, req, res, next)

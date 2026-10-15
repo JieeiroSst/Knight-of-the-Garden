@@ -19,12 +19,19 @@ namespace HiepSiVeVuon.UI
             ("Space", "settings.ctrl.tool"),
             ("E", "settings.ctrl.interact"),
             ("R", "settings.ctrl.mount"),
+            ("G", "settings.ctrl.gift"),
+            ("K", "settings.ctrl.journal"),
             ("I", "settings.ctrl.inventory"),
             ("B", "settings.ctrl.backpack"),
             ("N", "settings.ctrl.build"),
             ("M", "settings.ctrl.map"),
             ("H", "settings.ctrl.settings"),
             ("F5", "settings.ctrl.save"),
+            ("Enter", "settings.ctrl.chat"),
+            ("O", "settings.ctrl.social"),
+            ("V", "settings.ctrl.decor"),
+            ("C", "settings.ctrl.wardrobe"),
+            ("1 / 2 / 3", "settings.ctrl.abilities"),
         };
 
         private readonly LocalizedLabelSet _loc = new();

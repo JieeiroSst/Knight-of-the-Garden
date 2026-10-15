@@ -1,0 +1,8 @@
+{
+  "Gold": 50,
+  "Items": [
+    { "ItemId": "pumpkin_seed", "Count": 3 }, { "ItemId": "tomato_seed", "Count": 2 }, { "ItemId": "potion", "Count": 2 },
+    { "ItemId": "sword", "Count": 1 }, { "ItemId": "hoe", "Count": 1 },
+    { "ItemId": "binh_tuoi", "Count": 1 }, { "ItemId": "xeng", "Count": 1 }, { "ItemId": "cao_co", "Count": 1 }
+  ]
+}

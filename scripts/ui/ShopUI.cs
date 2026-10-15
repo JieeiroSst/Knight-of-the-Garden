@@ -100,7 +100,8 @@ namespace HiepSiVeVuon.UI
 				if (def == null) continue;
 				// Gia mua theo cung/cau (xem Market.cs) - CHI dong voi Crop/Material, cac loai
 				// khac (hat giong/vu khi/tool...) tra ve he so 1.0f (gia co dinh nhu cu).
-				int price = Mathf.RoundToInt(def.BuyPrice * Market.GetSupplyMultiplier(id));
+				// Gia mua = gia goc catalog (server tinh dung gia nay, xem EconomyClient.Buy).
+				int price = def.BuyPrice;
 				var btn = new Button { Text = string.Format(Loc.T("shop.buy_item_fmt"), ItemDatabase.Instance.GetDisplayName(id), price) };
 				string itemId = id;
 				btn.Pressed += () => Buy(itemId, price);
@@ -119,10 +120,12 @@ namespace HiepSiVeVuon.UI
 				// Gia ban theo mua/le hoi (GetSeasonalPriceMultiplier) NHAN THEM theo cung/cau
 				// (Market.GetSupplyMultiplier) - 2 he so DOC LAP, ca nhan hien thi label lan logic
 				// AddGold deu dung chung bien "price" nay nen tu dong dong bo.
-				int price = Mathf.RoundToInt(def.SellPrice * GameManager.Instance.GetSeasonalPriceMultiplier(def) * Market.GetSupplyMultiplier(def.Id));
+				// He so mua/le hoi/ky nang x cung-cau - server kep toi da EconomyClient.MaxPriceMult.
+				float mult = EconomyClient.ClampMult(GameManager.Instance.GetSeasonalPriceMultiplier(def) * Market.GetSupplyMultiplier(def.Id));
+				int price = Mathf.RoundToInt(def.SellPrice * mult);
 				var btn = new Button { Text = string.Format(Loc.T("shop.sell_item_fmt"), ItemDatabase.Instance.GetDisplayName(stack.ItemId), stack.Count, price) };
 				string itemId = stack.ItemId;
-				btn.Pressed += () => Sell(itemId, price);
+				btn.Pressed += () => Sell(itemId, mult);
 				_sellList.AddChild(btn);
 			}
 		}
@@ -158,9 +161,8 @@ namespace HiepSiVeVuon.UI
 
 		private void Buy(string itemId, int price)
 		{
-			if (GameManager.Instance.SpendGold(price))
+			if (EconomyClient.Instance.Buy(itemId, 1))
 			{
-				Inventory.Instance.AddItem(itemId, 1);
 				_status.Text = Loc.T("shop.buy_success");
 			}
 			else _status.Text = Loc.T("shop.buy_fail");
@@ -169,11 +171,10 @@ namespace HiepSiVeVuon.UI
 			RefreshSell();
 		}
 
-		private void Sell(string itemId, int price)
+		private void Sell(string itemId, float mult)
 		{
-			if (Inventory.Instance.RemoveItem(itemId, 1))
+			if (EconomyClient.Instance.Sell(itemId, 1, mult))
 			{
-				GameManager.Instance.AddGold(price);
 				_status.Text = Loc.T("shop.sell_success");
 			}
 			RefreshBuy();

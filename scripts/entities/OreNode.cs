@@ -15,11 +15,38 @@ namespace HiepSiVeVuon.Entities
         [Export] public string OreItemId;
         [Export] public int DropAmount = 2;
         [Export] public int RegrowDays = 3;
+        // Suc cuoc toi thieu (Inventory.GetToolPower: tay 3, Cuoc Chim Da 12, Bac 24, Vang 42, Kim
+        // Cuong 70) - quang quy o mo sau can cuoc chim tot hon. 0 = dao bang gi cung duoc.
+        [Export] public int RequiredPower = 0;
+
+        private static ulong _lastWeakMsg;
+
+        // Player goi TRUOC khi tru the luc - cuoc qua yeu thi bao (gioi han 1 lan/2s) va khong dao.
+        public bool CanMineWith(int power)
+        {
+            if (_depleted) return false;
+            if (power >= RequiredPower) return true;
+            ulong now = Time.GetTicksMsec();
+            if (now - _lastWeakMsg > 2000)
+            {
+                _lastWeakMsg = now;
+                HiepSiVeVuon.UI.Notify.Show(string.Format(Loc.T("mine.too_weak_fmt"), ItemDatabase.Instance.GetDisplayName(OreItemId), PickaxeNameFor(RequiredPower)));
+            }
+            return false;
+        }
+
+        public static string PickaxeNameFor(int power) => ItemDatabase.Instance.GetDisplayName(
+            power <= 12 ? "pickaxe" : power <= 24 ? "pickaxe_bac" : power <= 42 ? "pickaxe_vang" : "pickaxe_kim_cuong");
 
         private int _hp;
         private bool _depleted = false;
         private int _regrowDaysLeft = 0;
         private Node3D _visual; // mesh da/khoi quang - Main.cs gan qua Init(), AN khi vo, HIEN khi moc lai
+
+        // Khoa ON DINH cua khoi quang (vd "field_12_-3_2" cho bai quang trong chunk hoang da) - de da
+        // dao thi KHONG moc lai chi vi chunk bi xoa/tao lai khi nguoi choi di xa roi quay ve, va giu
+        // qua lan thoat game (OreRegistry luu trong ban luu). null = khong theo doi (ham mo goc cu).
+        public string PersistKey;
 
         public void Init(Node3D visual)
         {
@@ -27,6 +54,20 @@ namespace HiepSiVeVuon.Entities
             _hp = MaxHp;
             AddToGroup("ore_nodes");
             GameManager.Instance.DayChanged += OnDayChanged;
+            OreRegistry.Changed += ApplyRegistry;
+            ApplyRegistry();
+        }
+
+        public override void _ExitTree() => OreRegistry.Changed -= ApplyRegistry;
+
+        private void ApplyRegistry()
+        {
+            if (string.IsNullOrEmpty(PersistKey)) return;
+            int left = OreRegistry.DaysLeft(PersistKey);
+            _depleted = left > 0;
+            _regrowDaysLeft = left;
+            if (!_depleted) _hp = MaxHp;
+            if (_visual != null) _visual.Visible = !_depleted;
         }
 
         // Goi tu Player.TryAttack() khi vung Pickaxe trung ban kinh - dung TEN "Mine" (rieng, khac
@@ -43,11 +84,17 @@ namespace HiepSiVeVuon.Entities
         {
             _depleted = true;
             _regrowDaysLeft = RegrowDays;
+            if (!string.IsNullOrEmpty(PersistKey)) OreRegistry.MarkDepleted(PersistKey, RegrowDays);
             if (_visual != null) _visual.Visible = false;
             // Vat pham nguoi choi TU DAO duoc - KHONG goi FarmStorage.Add (kho do la so lieu
             // "nong san trang trai", khac ban chat voi khoang san dao thu cong).
-            Inventory.Instance.AddItem(OreItemId, DropAmount);
+            // Ky nang Khai Khoang: co hoi dao duoc gap doi.
+            int amount = GD.Randf() < SkillSystem.Instance.ExtraOreChance ? DropAmount * 2 : DropAmount;
+            Inventory.Instance.AddItem(OreItemId, amount, "mine");
             QuestSystem.Instance.OnItemCollected(OreItemId);
+            SkillSystem.Instance.AddXp(Data.SkillType.Mining, 6 + MaxHp / 10);
+            AchievementSystem.Instance.Add("ores_mined");
+            HiepSiVeVuon.UI.Notify.Show(string.Format(Loc.T("pickup.got_fmt"), ItemDatabase.Instance.GetDisplayName(OreItemId), amount));
         }
 
         private void OnDayChanged(int day)

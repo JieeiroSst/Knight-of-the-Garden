@@ -44,7 +44,7 @@ namespace HiepSiVeVuon.Core
         // _Process() o frame sau).
         public static readonly List<(Vector3 Center, float Radius)> ExclusionZones = new();
 
-        private static bool IsExcluded(Vector3 worldPos)
+        public static bool IsExcluded(Vector3 worldPos)
         {
             foreach (var (center, radius) in ExclusionZones)
             {
@@ -96,7 +96,7 @@ namespace HiepSiVeVuon.Core
         }
         public static readonly List<RegionProfile> Regions = new();
 
-        private static RegionProfile FindRegion(Vector3 worldPos)
+        public static RegionProfile FindRegion(Vector3 worldPos)
         {
             foreach (var r in Regions)
             {
@@ -211,6 +211,8 @@ namespace HiepSiVeVuon.Core
             _timer += (float)delta;
             if (_timer < UpdateInterval) return;
             _timer = 0f;
+            // Ban do sinh canh cua mat dat (da/cat/bun/la... theo vung) - ve lai neu Main vua dang ky them vung.
+            GroundMaterial.EnsureBiomeMap();
 
             if (_player == null || !IsInstanceValid(_player))
                 _player = GetTree().GetFirstNodeInGroup("player") as Node3D;
@@ -313,6 +315,10 @@ namespace HiepSiVeVuon.Core
                 GenerateRegionDecor(root, center, rng, region);
             else
                 GenerateWildernessDecor(root, center, rng);
+
+            // Bai quang lo thien rai khap ban do (khong co o vung que Phap - khu dan cu yen binh).
+            if (!TryGetFrenchRegionDist(center, out _))
+                HiepSiVeVuon.Entities.OreFields.Generate(root, center, cx, cz, ChunkSeed(WorldSeed, cx, cz), ChunkSize);
 
             return root;
         }

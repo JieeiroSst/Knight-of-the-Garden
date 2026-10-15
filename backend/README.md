@@ -4,6 +4,66 @@ Backend luu tru game (Node.js/Express + PostgreSQL) - thay the hoan toan viec lu
 truoc day. Game (Godot) CAN backend nay dang chay moi choi/dang nhap/luu duoc - khong co che do
 choi offline.
 
+## Game online nhieu nguoi choi (kien truc moi)
+
+```
+ Godot client ──HTTPS──> Load balancer ──/api──> API (ROLE=api, N ban)  ──> PgBouncer ──> Postgres (shard theo player_id)
+      │                       │
+      └──────WebSocket────────┴───/ws───> Gateway (ROLE=gateway, M ban) <──pub/sub──> Redis (Cluster)
+```
+
+| Thanh phan | Lam gi | Trang thai trong process |
+|---|---|---|
+| **API** (`ROLE=api`) | Dang nhap, ban luu, **kinh te do server quan ly** (`/api/economy`), nhan vat, giao dich, cho, thoi gian | Khong (stateless) - nhan ban thoai mai |
+| **Gateway** (`ROLE=gateway`) | WebSocket `/ws`: hien dien, vi tri, chat kenh/nhan rieng, thong bao | Chi ket noi cua chinh no; roster kenh nam o Redis |
+| **Redis** | Pub/sub giua gateway (topic `ch:<vung>:<kenh>`, `user:<id>`), roster + dem kenh | |
+| **Postgres** | Nguoi choi, ban luu, vi/tui do, thung giao hang, giao dich, cho | |
+
+- **Thoi gian thuc chung**: `GET /api/time` - 1 ngay game = 1 ngay that, lich chung (ngay 1 = `GAME_EPOCH`, mui gio
+  `GAME_TZ_OFFSET_MIN`). Client khong dung dong ho may de tinh ngay; offline bao nhieu ngay thi luc vao lai "chay bu"
+  toi da 28 ngay (nhan cong cham cay ho).
+- **Kinh te do server quan ly**: vang/vat pham chinh thuc nam o `wallets`/`inventory_items`. Client gui lo "op" (`POST
+  /api/economy/ops`, co `seq` chong gui trung); server kiem tra bang `src/game/economyRules.js` (gia/cong thuc tu
+  `gamedata/`, nguon roi do hop le, gioi han/gio, phan thuong 1 lan theo key) roi tra anh chup chinh thuc.
+- **Giao dich 2 nguoi** (`/api/trades`): moi -> chap nhan -> dat do -> ca 2 khoa -> ca 2 xac nhan -> chuyen nguyen tu
+  trong 1 transaction (khoa vi theo thu tu id - khong deadlock).
+- **Cho** (`/api/market`): dang ban = giu do (ky quy); mua nguyen tu, thue `MARKET_TAX_PERCENT`; het han tu hoan do.
+- **Chia kenh**: moi vung (thi tran/khu vuc/hoang da) chia kenh toi da `CHANNEL_CAPACITY` (80) nguoi - chi nguoi cung
+  kenh thay nhau, nen tai moi nguoi choi KHONG tang theo tong so nguoi online.
+- **Du lieu game dung chung**: `data/*.json` (goc repo) la nguon su that; `npm run sync-gamedata` chep vao
+  `gamedata/`. Test `tests/gamedata.test.js` bao loi neu quen dong bo.
+
+### Chay ca he thong (2 API + 2 gateway + nginx + Redis + Postgres)
+
+```
+docker compose up -d --build --scale api=2 --scale gateway=2
+curl http://localhost:3000/api/time
+```
+
+### Kiem tai
+
+```
+DATABASE_URL=... JWT_SECRET=... node scripts/loadtest.js --url ws://localhost:3000/ws --bots 1500 --zones 5 --seconds 20 --ramp 5
+```
+
+So do thuc te tren 1 MacBook (1 process `ROLE=all`, cung may voi bot): **1.500 nguoi choi di chuyen 5 lan/giay, 0 loi,
+~54% 1 nhan CPU, ~90 MB RAM, ~7 KB/giay/nguoi choi, vao kenh p95 146 ms**; tu ~2.000 nguoi/process bat dau qua tai
+(ket noi bi timeout) - do la gioi han 1 nhan CPU cua 1 process Node.
+
+### Lo trinh len 1 trieu nguoi choi dong thoi (uoc tinh tu so do o tren)
+
+| Hang muc | Uoc tinh cho 1.000.000 CCU |
+|---|---|
+| Gateway | ~2.000 nguoi/nhan -> **~500-600 nhan CPU** (vd 70-80 may 8 nhan; HPA `deploy/k8s/hsvv.yaml`) |
+| Bang thong ra | ~7 KB/s x 1M = **~7 GB/s (~56 Gbps)** - can CDN/edge hoac dat gateway nhieu vung dia ly |
+| Redis | Pub/sub ~12.500 kenh hoat dong -> **Redis Cluster** + sharded pub/sub (`SPUBLISH`) |
+| API kinh te | Moi nguoi choi ~1 lo/4 giay -> **~250.000 request/giay** -> hang tram pod API + PgBouncer |
+| Postgres | Chia shard theo `player_id` (moi bang deu co `player_id` dau khoa chinh - san sang cho Citus) |
+
+Toi uu khi can them: giao thuc nhi phan thay JSON (giam ~60% bang thong), `uWebSockets.js` thay `ws` (~5-10x so ket noi/
+nhan), gom nhieu op kinh te hon/lo. **Day la uoc tinh tu do dac tren 1 may - phai kiem tai that tren ha tang dich truoc
+khi mo cho 1 trieu nguoi.**
+
 ## Chay thu tren may cua ban (local, de kiem tra)
 
 ```

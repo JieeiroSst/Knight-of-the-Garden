@@ -68,7 +68,7 @@ namespace HiepSiVeVuon.Entities
                         {
                             if (Products.Length == 0) return;
                             var itemId = Products[_productIndex];
-                            DroppedItem.Spawn(GetTree().CurrentScene, ctx.SelfPos, itemId, 1);
+                            DroppedItem.Spawn(GetTree().CurrentScene, ctx.SelfPos, itemId, 1, "animal");
                             FarmStorage.Instance.Add(itemId, 1);
                             _productIndex = (_productIndex + 1) % Products.Length;
                         },

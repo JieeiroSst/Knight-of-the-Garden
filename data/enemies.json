@@ -10,9 +10,21 @@
     "GoldReward": 10,
     "SpritePath": "res://assets/enemies/mud_monster.png",
     "Loot": [
-      { "ItemId": "mud_core", "Chance": 0.8, "Min": 1, "Max": 2 },
-      { "ItemId": "potion", "Chance": 0.15, "Min": 1, "Max": 1 }
-    ]
+      {
+        "ItemId": "mud_core",
+        "Chance": 0.8,
+        "Min": 1,
+        "Max": 2
+      },
+      {
+        "ItemId": "potion",
+        "Chance": 0.15,
+        "Min": 1,
+        "Max": 1
+      }
+    ],
+    "ModelPath": "res://assets3d/quaternius/monsters/slime.glb",
+    "ModelScale": 16
   },
   {
     "Id": "spiky_monster",
@@ -25,10 +37,27 @@
     "GoldReward": 25,
     "SpritePath": "res://assets/enemies/spiky_monster.png",
     "Loot": [
-      { "ItemId": "spike_shard", "Chance": 0.7, "Min": 1, "Max": 3 },
-      { "ItemId": "potion", "Chance": 0.3, "Min": 1, "Max": 1 },
-      { "ItemId": "ring", "Chance": 0.05, "Min": 1, "Max": 1 }
-    ]
+      {
+        "ItemId": "spike_shard",
+        "Chance": 0.7,
+        "Min": 1,
+        "Max": 3
+      },
+      {
+        "ItemId": "potion",
+        "Chance": 0.3,
+        "Min": 1,
+        "Max": 1
+      },
+      {
+        "ItemId": "ring",
+        "Chance": 0.05,
+        "Min": 1,
+        "Max": 1
+      }
+    ],
+    "ModelPath": "res://assets3d/quaternius/monsters/spiky_blob.glb",
+    "ModelScale": 18.4
   },
   {
     "Id": "forest_wolf",
@@ -42,9 +71,21 @@
     "SpritePath": "res://assets/enemies/mud_monster.png",
     "TintColor": "5a4a3a",
     "Loot": [
-      { "ItemId": "mud_core", "Chance": 0.6, "Min": 1, "Max": 2 },
-      { "ItemId": "potion", "Chance": 0.2, "Min": 1, "Max": 1 }
-    ]
+      {
+        "ItemId": "mud_core",
+        "Chance": 0.6,
+        "Min": 1,
+        "Max": 2
+      },
+      {
+        "ItemId": "potion",
+        "Chance": 0.2,
+        "Min": 1,
+        "Max": 1
+      }
+    ],
+    "ModelPath": "res://assets3d/quaternius/animals/wolf.glb",
+    "ModelScale": 6.6
   },
   {
     "Id": "mountain_troll",
@@ -56,11 +97,23 @@
     "ExpReward": 70,
     "GoldReward": 40,
     "SpritePath": "res://assets/enemies/spiky_monster.png",
-    "TintColor": "7a7a75",
     "Loot": [
-      { "ItemId": "spike_shard", "Chance": 0.6, "Min": 1, "Max": 2 },
-      { "ItemId": "potion", "Chance": 0.25, "Min": 1, "Max": 1 }
-    ]
+      {
+        "ItemId": "spike_shard",
+        "Chance": 0.6,
+        "Min": 1,
+        "Max": 2
+      },
+      {
+        "ItemId": "potion",
+        "Chance": 0.25,
+        "Min": 1,
+        "Max": 1
+      }
+    ],
+    "ModelPath": "res://assets3d/quaternius/monsters/golem.glb",
+    "ModelScale": 28.2,
+    "HoverHeight": 6
   },
   {
     "Id": "lake_serpent",
@@ -72,11 +125,23 @@
     "ExpReward": 60,
     "GoldReward": 35,
     "SpritePath": "res://assets/enemies/spiky_monster.png",
-    "TintColor": "2f6fa8",
     "Loot": [
-      { "ItemId": "spike_shard", "Chance": 0.5, "Min": 1, "Max": 2 },
-      { "ItemId": "potion", "Chance": 0.3, "Min": 1, "Max": 1 }
-    ]
+      {
+        "ItemId": "spike_shard",
+        "Chance": 0.5,
+        "Min": 1,
+        "Max": 2
+      },
+      {
+        "ItemId": "potion",
+        "Chance": 0.3,
+        "Min": 1,
+        "Max": 1
+      }
+    ],
+    "ModelPath": "res://assets3d/quaternius/monsters/squidle.glb",
+    "ModelScale": 20.2,
+    "HoverHeight": 8
   },
   {
     "Id": "swamp_lurker",
@@ -88,11 +153,23 @@
     "ExpReward": 55,
     "GoldReward": 30,
     "SpritePath": "res://assets/enemies/mud_monster.png",
-    "TintColor": "4a5a34",
     "Loot": [
-      { "ItemId": "mud_core", "Chance": 0.7, "Min": 1, "Max": 2 },
-      { "ItemId": "potion", "Chance": 0.25, "Min": 1, "Max": 1 }
-    ]
+      {
+        "ItemId": "mud_core",
+        "Chance": 0.7,
+        "Min": 1,
+        "Max": 2
+      },
+      {
+        "ItemId": "potion",
+        "Chance": 0.25,
+        "Min": 1,
+        "Max": 1
+      }
+    ],
+    "ModelPath": "res://assets3d/quaternius/monsters/glub.glb",
+    "ModelScale": 29.1,
+    "HoverHeight": 6
   },
   {
     "Id": "ruins_wraith",
@@ -104,11 +181,25 @@
     "ExpReward": 80,
     "GoldReward": 45,
     "SpritePath": "res://assets/enemies/spiky_monster.png",
-    "TintColor": "8a6fa8",
     "Loot": [
-      { "ItemId": "spike_shard", "Chance": 0.5, "Min": 1, "Max": 2 },
-      { "ItemId": "ring", "Chance": 0.08, "Min": 1, "Max": 1 }
-    ]
+      {
+        "ItemId": "spike_shard",
+        "Chance": 0.5,
+        "Min": 1,
+        "Max": 2
+      },
+      {
+        "ItemId": "ring",
+        "Chance": 0.08,
+        "Min": 1,
+        "Max": 1
+      }
+    ],
+    "ModelPath": "res://assets3d/quaternius/monsters/ghost_skull.glb",
+    "ModelScale": 33.6,
+    "HoverHeight": 14,
+    "Ghostly": true,
+    "GlowColor": "b48cff"
   },
   {
     "Id": "cemetery_ghost",
@@ -120,11 +211,25 @@
     "ExpReward": 75,
     "GoldReward": 20,
     "SpritePath": "res://assets/enemies/mud_monster.png",
-    "TintColor": "d8d8d8",
     "Loot": [
-      { "ItemId": "xuong", "Chance": 0.75, "Min": 1, "Max": 3 },
-      { "ItemId": "potion", "Chance": 0.15, "Min": 1, "Max": 1 }
-    ]
+      {
+        "ItemId": "xuong",
+        "Chance": 0.75,
+        "Min": 1,
+        "Max": 3
+      },
+      {
+        "ItemId": "potion",
+        "Chance": 0.15,
+        "Min": 1,
+        "Max": 1
+      }
+    ],
+    "ModelPath": "res://assets3d/quaternius/monsters/ghost.glb",
+    "ModelScale": 36.4,
+    "HoverHeight": 14,
+    "Ghostly": true,
+    "GlowColor": "cfe8ff"
   },
   {
     "Id": "cave_bat",
@@ -136,10 +241,428 @@
     "ExpReward": 30,
     "GoldReward": 15,
     "SpritePath": "res://assets/enemies/spiky_monster.png",
-    "TintColor": "2a2a2e",
+    "TintColor": "3a2f4a",
     "Loot": [
-      { "ItemId": "spike_shard", "Chance": 0.4, "Min": 1, "Max": 1 },
-      { "ItemId": "potion", "Chance": 0.15, "Min": 1, "Max": 1 }
-    ]
+      {
+        "ItemId": "spike_shard",
+        "Chance": 0.4,
+        "Min": 1,
+        "Max": 1
+      },
+      {
+        "ItemId": "potion",
+        "Chance": 0.15,
+        "Min": 1,
+        "Max": 1
+      }
+    ],
+    "ModelPath": "res://assets3d/quaternius/monsters/birb.glb",
+    "ModelScale": 15.0,
+    "HoverHeight": 22
+  },
+  {
+    "Id": "dungeon_mushnub",
+    "Name": "Nấm Độc Hầm Ngục",
+    "MaxHp": 90,
+    "Damage": 16,
+    "Speed": 70,
+    "DetectRange": 220,
+    "ExpReward": 30,
+    "GoldReward": 12,
+    "SpritePath": "res://assets/enemies/spiky_monster.png",
+    "Loot": [
+      {
+        "ItemId": "thach_anh",
+        "Chance": 0.3,
+        "Min": 1,
+        "Max": 2
+      },
+      {
+        "ItemId": "ngoc_linh_hon",
+        "Chance": 0.04,
+        "Min": 1,
+        "Max": 1
+      }
+    ],
+    "ModelPath": "res://assets3d/quaternius/monsters/mushnub.glb",
+    "ModelScale": 15.3
+  },
+  {
+    "Id": "dungeon_tribal",
+    "Name": "Thổ Dân Bay",
+    "MaxHp": 110,
+    "Damage": 20,
+    "Speed": 85,
+    "DetectRange": 260,
+    "ExpReward": 38,
+    "GoldReward": 15,
+    "SpritePath": "res://assets/enemies/spiky_monster.png",
+    "Loot": [
+      {
+        "ItemId": "dong_xu_co",
+        "Chance": 0.15,
+        "Min": 1,
+        "Max": 1
+      },
+      {
+        "ItemId": "ngoc_linh_hon",
+        "Chance": 0.05,
+        "Min": 1,
+        "Max": 1
+      }
+    ],
+    "ModelPath": "res://assets3d/quaternius/monsters/tribal.glb",
+    "ModelScale": 32.7,
+    "HoverHeight": 12
+  },
+  {
+    "Id": "dungeon_armabee",
+    "Name": "Ong Giáp Sắt",
+    "MaxHp": 100,
+    "Damage": 22,
+    "Speed": 100,
+    "DetectRange": 280,
+    "ExpReward": 40,
+    "GoldReward": 15,
+    "SpritePath": "res://assets/enemies/spiky_monster.png",
+    "Loot": [
+      {
+        "ItemId": "sat_tho",
+        "Chance": 0.4,
+        "Min": 1,
+        "Max": 3
+      },
+      {
+        "ItemId": "ngoc_linh_hon",
+        "Chance": 0.05,
+        "Min": 1,
+        "Max": 1
+      }
+    ],
+    "ModelPath": "res://assets3d/quaternius/monsters/armabee.glb",
+    "ModelScale": 25.2,
+    "HoverHeight": 16
+  },
+  {
+    "Id": "dungeon_ninja",
+    "Name": "Ninja Bóng Tối",
+    "MaxHp": 140,
+    "Damage": 26,
+    "Speed": 110,
+    "DetectRange": 300,
+    "ExpReward": 55,
+    "GoldReward": 22,
+    "SpritePath": "res://assets/enemies/spiky_monster.png",
+    "Loot": [
+      {
+        "ItemId": "hong_ngoc",
+        "Chance": 0.08,
+        "Min": 1,
+        "Max": 1
+      },
+      {
+        "ItemId": "tuong_da_co",
+        "Chance": 0.08,
+        "Min": 1,
+        "Max": 1
+      }
+    ],
+    "ModelPath": "res://assets3d/quaternius/monsters/ninja.glb",
+    "ModelScale": 27.4
+  },
+  {
+    "Id": "dungeon_alien",
+    "Name": "Sinh Vật Lạ",
+    "MaxHp": 120,
+    "Damage": 24,
+    "Speed": 80,
+    "DetectRange": 260,
+    "ExpReward": 48,
+    "GoldReward": 18,
+    "SpritePath": "res://assets/enemies/spiky_monster.png",
+    "Loot": [
+      {
+        "ItemId": "ngoc_luc_bao",
+        "Chance": 0.08,
+        "Min": 1,
+        "Max": 1
+      },
+      {
+        "ItemId": "mat_na_co",
+        "Chance": 0.06,
+        "Min": 1,
+        "Max": 1
+      }
+    ],
+    "ModelPath": "res://assets3d/quaternius/monsters/alien.glb",
+    "ModelScale": 25.8,
+    "GlowColor": "7dff9a"
+  },
+  {
+    "Id": "boss_forest",
+    "Name": "Vua Nấm",
+    "MaxHp": 450,
+    "Damage": 22,
+    "Speed": 70,
+    "DetectRange": 420,
+    "ExpReward": 300,
+    "GoldReward": 250,
+    "SpritePath": "res://assets/enemies/spiky_monster.png",
+    "Loot": [
+      {
+        "ItemId": "vuong_mien_nam",
+        "Chance": 1.0,
+        "Min": 1,
+        "Max": 1
+      },
+      {
+        "ItemId": "ngoc_luc_bao",
+        "Chance": 0.5,
+        "Min": 1,
+        "Max": 2
+      },
+      {
+        "ItemId": "dau_tay_seed",
+        "Chance": 1.0,
+        "Min": 5,
+        "Max": 10
+      }
+    ],
+    "ModelPath": "res://assets3d/quaternius/monsters/mushroom_king.glb",
+    "ModelScale": 56.8,
+    "IsBoss": true,
+    "BossTitle": "Vua Nấm Rừng Sâu",
+    "BossTitleEn": "Mushroom King of the Deep Woods",
+    "GlowColor": "ffb070"
+  },
+  {
+    "Id": "boss_mountain",
+    "Name": "Yeti",
+    "MaxHp": 650,
+    "Damage": 28,
+    "Speed": 75,
+    "DetectRange": 420,
+    "ExpReward": 400,
+    "GoldReward": 350,
+    "SpritePath": "res://assets/enemies/spiky_monster.png",
+    "Loot": [
+      {
+        "ItemId": "long_yeti",
+        "Chance": 1.0,
+        "Min": 1,
+        "Max": 1
+      },
+      {
+        "ItemId": "thach_anh",
+        "Chance": 1.0,
+        "Min": 3,
+        "Max": 6
+      },
+      {
+        "ItemId": "kim_cuong",
+        "Chance": 0.2,
+        "Min": 1,
+        "Max": 1
+      }
+    ],
+    "ModelPath": "res://assets3d/quaternius/monsters/yeti.glb",
+    "ModelScale": 93.0,
+    "IsBoss": true,
+    "BossTitle": "Người Tuyết Núi Đá",
+    "BossTitleEn": "Yeti of the Stone Peaks",
+    "GlowColor": "bfe6ff"
+  },
+  {
+    "Id": "boss_swamp",
+    "Name": "Khủng Long Đầm",
+    "MaxHp": 600,
+    "Damage": 30,
+    "Speed": 80,
+    "DetectRange": 420,
+    "ExpReward": 380,
+    "GoldReward": 320,
+    "SpritePath": "res://assets/enemies/spiky_monster.png",
+    "Loot": [
+      {
+        "ItemId": "trung_khung_long",
+        "Chance": 1.0,
+        "Min": 1,
+        "Max": 1
+      },
+      {
+        "ItemId": "thao_duoc_dam_lay",
+        "Chance": 1.0,
+        "Min": 4,
+        "Max": 8
+      },
+      {
+        "ItemId": "ngoc_luc_bao",
+        "Chance": 0.4,
+        "Min": 1,
+        "Max": 2
+      }
+    ],
+    "ModelPath": "res://assets3d/quaternius/monsters/dino.glb",
+    "ModelScale": 69.0,
+    "IsBoss": true,
+    "BossTitle": "Bạo Chúa Đầm Lầy",
+    "BossTitleEn": "Tyrant of the Swamp",
+    "GlowColor": "a6ff6b"
+  },
+  {
+    "Id": "boss_ruins",
+    "Name": "Quỷ Đỏ",
+    "MaxHp": 800,
+    "Damage": 34,
+    "Speed": 85,
+    "DetectRange": 420,
+    "ExpReward": 500,
+    "GoldReward": 450,
+    "SpritePath": "res://assets/enemies/spiky_monster.png",
+    "Loot": [
+      {
+        "ItemId": "sung_quy",
+        "Chance": 1.0,
+        "Min": 1,
+        "Max": 1
+      },
+      {
+        "ItemId": "chen_vang_co",
+        "Chance": 0.5,
+        "Min": 1,
+        "Max": 1
+      },
+      {
+        "ItemId": "hong_ngoc",
+        "Chance": 0.6,
+        "Min": 1,
+        "Max": 2
+      }
+    ],
+    "ModelPath": "res://assets3d/quaternius/monsters/demon.glb",
+    "ModelScale": 69.3,
+    "IsBoss": true,
+    "BossTitle": "Quỷ Vương Phế Tích",
+    "BossTitleEn": "Demon Lord of the Ruins",
+    "GlowColor": "ff5a3c"
+  },
+  {
+    "Id": "boss_cemetery",
+    "Name": "Quỷ Lam",
+    "MaxHp": 850,
+    "Damage": 36,
+    "Speed": 85,
+    "DetectRange": 420,
+    "ExpReward": 520,
+    "GoldReward": 480,
+    "SpritePath": "res://assets/enemies/spiky_monster.png",
+    "Loot": [
+      {
+        "ItemId": "sung_quy_xanh",
+        "Chance": 1.0,
+        "Min": 1,
+        "Max": 1
+      },
+      {
+        "ItemId": "ngoc_linh_hon",
+        "Chance": 1.0,
+        "Min": 1,
+        "Max": 2
+      },
+      {
+        "ItemId": "mat_na_co",
+        "Chance": 0.5,
+        "Min": 1,
+        "Max": 1
+      }
+    ],
+    "ModelPath": "res://assets3d/quaternius/monsters/blue_demon.glb",
+    "ModelScale": 29.4,
+    "IsBoss": true,
+    "BossTitle": "Chúa Tể Nghĩa Địa",
+    "BossTitleEn": "Lord of the Graveyard",
+    "GlowColor": "5a8cff"
+  },
+  {
+    "Id": "boss_cave",
+    "Name": "Rồng Lửa",
+    "MaxHp": 1000,
+    "Damage": 40,
+    "Speed": 90,
+    "DetectRange": 420,
+    "ExpReward": 650,
+    "GoldReward": 600,
+    "SpritePath": "res://assets/enemies/spiky_monster.png",
+    "Loot": [
+      {
+        "ItemId": "vay_rong",
+        "Chance": 1.0,
+        "Min": 1,
+        "Max": 1
+      },
+      {
+        "ItemId": "kim_cuong",
+        "Chance": 0.5,
+        "Min": 1,
+        "Max": 2
+      },
+      {
+        "ItemId": "da_quy",
+        "Chance": 1.0,
+        "Min": 2,
+        "Max": 4
+      }
+    ],
+    "ModelPath": "res://assets3d/quaternius/monsters/dragon.glb",
+    "ModelScale": 50.4,
+    "IsBoss": true,
+    "BossTitle": "Rồng Hang Sâu",
+    "BossTitleEn": "Dragon of the Deep Cave",
+    "GlowColor": "ff7a2a",
+    "HoverHeight": 24
+  },
+  {
+    "Id": "boss_dungeon",
+    "Name": "Rồng Cổ Đại",
+    "MaxHp": 2000,
+    "Damage": 50,
+    "Speed": 95,
+    "DetectRange": 420,
+    "ExpReward": 1500,
+    "GoldReward": 1500,
+    "SpritePath": "res://assets/enemies/spiky_monster.png",
+    "Loot": [
+      {
+        "ItemId": "vay_rong_co",
+        "Chance": 1.0,
+        "Min": 1,
+        "Max": 1
+      },
+      {
+        "ItemId": "kim_cuong",
+        "Chance": 1.0,
+        "Min": 2,
+        "Max": 3
+      },
+      {
+        "ItemId": "chen_vang_co",
+        "Chance": 1.0,
+        "Min": 1,
+        "Max": 1
+      },
+      {
+        "ItemId": "ngoc_linh_hon",
+        "Chance": 1.0,
+        "Min": 2,
+        "Max": 3
+      }
+    ],
+    "ModelPath": "res://assets3d/quaternius/monsters/dragon_evolved.glb",
+    "ModelScale": 59.9,
+    "IsBoss": true,
+    "BossTitle": "Rồng Cổ Đại",
+    "BossTitleEn": "The Ancient Dragon",
+    "GlowColor": "c070ff",
+    "HoverHeight": 26
   }
 ]

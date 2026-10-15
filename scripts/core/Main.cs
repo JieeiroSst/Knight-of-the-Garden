@@ -261,6 +261,8 @@ namespace HiepSiVeVuon.Core
 			// ben duoi) - da doi xuong.
 			SafeBuildStep(BuildPlateaus, nameof(BuildPlateaus));
 			SafeBuildStep(BuildMine, nameof(BuildMine));
+			// 3 ham mo moi (Than/Pha Le/Vang) - xem MainMines.cs.
+			SafeBuildStep(BuildMoreMines, nameof(BuildMoreMines));
 			// 10 khu vuc "the gioi mo" moi (xem yeu cau nguoi dung, Mo o tren da tinh la khu thu
 			// 11) - dang ky RegionProfile vao WorldStreamer.Regions TRUOC khi WorldStreamer kip
 			// sinh chunk dau tien (giong cach BuildMine/BuildPlateaus dang ky ExclusionZones).
@@ -304,6 +306,8 @@ namespace HiepSiVeVuon.Core
 			SafeBuildStep(BuildProcessingArea, nameof(BuildProcessingArea));
 			SafeBuildStep(BuildCookingStation, nameof(BuildCookingStation));
 			SafeBuildStep(BuildBeehives, nameof(BuildBeehives));
+			SafeBuildStep(BuildFarmLife, nameof(BuildFarmLife));
+			SafeBuildStep(BuildAdventure, nameof(BuildAdventure));
 			// Nha + NPC ten rieng cua 3 chuong "cu" (Bo/Ngua/Ga) - PHAI chay SAU
 			// BuildAnimalPenDistrict (doc CowPastureCenter/HorseStableCenter/ChickenCoopCenter).
 			SafeBuildStep(BuildCowherd, nameof(BuildCowherd));
@@ -325,8 +329,8 @@ namespace HiepSiVeVuon.Core
 			SafeBuildStep(BuildFarmNavigation, nameof(BuildFarmNavigation));
 
 			// Sang ngay thuc moi (GameManager tu phat hien qua dong ho may tinh) -> sinh them quai
-			GameManager.Instance.DayChanged += _ => RespawnSomeEnemies();
-			GameManager.Instance.DayChanged += _ => RespawnWildlife();
+			GameManager.Instance.DayChanged += _ => { if (!GameManager.Instance.IsCatchingUp) RespawnSomeEnemies(); };
+			GameManager.Instance.DayChanged += _ => { if (!GameManager.Instance.IsCatchingUp) RespawnWildlife(); };
 			// Den duong tu bat/tat theo dung gio (18h - 6h sang). Ap dung trang thai ban dau
 			// MOT LAN cho TAT CA cot den (ca 4 cot rieng va 2*13 cot o tung cong trinh) - phai
 			// dat SAU khi toan bo cong trinh da duoc xay xong (BuildPoultryKeeper la cong trinh cuoi
@@ -334,11 +338,11 @@ namespace HiepSiVeVuon.Core
 			GameManager.Instance.HourChanged += OnStreetLampHourChanged;
 			SetStreetLampsOn(IsStreetLampHour(GameManager.Instance.Hour));
 			// ...va thu cho bo giao phoi sinh be con (xem TryBreedCows).
-			GameManager.Instance.DayChanged += _ => TryBreedCows();
-			GameManager.Instance.DayChanged += _ => TryBreedSheep();
-			GameManager.Instance.DayChanged += _ => TryBreedPigs();
-			GameManager.Instance.DayChanged += _ => TryBreedHorses();
-			GameManager.Instance.DayChanged += _ => TryBreedGoats();
+			GameManager.Instance.DayChanged += _ => { if (!GameManager.Instance.IsCatchingUp) TryBreedCows(); };
+			GameManager.Instance.DayChanged += _ => { if (!GameManager.Instance.IsCatchingUp) TryBreedSheep(); };
+			GameManager.Instance.DayChanged += _ => { if (!GameManager.Instance.IsCatchingUp) TryBreedPigs(); };
+			GameManager.Instance.DayChanged += _ => { if (!GameManager.Instance.IsCatchingUp) TryBreedHorses(); };
+			GameManager.Instance.DayChanged += _ => { if (!GameManager.Instance.IsCatchingUp) TryBreedGoats(); };
 
 			// The gioi da dung xong voi trang thai mac dinh - gio moi hoi backend xem nguoi choi
 			// dang nhap co ban luu khong (goi MANG bat dong bo, khong the cho dong bo o day nhu
@@ -347,6 +351,22 @@ namespace HiepSiVeVuon.Core
 			{
 				RestoreFreeformFarmPlots();
 				GrantNewToolsIfMissing();
+				// Sau khi nap save: thu chao mung (chi 1 lan/nguoi choi) + rai lai do hai luom dung mua.
+				// Game online theo thoi gian thuc: chay bu nhung ngay da troi qua khi offline (nhan cong
+				// cham ho), roi dong bo kinh te voi server + vao the gioi chung (gateway).
+				GameManager.Instance.CatchUpToServerDay(newPlayer: !SaveSystem.Instance.LoadedExistingSave);
+				EconomyClient.Instance.RequestSync();
+				NetworkClient.Instance.Start();
+				MailSystem.Instance.SendWelcomeIfNeeded();
+				_forageSpawner?.RequestRespawn();
+				RestoreScarecrows();
+				// Do tu dat (trang tri/to ong/cay an qua/may/bay cua/ho ca) + thu cung + cap cuong hoa.
+				PlacementSystem.Instance.SpawnAll(_world);
+				(GetNodeOrNull("PetManager") as PetManager)?.Sync();
+				EnhanceClient.Refresh();
+				VisitSystem.TakeHelps(GetTree());
+				StartStatsTimer();
+				RemindDailyCheckin();
 			});
 		}
 
@@ -357,6 +377,8 @@ namespace HiepSiVeVuon.Core
 		// (o CA Tui Do lan Balo) - tranh cap trung nhieu lan qua moi lan tai lai game.
 		private void GrantNewToolsIfMissing()
 		{
+			// Server da gom cac cong cu nay trong bo khoi dau/nhap ban luu cu - khong tao op.
+			using var suppress = EconomyClient.Suppress();
 			foreach (var id in new[] { "binh_tuoi", "xeng", "cao_co" })
 			{
 				if (Backpack.Instance.CountOf(id) == 0 && Inventory.Instance.CountOf(id) == 0)
@@ -409,6 +431,26 @@ namespace HiepSiVeVuon.Core
 		// nguoi choi bam nut dong cua so nhieu lan lien tiep trong luc dang cho luu.
 		private bool _isQuitting = false;
 
+		// Bang xep hang: gui chi so moi 5 phut.
+		private void StartStatsTimer()
+		{
+			var t = new Timer { WaitTime = 300, Autostart = true };
+			t.Timeout += () => StatsReporter.Report();
+			AddChild(t);
+			StatsReporter.Report();
+		}
+
+		private void RemindDailyCheckin()
+		{
+			BackendClient.Instance.GetJson("/api/daily", (ok, status, text) =>
+			{
+				if (!ok || status != 200) return;
+				using var doc = System.Text.Json.JsonDocument.Parse(text);
+				if (!doc.RootElement.GetProperty("checkin").GetProperty("claimedToday").GetBoolean())
+					Notify.Show(Loc.T("social.checkin_reminder"));
+			});
+		}
+
 		private void OnCloseRequested()
 		{
 			if (_isQuitting) return;
@@ -416,12 +458,17 @@ namespace HiepSiVeVuon.Core
 			GD.Print("Đang lưu game trước khi thoát...");
 
 			bool done = false;
-			SaveSystem.Instance.SaveGame(_ =>
+			// Gui het thay doi kinh te con cho TRUOC (vang/vat pham chinh thuc nam tren server), roi
+			// moi luu ban luu (cach sap xep tui do, trang thai nong trai...).
+			StatsReporter.Report();
+			VisitSystem.End(GetTree());
+			EconomyClient.Instance.FlushNow(_ => SaveSystem.Instance.SaveGame(_ =>
 			{
 				if (done) return; // da thoat qua nguong an toan ben duoi, khong Quit() 2 lan
 				done = true;
+				NetworkClient.Instance.Stop();
 				GetTree().Quit();
-			});
+			}));
 			// Nguong an toan: neu sau vai giay van chua co phan hoi tu server (vd mat mang/server
 			// treo), van thoat de KHONG "treo" cua so - dung y "luu neu duoc" chu khong bat buoc
 			// nguoi choi phai cho vo han han moi dong duoc game.
@@ -688,7 +735,11 @@ namespace HiepSiVeVuon.Core
 							AddDecor(_barrelScene, a + new Vector3(130, 0, 120), 95f);
 							// Ban lam viec + ruong do (theo yeu cau "ban lam viec/ruong do")
 							AddDecor(_workbenchScene, a + new Vector3(-110, 0, -90), 26f, 90f);
+							// Ban lam viec dung duoc that: bam [E] mo Che Tao (xem CraftingBench.cs).
+							_world.AddChild(new CraftingBench { Position = a + new Vector3(-110, 0, -90) });
 							AddDecor(_chestScene, a + new Vector3(-150, 0, -20), 24f, 20f);
+							// Ruong chua do dung duoc that (xem HomeChest.cs/HomeSystem).
+							_world.AddChild(new HomeChest { Position = a + new Vector3(-150, 0, -20) });
 						});
 					BuildRoom(floor2Anchor, 300f, 130f,
 						wallColor: new Color(0.86f, 0.78f, 0.64f),
@@ -698,6 +749,8 @@ namespace HiepSiVeVuon.Core
 						furnish: a =>
 						{
 							AddDecor(_bedScene, a + new Vector3(-100, 0, -90), 10f, 90f);
+							// Giuong ngu that: bam [E] de ngu, hoi day the luc/mau + tu luu (xem Bed.cs).
+							_world.AddChild(new Bed { Position = a + new Vector3(-100, 0, -90) });
 							AddDecor(_bagScene, a + new Vector3(90, 0, 100), 90f);
 							// Tu, gia sach, den dau (theo yeu cau) - phong ngu
 							AddDecor(_wardrobeScene, a + new Vector3(110, 0, -60), 30f, -90f);
@@ -1604,6 +1657,10 @@ namespace HiepSiVeVuon.Core
 				"pumpkin_seed", "tomato_seed", "wheat_seed", "carrot_seed", "potato_seed", "cabbage_seed",
 				"pumpkin_seed_premium", "tomato_seed_premium", "wheat_seed_premium", "carrot_seed_premium", "potato_seed_premium", "cabbage_seed_premium",
 				"fertilizer_basic", "pesticide", "potion", "thucan_giasuc", "may_tuoi_tu_dong",
+				// Cay theo mua moi (xem items.json) - trong duoc tuy mua.
+				"dau_tay_seed", "toi_seed", "cai_xoan_seed", "dua_hau_seed", "ngo_seed", "viet_quat_seed",
+				"ca_tim_seed", "cu_den_seed", "cu_cai_dong_seed",
+				"cay_giong_tao", "cay_giong_le", "cay_giong_anh_dao", "cay_giong_nho",
 			};
 			merchant.DialogueLow = new[] { "Mua gì không? Hạt giống tốt đây!" };
 			merchant.DialogueMid = new[] { "Khách quen rồi! Xem hàng đi." };
@@ -1674,7 +1731,14 @@ namespace HiepSiVeVuon.Core
 			var carpenter = _npcScene.Instantiate<NPC>();
 			carpenter.NpcId = "carpenter";
 			carpenter.NpcName = "Thợ Mộc";
-			carpenter.ShopItems = new[] { "shield", "da", "wood" };
+			carpenter.ShopItems = new[]
+			{
+				"shield", "da", "wood",
+				// Do trang tri (dat bang [V]).
+				"decor_chair", "decor_table", "decor_barrel", "decor_rug", "decor_plant_a", "decor_plant_b", "decor_bench", "decor_lamp_table",
+				"decor_lamp_floor", "decor_lantern", "decor_painting", "decor_bookshelf", "decor_wardrobe", "decor_couch_small", "decor_sofa",
+				"decor_chandelier", "decor_clock", "decor_fountain", "decor_fox_statue", "decor_horse_statue", "decor_stag_statue",
+			};
 			carpenter.DialogueLow = new[] { "Có gỗ tốt thì mang đến đây, ta mua hết." };
 			carpenter.DialogueMid = new[] { "Gỗ cậu chắc chất lượng đấy. Còn bao nhiêu mang tới nhé." };
 			carpenter.DialogueHigh = new[] { "Ta sẽ đóng cho cậu một món đồ gỗ đẹp nhất xưởng làng." };
@@ -2777,14 +2841,8 @@ namespace HiepSiVeVuon.Core
 			// Loai tru trang trai/coi xay/quai hoang da khoi khu vuc cua ham (giong BuildPlateaus).
 			WorldStreamer.ExclusionZones.Add((MineEntrancePos, 260f));
 
-			// Mat tien hang da don gian (khoi da xam + vom cua) - khong tim duoc model hang dong
-			// CC0 phu hop nen dung primitive, giong cach lam silo/lo ren/nha kinh truoc do.
-			var rockMat = GetCachedMaterial(new Color(0.32f, 0.3f, 0.29f), 1f);
-			_world.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(180f, 90f, 60f) }, Position = MineEntrancePos + Vector3.Up * 45f, MaterialOverride = rockMat });
-			_world.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 30f, BottomRadius = 30f, Height = 62f }, Position = MineEntrancePos + Vector3.Up * 31f, RotationDegrees = new Vector3(90, 0, 0), MaterialOverride = GetCachedMaterial(new Color(0.06f, 0.06f, 0.06f), 1f) });
-			var mineBody = new StaticBody3D { Position = MineEntrancePos };
-			mineBody.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(180f, 90f, 60f) }, Position = Vector3.Up * 45f });
-			_world.AddChild(mineBody);
+			// Mat tien ham mo dung MODEL 3D CC0 (khoi nui + cong vom + xe goong...) - xem MainMines.cs.
+			BuildMineEntranceModels(MineEntrancePos, new Color(0.32f, 0.3f, 0.29f), "old");
 			AddBuildingLabelZone(MineEntrancePos, 110f, "label.mine_shaft");
 
 			// 3 tang, moi tang 1 do cao (Y) RIENG qua bo dem CHUNG _nextInteriorIndex (giong het
@@ -2811,6 +2869,15 @@ namespace HiepSiVeVuon.Core
 				anchor => FurnishMineFloor(anchor, "sat_tho", hp: 35, regrowDays: 3, enemyStatMult: 1.5f, rockColor: new Color(0.5f, 0.32f, 0.25f)));
 			BuildRoom(floor3, 400f, 160f, wallColor, floorColor, null, default, backIsExit: true, floor2,
 				anchor => FurnishMineFloor(anchor, "da_quy", hp: 55, regrowDays: 5, enemyStatMult: 1.8f, rockColor: new Color(0.5f, 0.35f, 0.65f)));
+			// Danh dau tang (thong bao loai quang + thanh tuu "xuong tang sau nhat cua ca 4 mo").
+			string[] oldOres = { "dong_tho", "sat_tho", "da_quy" };
+			var oldFloors = new[] { floor1, floor2, floor3 };
+			for (int i = 0; i < 3; i++)
+				_world.AddChild(new MineFloorMarker
+				{
+					MineId = "old", MineLabelKey = "label.mine_shaft", Floor = i + 1, FloorCount = 3,
+					OreSummary = ItemDatabase.Instance.GetDisplayName(oldOres[i]), RoomHalf = 180f + i * 10f, Position = oldFloors[i],
+				});
 		}
 
 		// Rai OreNode + vai quai trong 1 tang ham - do quy (Hp/RegrowDays/loai quang) va do manh
@@ -2842,18 +2909,9 @@ namespace HiepSiVeVuon.Core
 		// primitive, giong cach lam da khac trong game.
 		private void AddOreNode(Vector3 pos, string oreId, int hp, int dropAmount, int regrowDays, Color rockColor)
 		{
-			var ore = new OreNode { Position = pos, MaxHp = hp, OreItemId = oreId, DropAmount = dropAmount, RegrowDays = regrowDays };
-			var visual = new MeshInstance3D
-			{
-				Mesh = new BoxMesh { Size = new Vector3(24f, 20f, 22f) },
-				Position = Vector3.Up * 10f,
-				RotationDegrees = new Vector3(0, 20f, 0),
-				MaterialOverride = GetCachedMaterial(rockColor, 0.6f)
-			};
-			ore.AddChild(visual);
-			ore.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(24f, 20f, 22f) }, Position = Vector3.Up * 10f });
-			_world.AddChild(ore);
-			ore.Init(visual);
+			// Khoi quang = model 3D theo loai quang (OreVisuals) thay cho hop mau truoc day.
+			var rng = new RandomNumberGenerator { Seed = (ulong)(pos.X * 73856093f) ^ (ulong)(pos.Z * 19349663f) };
+			AddOreNodeEx(pos, new OreSpot(oreId, hp, 0, rockColor, 1), regrowDays, rng, persistKey: $"old_{Mathf.RoundToInt(pos.X)}_{Mathf.RoundToInt(pos.Y)}_{Mathf.RoundToInt(pos.Z)}");
 		}
 
 		// ==== He thong "the gioi mo": ham dung chung cho 11 khu vuc moi (xem WorldStreamer.
@@ -5860,6 +5918,47 @@ namespace HiepSiVeVuon.Core
 			}
 		}
 
+		// ==== Doi song nong trai (xem SkillSystem/FriendshipSystem/MailSystem/ShippingSystem/
+		// AchievementSystem) - cac tram tuong tac ngoai troi + UI + bo rai do hai luom. Ban Che Tao
+		// va Giuong trong nha nong dan dat rieng o BuildRoomForKind (Farmhouse). ====
+		private ForageSpawner _forageSpawner;
+
+		private void BuildFarmLife()
+		{
+			// UI (CanvasLayer) - tu dang ky group rieng, cac entity tim qua group.
+			AddChild(new CraftingUI());
+			AddChild(new ShippingUI());
+			AddChild(new GiftUI());
+			AddChild(new FishingUI());
+			AddChild(new JournalUI());
+
+			// Thung Giao Hang + Hop Thu truoc nha (tranh diem xuat phat FarmhousePos+(0,0,140) va
+			// 2 chuong cho/meo o +-110,130).
+			var bin = new ShippingBin { Position = FarmhousePos + new Vector3(175, 0, 20) };
+			_world.AddChild(bin);
+			AddBuildingLabelZone(bin.Position, 40f, "label.shipping_bin");
+			var mailbox = new Mailbox { Position = FarmhousePos + new Vector3(55, 0, 175) };
+			_world.AddChild(mailbox);
+			AddBuildingLabelZone(mailbox.Position, 30f, "label.mailbox");
+
+			// Thung U Phan canh goc ruong.
+			var compost = new CompostBin { Position = FarmOrigin + new Vector3(-95, 0, 0) };
+			_world.AddChild(compost);
+			AddBuildingLabelZone(compost.Position, 35f, "label.compost_bin");
+
+			// Them 1 Ban Che Tao ngoai troi canh Bep (khu che bien) cho tien, khong can vao nha.
+			var bench = new CraftingBench { DrawVisual = true, Position = ProcessingAnchor + new Vector3(90, 0, -150) };
+			_world.AddChild(bench);
+			AddBuildingLabelZone(bench.Position, 30f, "label.workbench");
+
+			// Do hai luom: rung (nhieu nhat), canh dong, va vung co quanh nong trai.
+			_forageSpawner = new ForageSpawner();
+			_forageSpawner.Areas.Add((ForestRegionCenter, 1200f, 18));
+			_forageSpawner.Areas.Add((FieldRegionCenter, 1000f, 10));
+			_forageSpawner.Areas.Add((FarmhousePos, 1500f, 12));
+			_world.AddChild(_forageSpawner);
+		}
+
 		// Bep nau an (xem CookingStation.cs/CookingUI.cs) - canh khu che bien.
 		private void BuildCookingStation()
 		{
@@ -6278,6 +6377,9 @@ namespace HiepSiVeVuon.Core
 
 		private void GiveStartingItems()
 		{
+			// Bo khoi dau chinh thuc do SERVER cap (data/starter.json) - o day chi hien san tren tay
+			// cho man hinh dau, khong tao op (anh chup kinh te se dong bo dung so luong ngay sau).
+			using var suppress = EconomyClient.Suppress();
 			// Luon cap do khoi dau truoc - neu nguoi choi co ban luu tren server, FetchAndApplySave
 			// (cuoi _Ready, xem duoi day) se GHI DE len ngay sau do (Inventory.Clear() + nap lai
 			// tu save that). Truoc day co the kiem tra HasSave() dong bo qua file - nay la goi

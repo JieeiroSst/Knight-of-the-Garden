@@ -1,0 +1,5 @@
+[
+  { "Level": 1, "Gold": 1000, "Materials": [ { "ItemId": "wood", "Count": 100 }, { "ItemId": "da", "Count": 50 } ] },
+  { "Level": 2, "Gold": 3000, "Materials": [ { "ItemId": "wood", "Count": 150 }, { "ItemId": "da", "Count": 100 }, { "ItemId": "sat_tho", "Count": 30 } ] },
+  { "Level": 3, "Gold": 8000, "Materials": [ { "ItemId": "da", "Count": 200 }, { "ItemId": "sat_tho", "Count": 60 }, { "ItemId": "da_quy", "Count": 10 } ] }
+]

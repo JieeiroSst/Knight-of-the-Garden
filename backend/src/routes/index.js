@@ -5,11 +5,15 @@ const express = require("express");
 const authRoutes = require("./authRoutes");
 const saveRoutes = require("./saveRoutes");
 const healthRoutes = require("./healthRoutes");
+const onlineRoutes = require("./onlineRoutes");
+const socialRoutes = require("./socialRoutes");
 
 const router = express.Router();
 
 router.use("/health", healthRoutes);
 router.use("/api", authRoutes);
 router.use("/api/save", saveRoutes);
+router.use("/api", onlineRoutes);
+router.use("/api", socialRoutes);
 
 module.exports = router;

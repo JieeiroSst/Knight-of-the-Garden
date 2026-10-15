@@ -1,5 +1,6 @@
 using Godot;
 using HiepSiVeVuon.Systems;
+using HiepSiVeVuon.Core;
 
 namespace HiepSiVeVuon.UI
 {
@@ -234,6 +235,9 @@ namespace HiepSiVeVuon.UI
             foreach (var lm in Landmarks)
                 DrawLandmark(lm);
 
+            DrawAdventureOverlay();
+            DrawMines();
+
             // Vung que nuoc Phap (xem Main.FrenchRegionCenter) cach xa toi 10km - qua xa de ve
             // dung ty le. Thay bang 1 mui ten chi huong o mep trai ban do.
             var arrowTip = new Vector2(6, MapSize.Y * 0.5f);
@@ -266,6 +270,75 @@ namespace HiepSiVeVuon.UI
             }
 
             DrawVignette();
+        }
+
+        // Suong mu tren vung CHUA kham pha (xem AdventureSystem.Discover) + diem phieu luu: cot da
+        // dich chuyen (xanh = da kich hoat), hang trum (do; xam = da ha, cho hoi sinh), ham nguc,
+        // bao tang, bang le hoi.
+        private void DrawAdventureOverlay()
+        {
+            var adv = AdventureSystem.Instance;
+            if (adv == null) return;
+            float scale = MapSize.X / (WorldMaxX - WorldMinX);
+            foreach (var r in WorldStreamer.Regions)
+            {
+                if (adv.Discovered.Contains(r.Name)) continue;
+                var c = WorldToMap(new Vector2(r.Center.X, r.Center.Z));
+                _mapArea.DrawCircle(c, r.HalfSize * scale, new Color(0.05f, 0.06f, 0.08f, 0.72f));
+                _mapArea.DrawString(ThemeDB.FallbackFont, c + new Vector2(-5, 5), "?", HorizontalAlignment.Left, -1, 16, new Color(TextCream, 0.7f));
+            }
+            foreach (var poi in adv.Pois)
+            {
+                var p = WorldToMap(new Vector2(poi.pos.X, poi.pos.Z));
+                switch (poi.kind)
+                {
+                    case AdventureSystem.PoiKind.Waystone:
+                        bool on = adv.Waystones.Contains(poi.id);
+                        DrawDiamond(p, 4.5f, on ? new Color(0.35f, 0.8f, 1f) : new Color(0.45f, 0.5f, 0.55f));
+                        break;
+                    case AdventureSystem.PoiKind.Boss:
+                        bool alive = adv.IsBossAvailable(poi.id);
+                        var bc = alive ? new Color(0.95f, 0.2f, 0.15f) : new Color(0.5f, 0.45f, 0.45f);
+                        _mapArea.DrawCircle(p, 6f, new Color(bc, 0.35f));
+                        _mapArea.DrawLine(p + new Vector2(-4, -4), p + new Vector2(4, 4), bc, 2.5f);
+                        _mapArea.DrawLine(p + new Vector2(-4, 4), p + new Vector2(4, -4), bc, 2.5f);
+                        if (!alive)
+                            _mapArea.DrawString(ThemeDB.FallbackFont, p + new Vector2(7, 4), string.Format(Loc.T("map.boss_respawn_fmt"), adv.BossRespawnIn(poi.id)),
+                                HorizontalAlignment.Left, -1, 10, new Color(TextCream, 0.7f));
+                        break;
+                    case AdventureSystem.PoiKind.Dungeon:
+                        DrawDiamond(p, 6f, new Color(0.7f, 0.35f, 1f));
+                        DrawLabelPlate(p + new Vector2(8, -4), Loc.T(poi.labelKey));
+                        break;
+                    default:
+                        _mapArea.DrawCircle(p, 4f, poi.kind == AdventureSystem.PoiKind.Museum ? new Color(0.95f, 0.85f, 0.5f) : new Color(1f, 0.45f, 0.6f));
+                        break;
+                }
+            }
+        }
+
+        // Ham mo (vi tri lay thang tu Main.MineLocations) + cac bai quang lo thien nguoi choi da di qua.
+        private void DrawMines()
+        {
+            foreach (var (pos, ore) in HiepSiVeVuon.Entities.OreFields.Known.Values)
+            {
+                var p = WorldToMap(new Vector2(pos.X, pos.Z));
+                if (p.X < 0 || p.Y < 0 || p.X > MapSize.X || p.Y > MapSize.Y) continue;
+                _mapArea.DrawCircle(p, 2.2f, new Color(0.85f, 0.7f, 0.4f, 0.9f));
+            }
+            foreach (var (labelKey, pos) in HiepSiVeVuon.Core.Main.MineLocations)
+            {
+                var p = WorldToMap(new Vector2(pos.X, pos.Z));
+                DrawDiamond(p, 5f, new Color(0.75f, 0.55f, 0.3f));
+                _mapArea.DrawLine(p + new Vector2(-3, 3), p + new Vector2(3, -3), Colors.Black, 1.5f);
+            }
+        }
+
+        private void DrawDiamond(Vector2 c, float r, Color col)
+        {
+            var pts = new[] { c + new Vector2(0, -r), c + new Vector2(r, 0), c + new Vector2(0, r), c + new Vector2(-r, 0) };
+            _mapArea.DrawColoredPolygon(pts, col);
+            _mapArea.DrawPolyline(new[] { pts[0], pts[1], pts[2], pts[3], pts[0] }, Colors.Black, 1f);
         }
 
         // Lam toi 4 goc ban do (khong dong vao vung giua) - tao chieu sau/cam giac "tam ban do

@@ -1,66 +1,140 @@
 using Godot;
+using System.Collections.Generic;
 
 namespace HiepSiVeVuon.Core
 {
-    // Vat lieu co/dat that (ambientCG, CC0) dung chung cho mat dat San Main va cac chunk WorldStreamer.
+    // Vat lieu mat dat (ambientCG, CC0) dung chung cho San chinh, Thi tran va cac chunk WorldStreamer.
     public static class GroundMaterial
     {
-        private const string GrassColorPath = "res://assets3d/textures/grass/grass_color.jpg";
-        private const string GrassNormalPath = "res://assets3d/textures/grass/grass_normal.jpg";
-        private const string GrassRoughnessPath = "res://assets3d/textures/grass/grass_roughness.jpg";
-
         private const string EarthColorPath = "res://assets3d/textures/ground/ground_color.jpg";
         private const string EarthNormalPath = "res://assets3d/textures/ground/ground_normal.jpg";
         private const string EarthRoughnessPath = "res://assets3d/textures/ground/ground_roughness.jpg";
 
-        private const float TileSize = 70f; // 1 lan lap texture ~ 70 don vi the gioi
+        private const float TileSize = 70f; // 1 lan lap texture khoi dat ben duoi (~70 don vi the gioi)
 
-        private static Texture2D _grassColor, _grassNormal, _grassRoughness;
         private static Texture2D _earthColor, _earthNormal, _earthRoughness;
-        private static Shader _groundShader;
 
         // Do sau khoi dat dac ben duoi lop co (xem CreateEarthMass).
         public const float EarthDepth = 400f;
 
-        // So lan chia luoi (Subdivide) can co tren PlaneMesh de shader GO NHE (ground.gdshader)
-        // co du dinh de tao bum muot - mat KHONG chia (mac dinh) chi co 4 dinh goc, shader se
-        // khong the "uon" gi ca. San chinh va chunk WorldStreamer dung ham nay (khac kich thuoc)
-        // de tinh so o luoi hop ly (~30-50 don vi/o, du muot ma khong qua nhieu dinh).
+        // So lan chia luoi can co tren PlaneMesh de shader tao go va do bong theo do doc.
         public static int SubdivisionsFor(float sizeUnits) => Mathf.Clamp((int)(sizeUnits / 40f), 8, 80);
 
-        // Luu y: khong nhan tham so tint/mau rieng - moi mat dat (San chinh va tat ca chunk)
-        // phai dung dung 1 texture giong het nhau, neu khong se tao duong ranh sang giua
-        // cac o dat rieng biet (da tung xay ra khi WorldStreamer tung tint ngau nhien tung chunk).
-        //
-        // ShaderMaterial (thay StandardMaterial3D truoc day) de them go nhe hinh hoc THAT qua
-        // vertex shader (xem ground.gdshader) - PlaneMesh goi ham nay PHAI co Subdivide du (xem
-        // SubdivisionsFor) de bum hien ra duoc.
-        //
-        // bumpHeight: MAC DINH 2.5 (rat nhe, dung cho San chinh/Thi tran - dat nong trai da duoc
-        // "san phang" de canh tac, khong nen gap ghenh). Vung hoang da (WorldStreamer.GenerateChunk)
-        // truyen gia tri LON HON (xem WildernessBumpHeight) de tao cam giac "dia hinh tu nhien gap
-        // gho" ro ret hon, theo dung yeu cau "ngoai nong trai thi mat dat gap gho". Van GIU CHUNG 1
-        // ham NOISE trong shader (chi doi bien do), nen bien dang van lien tuc/muot giua cac o luoi
-        // ke nhau du bumpHeight khac nhau - CHI co the "bac thang" o ranh gioi giua 2 vung dung
-        // bumpHeight khac nhau (vd tuong da nong trai), tuong tu tuong da von da la 1 ranh gioi thi
-        // giac ro rang san co, khong tao cam giac loi.
+        // ==== Mat dat nhieu lop (terrain.gdshader) ====
+        // 8 lop vat lieu that (ambientCG, CC0): ten file trong assets3d/textures/terrain.
+        private static readonly string[] Layers = { "0_grass", "1_meadow", "2_dirt", "3_mud", "4_forest", "5_rock", "6_sand", "7_gravel" };
+        private const string TerrainDir = "res://assets3d/textures/terrain/";
+        private static Shader _terrainShader;
+        private static Texture2DArray _albedoArray, _normalArray;
+
+        private static Texture2DArray BuildArray(string suffix)
+        {
+            var images = new Godot.Collections.Array<Image>();
+            foreach (var l in Layers)
+            {
+                var img = GD.Load<Texture2D>(TerrainDir + l + suffix)?.GetImage();
+                if (img == null) return null;
+                if (img.IsCompressed()) img.Decompress();
+                img.Convert(Image.Format.Rgba8);
+                if (!img.HasMipmaps()) img.GenerateMipmaps();
+                images.Add(img);
+            }
+            var arr = new Texture2DArray();
+            return arr.CreateFromImages(images) == Error.Ok ? arr : null;
+        }
+
+        // Ten giu nguyen (CreateGrass) vi San chinh, Thi tran va chunk WorldStreamer deu goi ham nay.
+        // MOI mat dat dung CUNG 1 shader + toa do the gioi + ban do sinh canh chung -> khong co duong
+        // ranh giua cac o dat; vung nao lop dat nao do ban do sinh canh quyet dinh (RebuildBiomeMap).
+        // bumpHeight: 2.5 cho dat nong trai/thi tran (da san phang), lon hon cho vung hoang da.
         public static ShaderMaterial CreateGrass(float worldWidth, float worldDepth, float bumpHeight = 2.5f)
         {
-            _grassColor ??= GD.Load<Texture2D>(GrassColorPath);
-            _grassNormal ??= GD.Load<Texture2D>(GrassNormalPath);
-            _grassRoughness ??= GD.Load<Texture2D>(GrassRoughnessPath);
-            _groundShader ??= GD.Load<Shader>("res://assets/shaders/ground.gdshader");
-
-            var mat = new ShaderMaterial { Shader = _groundShader };
-            mat.SetShaderParameter("albedo_texture", _grassColor);
-            mat.SetShaderParameter("normal_texture", _grassNormal);
-            mat.SetShaderParameter("roughness_texture", _grassRoughness);
-            mat.SetShaderParameter("uv_scale", new Vector2(worldWidth / TileSize, worldDepth / TileSize));
-            // Co that khong bong: giam phan xa Fresnel goc hep, tranh hien tuong ca dam co "anh
-            // len" mau troi thanh mot dai sang xanh o duong chan troi.
-            mat.SetShaderParameter("specular_val", 0.05f);
+            _terrainShader ??= GD.Load<Shader>("res://assets/shaders/terrain.gdshader");
+            _albedoArray ??= BuildArray("_albedo_height.png");
+            _normalArray ??= BuildArray("_normal_rough.png");
+            EnsureBiomeMap();
+            var mat = new ShaderMaterial { Shader = _terrainShader };
+            mat.SetShaderParameter("layer_albedo", _albedoArray);
+            mat.SetShaderParameter("layer_normal", _normalArray);
             mat.SetShaderParameter("bump_height", bumpHeight);
             return mat;
+        }
+
+        // ==== Ban do sinh canh ====
+        // Trong so 8 lop cho tung loai vung (theo ten vung dang ky trong WorldStreamer.Regions).
+        //                                   co   coDat  dat  bun  la   da   cat  soi
+        private static readonly float[] Wild =     { .50f, .30f, .10f, 0f, .06f, .02f, 0f, .02f };
+        private static readonly Dictionary<string, float[]> RegionLayers = new()
+        {
+            ["Núi"] =        new[] { .05f, .22f, .10f, 0f, 0f, .48f, 0f, .15f },
+            ["Rừng"] =       new[] { .30f, .12f, 0f, .10f, .43f, .05f, 0f, 0f },
+            ["Đồng Ruộng"] = new[] { .48f, .32f, .20f, 0f, 0f, 0f, 0f, 0f },
+            ["Hồ"] =         new[] { .35f, .10f, 0f, .20f, 0f, 0f, .35f, 0f },
+            ["Sông"] =       new[] { .38f, .10f, 0f, .14f, 0f, .05f, .25f, .08f },
+            ["Làng"] =       new[] { .45f, .15f, .25f, 0f, 0f, 0f, 0f, .15f },
+            ["Thành Phố"] =  new[] { .25f, .05f, .30f, 0f, 0f, .05f, 0f, .35f },
+            ["Phế Tích"] =   new[] { .10f, .35f, .15f, 0f, 0f, .25f, 0f, .15f },
+            ["Nghĩa Địa"] =  new[] { .05f, .35f, .05f, .40f, .05f, .10f, 0f, 0f },
+            ["Đầm Lầy"] =    new[] { .30f, .05f, 0f, .48f, .17f, 0f, 0f, 0f },
+            ["Hang Động"] =  new[] { 0f, .10f, .05f, .15f, 0f, .50f, 0f, .20f },
+        };
+        private static readonly float[] Farm =   { .55f, .22f, .20f, 0f, 0f, 0f, 0f, .03f };
+        private static readonly float[] French = { .50f, .38f, .12f, 0f, 0f, 0f, 0f, 0f };
+
+        private static string _biomeSignature;
+        private const int BiomeRes = 512;
+        private const float Feather = 380f; // do rong vung chuyen tiep mem giua 2 sinh canh
+
+        // Goi lai moi khi danh sach vung thay doi (re: so sanh chu ky danh sach truoc).
+        public static void EnsureBiomeMap()
+        {
+            var regions = WorldStreamer.Regions;
+            string sig = regions.Count + "|" + WorldStreamer.FrenchRegionCenter + "|" + WorldStreamer.NoEnemyZoneCenter + "|" + WorldStreamer.NoEnemyZoneHalfSize;
+            if (sig == _biomeSignature) return;
+            _biomeSignature = sig;
+
+            var rects = new List<(Vector2 c, float half, float[] w)>();
+            foreach (var r in regions)
+                if (RegionLayers.TryGetValue(r.Name ?? "", out var w)) rects.Add((new Vector2(r.Center.X, r.Center.Z), r.HalfSize, w));
+            if (WorldStreamer.FrenchRegionCenter is Vector3 fc) rects.Add((new Vector2(fc.X, fc.Z), WorldStreamer.FrenchRegionHalfSize, French));
+            var farmC = WorldStreamer.NoEnemyZoneCenter ?? Vector3.Zero;
+            rects.Add((new Vector2(farmC.X, farmC.Z), Mathf.Max(1500f, WorldStreamer.NoEnemyZoneHalfSize), Farm));
+
+            Vector2 min = new(float.MaxValue, float.MaxValue), max = new(float.MinValue, float.MinValue);
+            foreach (var (c, half, _) in rects)
+            {
+                min = new Vector2(Mathf.Min(min.X, c.X - half), Mathf.Min(min.Y, c.Y - half));
+                max = new Vector2(Mathf.Max(max.X, c.X + half), Mathf.Max(max.Y, c.Y + half));
+            }
+            min -= Vector2.One * 2000f;
+            max += Vector2.One * 2000f;
+            var size = max - min;
+
+            var a = Image.CreateEmpty(BiomeRes, BiomeRes, false, Image.Format.Rgba8);
+            var b = Image.CreateEmpty(BiomeRes, BiomeRes, false, Image.Format.Rgba8);
+            var w8 = new float[8];
+            for (int y = 0; y < BiomeRes; y++)
+                for (int x = 0; x < BiomeRes; x++)
+                {
+                    var p = min + new Vector2((x + 0.5f) / BiomeRes * size.X, (y + 0.5f) / BiomeRes * size.Y);
+                    System.Array.Copy(Wild, w8, 8);
+                    foreach (var (c, half, w) in rects)
+                    {
+                        // Khoang cach co dau toi canh hinh vuong cua vung (am = ben trong).
+                        float d = Mathf.Max(Mathf.Abs(p.X - c.X), Mathf.Abs(p.Y - c.Y)) - half;
+                        float m = 1f - Mathf.SmoothStep(-Feather, Feather, d);
+                        if (m <= 0.001f) continue;
+                        for (int k = 0; k < 8; k++) w8[k] = Mathf.Lerp(w8[k], w[k], m);
+                    }
+                    float sum = 0f;
+                    for (int k = 0; k < 8; k++) sum += w8[k];
+                    sum = Mathf.Max(sum, 0.0001f);
+                    a.SetPixel(x, y, new Color(w8[0] / sum, w8[1] / sum, w8[2] / sum, w8[3] / sum));
+                    b.SetPixel(x, y, new Color(w8[4] / sum, w8[5] / sum, w8[6] / sum, w8[7] / sum));
+                }
+            RenderingServer.GlobalShaderParameterSet("terrain_biome_a", ImageTexture.CreateFromImage(a));
+            RenderingServer.GlobalShaderParameterSet("terrain_biome_b", ImageTexture.CreateFromImage(b));
+            RenderingServer.GlobalShaderParameterSet("terrain_bounds", new Vector4(min.X, min.Y, size.X, size.Y));
         }
 
         // Khoi dat dac (texture dat/da that, ambientCG, CC0) nam ngay duoi mat co - de nhin tu

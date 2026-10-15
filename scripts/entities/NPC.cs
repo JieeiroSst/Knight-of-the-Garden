@@ -31,18 +31,21 @@ namespace HiepSiVeVuon.Entities
         // Cua hang: danh sach itemId ban ra
         [Export] public string[] ShopItems = new string[0];
 
-        public int Trust = 0;   // 0..100
+        // 0..100 - doc tu FriendshipSystem (diem than thiet/10) de LUU qua save va dong bo voi
+        // tang qua; truoc day la field rieng, mat sau moi lan tai game.
+        public int Trust => (FriendshipSystem.Instance?.GetPoints(NpcId) ?? 0) / 10;
 
         [Export] public float ModelScale = 22f;
 
         // Moi NPC mot model rieng (Quaternius) cho hop vai trong lang.
+        // Boi canh Trung co: dung kieu nhan vat trong CharacterCatalog (lanh chua, lu khach, hiep si...).
         private static readonly Dictionary<string, string> ModelPathByNpcId = new()
         {
-            { "elder", "res://assets3d/quaternius/characters/Worker.gltf" },
-            { "merchant", "res://assets3d/quaternius/characters/Suit.gltf" },
-            { "blacksmith", "res://assets3d/quaternius/characters/Adventurer.gltf" },
-            { "herbalist", "res://assets3d/quaternius/characters/Casual_2.gltf" },
-            { "ranger", "res://assets3d/quaternius/characters/Swat.gltf" },
+            { "elder", "Lord" },
+            { "merchant", "HoodedF" },
+            { "blacksmith", "Knight" },
+            { "herbalist", "PeasantF" },
+            { "ranger", "Ranger" },
         };
 
         // Cac NpcId KHONG co trong dict tren (vd nguoi cham bo/ngua/ga, va nay la dan thi tran
@@ -50,14 +53,15 @@ namespace HiepSiVeVuon.Entities
         // hang loat - thay bang chon theo BAM (hash) CO DINH tu NpcId trong 5 model co san, cho
         // moi NPC 1 dien mao rieng nhung ON DINH (cung 1 NpcId luon ra cung 1 model moi lan tai
         // lai, khong doi ngau nhien giua cac lan chay).
-        private static readonly string[] FallbackModels =
+        private static readonly string[] FallbackModels = { "Farmer", "Adventurer", "Ranger", "HuntressF", "PeasantF", "HoodedF" };
+
+        // Bam FNV-1a CO DINH (string.GetHashCode() cua .NET doi theo moi lan chay -> NPC doi mat lien tuc).
+        private static uint StableHash(string s)
         {
-            "res://assets3d/quaternius/characters/Worker.gltf",
-            "res://assets3d/quaternius/characters/Suit.gltf",
-            "res://assets3d/quaternius/characters/Adventurer.gltf",
-            "res://assets3d/quaternius/characters/Casual_2.gltf",
-            "res://assets3d/quaternius/characters/Swat.gltf",
-        };
+            uint h = 2166136261;
+            foreach (char c in s ?? "") { h ^= c; h *= 16777619; }
+            return h;
+        }
 
         // Luu lai (thay vi bien cuc bo) de cac lop con (vd FarmhandNpc) co the dieu khien
         // hoat canh Di/Dung khi them AI di chuyen rieng.
@@ -67,12 +71,14 @@ namespace HiepSiVeVuon.Entities
         public override void _Ready()
         {
             AddToGroup("npcs");
+            FriendshipSystem.Instance?.RegisterName(NpcId, NpcName);
             _model = GetNodeOrNull<Node3D>("Model");
             if (_model != null)
             {
-                string path = ModelPathByNpcId.TryGetValue(NpcId, out var p)
-                    ? p : FallbackModels[(uint)NpcId.GetHashCode() % FallbackModels.Length];
-                _animPlayer = CharacterRig.Attach(_model, path, ModelScale);
+                string id = ModelPathByNpcId.TryGetValue(NpcId, out var p)
+                    ? p : FallbackModels[(uint)StableHash(NpcId) % FallbackModels.Length];
+                var def = CharacterCatalog.Get(id);
+                _animPlayer = CharacterCatalog.AttachModel(_model, def, ModelScale / 22f);
                 _animPlayer?.Play("Idle");
             }
         }
@@ -80,7 +86,7 @@ namespace HiepSiVeVuon.Entities
         public void Interact()
         {
             QuestSystem.Instance.OnTalkedTo(NpcId);
-            Trust = Mathf.Min(100, Trust + 5); // moi lan noi chuyen tang chut tin tuong
+            FriendshipSystem.Instance.OnTalk(NpcId); // lan noi chuyen dau moi ngay tang than thiet
 
             string line = PickDialogue();
             var dialogue = GetTree().GetFirstNodeInGroup("dialogue_ui") as DialogueBox;
@@ -94,6 +100,11 @@ namespace HiepSiVeVuon.Entities
                 string questTitle = ItemDatabase.Instance.GetQuestDisplayTitle(QuestToGive);
                 line += "\n\n" + string.Format(Loc.T("npc.new_quest_fmt"), questTitle);
             }
+
+            if (FriendshipSystem.Instance.IsBirthdayToday(NpcId))
+                line += "\n\n" + Loc.T("npc.bday_line");
+            if (!FriendshipSystem.Instance.GiftedToday(NpcId))
+                line += "\n" + Loc.T("npc.gift_hint");
 
             // Mo cua hang neu co
             if (ShopItems.Length > 0)

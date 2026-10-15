@@ -111,6 +111,47 @@ namespace HiepSiVeVuon.Systems
             });
         }
 
+        // ==== Goi API chung cho cac tinh nang online (kinh te/nhan vat/giao dich/cho/thoi gian) ====
+        // onDone(ok, httpStatus, bodyText) - giong SendRequest.
+        public void GetJson(string path, Action<bool, int, string> onDone, bool needsAuth = true)
+            => SendRequest(path, HttpClient.Method.Get, null, needsAuth, onDone);
+        public void PostJson(string path, string json, Action<bool, int, string> onDone)
+            => SendRequest(path, HttpClient.Method.Post, json ?? "{}", true, onDone);
+        public void PutJson(string path, string json, Action<bool, int, string> onDone)
+            => SendRequest(path, HttpClient.Method.Put, json, true, onDone);
+        public void DeleteJson(string path, Action<bool, int, string> onDone)
+            => SendRequest(path, HttpClient.Method.Delete, null, true, onDone);
+
+        // Dia chi gateway WebSocket - cung host voi API (nginx/load balancer chuyen /ws toi gateway).
+        public string WsUrl => (BaseUrl.StartsWith("https") ? "wss" + BaseUrl.Substring(5) : "ws" + BaseUrl.Substring(4)).TrimEnd('/') + "/ws";
+
+        // Lay thong bao loi "error" trong body JSON loi cua server (neu co).
+        public static string ErrorOf(string text, string fallback)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(text);
+                return doc.RootElement.TryGetProperty("error", out var e) ? e.GetString() : fallback;
+            }
+            catch { return fallback; }
+        }
+
+        // Dong bo dong ho game theo server (khong can dang nhap).
+        public void SyncTime(Action<bool> onDone = null)
+        {
+            GetJson("/api/time", (ok, status, text) =>
+            {
+                if (ok && status == 200)
+                {
+                    using var doc = JsonDocument.Parse(text);
+                    HiepSiVeVuon.Core.GameManager.Instance.ApplyServerTime(doc.RootElement);
+                }
+                onDone?.Invoke(ok && status == 200);
+            }, needsAuth: false);
+        }
+
+        public void Logout() => AuthToken = null;
+
         private static bool TryParse(string text, out JsonDocument doc)
         {
             try

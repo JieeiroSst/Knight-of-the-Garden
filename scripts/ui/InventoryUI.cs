@@ -99,7 +99,7 @@ namespace HiepSiVeVuon.UI
             var def = ItemDatabase.Instance.GetItem(itemId);
             if (def == null) return;
             _hoveredDef = def;
-            if (def.Type == ItemType.Weapon || def.Type == ItemType.Armor || def.Type == ItemType.Tool)
+            if (Inventory.IsEquippable(def))
             {
                 Inventory.Instance.Equip(itemId);
                 _info.Text = string.Format(Loc.T("inventory.equipped_fmt"), ItemDatabase.Instance.GetDisplayName(def.Id));
