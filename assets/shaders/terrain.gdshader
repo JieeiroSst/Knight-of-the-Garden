@@ -15,12 +15,18 @@ render_mode blend_mix, cull_back, diffuse_burley, specular_schlick_ggx;
 uniform sampler2DArray layer_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2DArray layer_normal : filter_linear_mipmap_anisotropic, repeat_enable;
 // Kich thuoc 1 lan lap texture (don vi the gioi; nguoi cao ~40 = ~1.8m).
-uniform float layer_tile[8] = { 48.0, 70.0, 60.0, 60.0, 64.0, 140.0, 80.0, 36.0 };
+// Hang so (Godot 4.3 KHONG ho tro gia tri mac dinh cho uniform dang mang -> shader khong bien dich duoc).
+const float layer_tile[8] = float[8](48.0, 70.0, 60.0, 60.0, 64.0, 140.0, 80.0, 36.0);
 
 // Ban do sinh canh (trong so 8 lop, RGBA x2) phu len vung the gioi terrain_bounds (xy = goc, zw = kich thuoc).
 global uniform sampler2D terrain_biome_a;
 global uniform sampler2D terrain_biome_b;
 global uniform vec4 terrain_bounds;
+// Nong trai o toa do rieng (xem GroundMaterial.SetFarmCenters): xy = tam, z = nua canh, w = bat.
+global uniform vec4 farm_c0;
+global uniform vec4 farm_c1;
+global uniform vec4 farm_c2;
+global uniform vec4 farm_c3;
 
 uniform float bump_height = 2.5;
 uniform float bump_frequency = 0.02;
@@ -44,16 +50,91 @@ float fbm(vec2 p) {
 	return vnoise(p) * 0.55 + vnoise(p * 2.03 + 17.0) * 0.3 + vnoise(p * 4.11 + 41.0) * 0.15;
 }
 
-// Trong so goc tu ban do sinh canh (ngoai ban do = vung hoang da: co xanh + co lan dat).
+// ==== Sinh canh thu tuc cua the gioi vo han ====
+// CHEP Y HET scripts/core/WorldBiomes.cs (hash, nhieu, nguong) - de mat dat khop voi cay/da/quai
+// do WorldStreamer sinh ra. Doi 1 ben thi PHAI doi ca ben kia.
+float bhash(ivec2 c, uint seed) {
+	uint h = (uint(c.x) * 2376512323u) ^ (uint(c.y) * 3625334849u) ^ (seed * 3407524639u);
+	h ^= h >> 13u;
+	h *= 2246822507u;
+	h ^= h >> 16u;
+	return float(h & 16777215u) / 16777215.0;
+}
+
+float bnoise(vec2 p, uint seed) {
+	vec2 i = floor(p);
+	vec2 f = p - i;
+	ivec2 c = ivec2(i);
+	vec2 u = f * f * (3.0 - 2.0 * f);
+	float a = bhash(c, seed);
+	float b = bhash(c + ivec2(1, 0), seed);
+	float cc = bhash(c + ivec2(0, 1), seed);
+	float d = bhash(c + ivec2(1, 1), seed);
+	float ab = a + (b - a) * u.x;
+	float cd = cc + (d - cc) * u.x;
+	return ab + (cd - ab) * u.y;
+}
+
+float bfbm(vec2 p, uint seed) {
+	return bnoise(p, seed) * 0.6 + bnoise(p * 2.07 + vec2(5.3, 1.7), seed + 1u) * 0.28
+		+ bnoise(p * 4.13 + vec2(9.1, 3.3), seed + 2u) * 0.12;
+}
+
+// Trong so 8 lop (co, co lan dat, dat, bun, la rung, da, cat, soi) cua sinh canh thu tuc.
+void biome_proc(vec2 wxz, out vec4 wa, out vec4 wb) {
+	// Plains (= vung hoang da cu)
+	wa = vec4(0.50, 0.30, 0.10, 0.0);
+	wb = vec4(0.06, 0.02, 0.0, 0.02);
+	float wild = smoothstep(9500.0, 12500.0, length(wxz));
+	if (wild <= 0.0) return;
+	vec2 p = wxz / 5200.0;
+	float t = bfbm(p, 11u);
+	float m = bfbm(p + vec2(37.2, -19.4), 23u);
+	float forest = smoothstep(0.54, 0.61, m) * (1.0 - smoothstep(0.5, 0.57, t));
+	float marsh = smoothstep(0.54, 0.61, m) * smoothstep(0.5, 0.57, t);
+	float barren = (1.0 - smoothstep(0.41, 0.48, m)) * smoothstep(0.52, 0.59, t);
+	float high = (1.0 - smoothstep(0.38, 0.45, t)) * (1.0 - smoothstep(0.54, 0.61, m));
+	float meadow = smoothstep(0.45, 0.5, t) * (1.0 - smoothstep(0.52, 0.59, t)) * (1.0 - smoothstep(0.47, 0.53, m));
+	float plains = max(0.0, 1.0 - (forest + marsh + barren + high + meadow));
+	vec4 pa = wa * plains
+		+ vec4(0.28, 0.12, 0.0, 0.10) * forest
+		+ vec4(0.08, 0.25, 0.08, 0.0) * high
+		+ vec4(0.28, 0.05, 0.0, 0.50) * marsh
+		+ vec4(0.06, 0.18, 0.26, 0.0) * barren
+		+ vec4(0.30, 0.58, 0.08, 0.0) * meadow;
+	vec4 pb = wb * plains
+		+ vec4(0.45, 0.05, 0.0, 0.0) * forest
+		+ vec4(0.0, 0.45, 0.0, 0.14) * high
+		+ vec4(0.17, 0.0, 0.0, 0.0) * marsh
+		+ vec4(0.0, 0.08, 0.36, 0.06) * barren
+		+ vec4(0.0, 0.0, 0.0, 0.04) * meadow;
+	wa = mix(wa, pa, wild);
+	wb = mix(wb, pb, wild);
+}
+
+// Dat nong trai (= GroundMaterial.Farm) phu len vung vuong quanh 1 nong trai, vien mem 380.
+void farm_blend(vec2 wxz, vec4 fc, inout vec4 wa, inout vec4 wb) {
+	if (fc.w < 0.5) return;
+	float d = max(abs(wxz.x - fc.x), abs(wxz.y - fc.y)) - fc.z;
+	float m = 1.0 - smoothstep(-380.0, 380.0, d);
+	if (m <= 0.001) return;
+	wa = mix(wa, vec4(0.55, 0.22, 0.20, 0.0), m);
+	wb = mix(wb, vec4(0.0, 0.0, 0.0, 0.03), m);
+}
+
+// Trong so goc tu ban do sinh canh (ngoai ban do = sinh canh thu tuc, xem biome_proc).
 void biome(vec2 wxz, out vec4 wa, out vec4 wb) {
 	vec2 uv = (wxz - terrain_bounds.xy) / max(terrain_bounds.zw, vec2(1.0));
-	wa = vec4(0.58, 0.3, 0.08, 0.0);
-	wb = vec4(0.04, 0.0, 0.0, 0.0);
 	if (uv.x > 0.0 && uv.y > 0.0 && uv.x < 1.0 && uv.y < 1.0) {
 		vec4 a = textureLod(terrain_biome_a, uv, 0.0);
 		vec4 b = textureLod(terrain_biome_b, uv, 0.0);
-		if (dot(a, vec4(1.0)) + dot(b, vec4(1.0)) > 0.05) { wa = a; wb = b; }
+		if (dot(a, vec4(1.0)) + dot(b, vec4(1.0)) > 0.05) { wa = a; wb = b; return; }
 	}
+	biome_proc(wxz, wa, wb);
+	farm_blend(wxz, farm_c0, wa, wb);
+	farm_blend(wxz, farm_c1, wa, wb);
+	farm_blend(wxz, farm_c2, wa, wb);
+	farm_blend(wxz, farm_c3, wa, wb);
 }
 
 float height_at(vec2 wxz, float amp) {

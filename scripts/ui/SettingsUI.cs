@@ -26,12 +26,17 @@ namespace HiepSiVeVuon.UI
             ("N", "settings.ctrl.build"),
             ("M", "settings.ctrl.map"),
             ("H", "settings.ctrl.settings"),
+            ("F1", "settings.ctrl.guide"),
             ("F5", "settings.ctrl.save"),
             ("Enter", "settings.ctrl.chat"),
             ("O", "settings.ctrl.social"),
-            ("V", "settings.ctrl.decor"),
+            ("L", "settings.ctrl.decor"),
             ("C", "settings.ctrl.wardrobe"),
             ("1 / 2 / 3", "settings.ctrl.abilities"),
+            ("T", "settings.ctrl.voice"),
+            ("Chuot / V", "settings.ctrl.camera"),
+            ("Space", "settings.ctrl.gallop"),
+            ("/toado", "settings.ctrl.coords"),
         };
 
         private readonly LocalizedLabelSet _loc = new();
@@ -97,6 +102,9 @@ namespace HiepSiVeVuon.UI
             vb.AddChild(scroll);
             var listVb = new VBoxContainer { CustomMinimumSize = new Vector2(360, 0) };
             scroll.AddChild(listVb);
+            BuildGraphicsSection(listVb);
+            BuildVoiceSection(listVb);
+            listVb.AddChild(new HSeparator());
 
             foreach (var (key, actionKey) in Controls)
             {
@@ -126,6 +134,109 @@ namespace HiepSiVeVuon.UI
         public override void _ExitTree()
         {
             Loc.LanguageChanged -= OnLanguageChanged;
+        }
+
+        // ==== Do hoa ====
+        private readonly Button[] _qualityBtns = new Button[4];
+        private Label _fpsLabel;
+        private static readonly (string key, int fps, bool vsync)[] FpsOptions =
+        {
+            ("gfx.fps_vsync", 0, true), ("gfx.fps_30", 30, false), ("gfx.fps_60", 60, false), ("gfx.fps_120", 120, false), ("gfx.fps_unlimited", 0, false),
+        };
+
+        private Label Header(string key)
+        {
+            var l = new Label { AutowrapMode = TextServer.AutowrapMode.Word, CustomMinimumSize = new Vector2(350, 0) };
+            _loc.Track(l, key);
+            l.AddThemeColorOverride("font_color", new Color(0.95f, 0.92f, 0.82f, 0.7f));
+            return l;
+        }
+
+        private void BuildGraphicsSection(VBoxContainer vb)
+        {
+            vb.AddChild(Header("gfx.header"));
+            var row = new HBoxContainer();
+            vb.AddChild(row);
+            string[] keys = { "gfx.low", "gfx.medium", "gfx.high", "gfx.ultra" };
+            for (int i = 0; i < 4; i++)
+            {
+                var q = (Core.GraphicsSettings.Quality)i;
+                var b = new Button { ToggleMode = true };
+                _loc.Track(b, keys[i]);
+                b.Pressed += () => { Core.GraphicsSettings.Set(q, GetTree()); RefreshGraphics(); };
+                row.AddChild(b);
+                _qualityBtns[i] = b;
+            }
+
+            var fpsRow = new HBoxContainer();
+            vb.AddChild(fpsRow);
+            var fpsLbl = new Label { CustomMinimumSize = new Vector2(120, 0) };
+            _loc.Track(fpsLbl, "gfx.fps_label");
+            fpsRow.AddChild(fpsLbl);
+            var fps = new OptionButton();
+            foreach (var (key, _, _) in FpsOptions) fps.AddItem(Loc.T(key));
+            int sel = System.Array.FindIndex(FpsOptions, o => o.fps == Core.GraphicsSettings.MaxFps && o.vsync == Core.GraphicsSettings.VSync);
+            fps.Selected = sel < 0 ? 0 : sel;
+            fps.ItemSelected += idx => Core.GraphicsSettings.SetFrameLimit(FpsOptions[idx].fps, FpsOptions[idx].vsync, GetTree());
+            fpsRow.AddChild(fps);
+            _fpsLabel = new Label();
+            _fpsLabel.AddThemeColorOverride("font_color", new Color(0.6f, 0.9f, 0.6f));
+            fpsRow.AddChild(_fpsLabel);
+            RefreshGraphics();
+        }
+
+        private void RefreshGraphics()
+        {
+            for (int i = 0; i < 4; i++) _qualityBtns[i].ButtonPressed = (int)Core.GraphicsSettings.Current == i;
+        }
+
+        // ==== Giong noi ====
+        private ProgressBar _micBar;
+
+        private void BuildVoiceSection(VBoxContainer vb)
+        {
+            var voice = VoiceChat.Instance;
+            if (voice == null) return;
+            vb.AddChild(new HSeparator());
+            vb.AddChild(Header("voice.header"));
+
+            var mode = new OptionButton();
+            mode.AddItem(Loc.T("voice.mode_off"));
+            mode.AddItem(Loc.T("voice.mode_ptt"));
+            mode.AddItem(Loc.T("voice.mode_open"));
+            mode.Selected = (int)voice.CurrentMode;
+            mode.ItemSelected += idx => voice.SetMode((VoiceChat.Mode)idx);
+            vb.AddChild(mode);
+
+            vb.AddChild(Header("voice.volume"));
+            var vol = new HSlider { MinValue = 0, MaxValue = 1.5, Step = 0.05, Value = voice.OutputVolume, CustomMinimumSize = new Vector2(330, 0) };
+            vol.ValueChanged += v => voice.SetVolume((float)v);
+            vb.AddChild(vol);
+
+            vb.AddChild(Header("voice.threshold"));
+            var thr = new HSlider { MinValue = 0.002, MaxValue = 0.12, Step = 0.002, Value = voice.MicThreshold, CustomMinimumSize = new Vector2(330, 0) };
+            thr.ValueChanged += v => voice.SetThreshold((float)v);
+            vb.AddChild(thr);
+
+            var levelRow = new HBoxContainer();
+            vb.AddChild(levelRow);
+            var lvlLbl = new Label { CustomMinimumSize = new Vector2(80, 0) };
+            _loc.Track(lvlLbl, "voice.mic_level");
+            levelRow.AddChild(lvlLbl);
+            _micBar = new ProgressBar { MinValue = 0, MaxValue = 0.12, ShowPercentage = false, CustomMinimumSize = new Vector2(250, 14) };
+            levelRow.AddChild(_micBar);
+
+            var muteAll = new CheckBox { ButtonPressed = voice.MuteAll };
+            _loc.Track(muteAll, "voice.mute_all");
+            muteAll.Toggled += on => voice.SetMuteAll(on);
+            vb.AddChild(muteAll);
+        }
+
+        public override void _Process(double delta)
+        {
+            if (!Visible) return;
+            if (_fpsLabel != null) _fpsLabel.Text = "  " + string.Format(Loc.T("gfx.fps_show_fmt"), Engine.GetFramesPerSecond());
+            if (_micBar != null && VoiceChat.Instance != null) _micBar.Value = VoiceChat.Instance.MicLevel;
         }
 
         private void SetLanguage(Loc.Lang lang)

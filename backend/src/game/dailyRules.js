@@ -20,6 +20,12 @@ const QUEST_POOL = [
   { id: "ship", counter: "act:ship", d: 20, w: 150, gold: 200 },
   { id: "animal", counter: "item:animal", d: 8, w: 60, gold: 200 },
   { id: "forage", counter: "item:forage", d: 6, w: 40, gold: 180 },
+  // San ban / giet thit (nguon "hunt").
+  { id: "hunt", counter: "item:hunt", d: 6, w: 40, gold: 220 },
+  // Ha Trum The Gioi (dong gop >= 1% mau) / Rong Co Dai cung to doi / lanh tien truy na.
+  { id: "world_boss", counter: "act:boss", d: 1, w: 3, gold: 450, item: "thoi_vang", n: 2 },
+  { id: "dungeon", counter: "act:dungeon", d: 1, w: 4, gold: 400, item: "potion", n: 3 },
+  { id: "bounty", counter: "act:bounty", d: 1, w: 3, gold: 350 },
 ];
 
 // Chon 3 nhiem vu TAT DINH theo (nguoi choi, ky) - moi nguoi 1 bo khac nhau, cung 1 ky luon cung bo.

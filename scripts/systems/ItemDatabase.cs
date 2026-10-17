@@ -25,6 +25,7 @@ namespace HiepSiVeVuon.Systems
         public List<ForageDef> Forage = new();
         public List<AchievementDef> Achievements = new();
         public List<HouseUpgradeDef> HouseUpgrades = new();
+        public List<MarketDef> Markets = new();
 
         private static readonly JsonSerializerOptions JsonOpts = new()
         {
@@ -56,6 +57,7 @@ namespace HiepSiVeVuon.Systems
             Forage = LoadList<ForageDef>("res://data/forage.json");
             Achievements = LoadList<AchievementDef>("res://data/achievements.json");
             HouseUpgrades = LoadList<HouseUpgradeDef>("res://data/house.json");
+            Markets = LoadList<MarketDef>("res://data/markets.json");
             GD.Print($"Đã nạp {Recipes.Count} công thức, {Fish.Count} loài cá, {NpcGifts.Count} sở thích NPC, {Forage.Count} đồ hái lượm, {Achievements.Count} thành tựu.");
         }
 

@@ -129,7 +129,8 @@
       }
     ],
     "UnlockSkill": "Farming",
-    "UnlockLevel": 4
+    "UnlockLevel": 4,
+    "Station": "carpentry"
   },
   {
     "Id": "r_hoe_silver",
@@ -171,7 +172,8 @@
       }
     ],
     "UnlockSkill": "Farming",
-    "UnlockLevel": 6
+    "UnlockLevel": 6,
+    "Station": "workshop"
   },
   {
     "Id": "r_pick_silver",
@@ -332,7 +334,8 @@
       }
     ],
     "UnlockSkill": "Mining",
-    "UnlockLevel": 7
+    "UnlockLevel": 7,
+    "Station": "workshop"
   },
   {
     "Id": "f_kiem_dong",
@@ -408,7 +411,7 @@
     ],
     "UnlockSkill": "Mining",
     "UnlockLevel": 6,
-    "Station": "forge"
+    "Station": "workshop"
   },
   {
     "Id": "f_giap_da",
@@ -472,7 +475,7 @@
     ],
     "UnlockSkill": "Mining",
     "UnlockLevel": 7,
-    "Station": "forge"
+    "Station": "workshop"
   },
   {
     "Id": "r_to_ong",
@@ -506,7 +509,8 @@
       }
     ],
     "UnlockSkill": "Farming",
-    "UnlockLevel": 3
+    "UnlockLevel": 3,
+    "Station": "carpentry"
   },
   {
     "Id": "r_may_ep_nuoc",
@@ -523,7 +527,8 @@
       }
     ],
     "UnlockSkill": "Farming",
-    "UnlockLevel": 3
+    "UnlockLevel": 3,
+    "Station": "carpentry"
   },
   {
     "Id": "r_bay_cua",
@@ -540,7 +545,8 @@
       }
     ],
     "UnlockSkill": "Fishing",
-    "UnlockLevel": 2
+    "UnlockLevel": 2,
+    "Station": "workbench"
   },
   {
     "Id": "r_ho_ca_canh",
@@ -557,7 +563,8 @@
       }
     ],
     "UnlockSkill": "Fishing",
-    "UnlockLevel": 3
+    "UnlockLevel": 3,
+    "Station": "workbench"
   },
   {
     "Id": "f_giap_thap_tu",
@@ -601,7 +608,7 @@
     ],
     "UnlockSkill": "Mining",
     "UnlockLevel": 8,
-    "Station": "forge"
+    "Station": "workshop"
   },
   {
     "Id": "t_do_yem_nong_dan",
@@ -694,5 +701,252 @@
     "UnlockSkill": "Animal",
     "UnlockLevel": 4,
     "Station": "tailor"
+  },
+  {
+    "Id": "r_bo_tuong_go",
+    "OutputId": "bo_tuong_go",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "wood",
+        "Count": 12
+      }
+    ]
+  },
+  {
+    "Id": "r_bo_leu_trai",
+    "OutputId": "bo_leu_trai",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "wood",
+        "Count": 20
+      },
+      {
+        "ItemId": "da",
+        "Count": 4
+      }
+    ],
+    "Station": "workbench"
+  },
+  {
+    "Id": "r_bo_ruong_can_cu",
+    "OutputId": "bo_ruong_can_cu",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "wood",
+        "Count": 15
+      },
+      {
+        "ItemId": "da",
+        "Count": 6
+      }
+    ],
+    "Station": "workbench"
+  },
+  {
+    "Id": "r_bo_lua_trai",
+    "OutputId": "bo_lua_trai",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "wood",
+        "Count": 8
+      },
+      {
+        "ItemId": "da",
+        "Count": 4
+      }
+    ]
+  },
+  {
+    "Id": "r_cung_go",
+    "OutputId": "cung_go",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "wood",
+        "Count": 8
+      },
+      {
+        "ItemId": "wool",
+        "Count": 3
+      }
+    ],
+    "Station": "workbench"
+  },
+  {
+    "Id": "r_cung_san",
+    "OutputId": "cung_san",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "wood",
+        "Count": 10
+      },
+      {
+        "ItemId": "thoi_sat",
+        "Count": 3
+      },
+      {
+        "ItemId": "wool",
+        "Count": 4
+      }
+    ],
+    "Station": "carpentry"
+  },
+  {
+    "Id": "r_mui_ten",
+    "OutputId": "mui_ten",
+    "OutputCount": 8,
+    "Ingredients": [
+      {
+        "ItemId": "wood",
+        "Count": 1
+      },
+      {
+        "ItemId": "da",
+        "Count": 1
+      }
+    ]
+  },
+  {
+    "Id": "r_bo_giuong",
+    "OutputId": "bo_giuong",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "wood",
+        "Count": 15
+      },
+      {
+        "ItemId": "vai",
+        "Count": 3
+      }
+    ],
+    "Station": "workbench"
+  },
+  {
+    "Id": "r_mui_ten_long_vu",
+    "OutputId": "mui_ten",
+    "OutputCount": 12,
+    "Ingredients": [
+      {
+        "ItemId": "wood",
+        "Count": 1
+      },
+      {
+        "ItemId": "long_vu",
+        "Count": 1
+      }
+    ]
+  },
+  {
+    "Id": "r_giap_da_thu",
+    "OutputId": "giap_da",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "da_thu",
+        "Count": 6
+      },
+      {
+        "ItemId": "long_thu",
+        "Count": 2
+      }
+    ],
+    "Station": "workbench"
+  },
+  {
+    "Id": "r_bo_ban_che_tac",
+    "OutputId": "bo_ban_che_tac",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "wood",
+        "Count": 10
+      },
+      {
+        "ItemId": "da",
+        "Count": 2
+      }
+    ]
+  },
+  {
+    "Id": "r_bo_ban_moc",
+    "OutputId": "bo_ban_moc",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "wood",
+        "Count": 25
+      },
+      {
+        "ItemId": "thoi_sat",
+        "Count": 2
+      }
+    ],
+    "Station": "workbench"
+  },
+  {
+    "Id": "r_bo_lo_ren",
+    "OutputId": "bo_lo_ren",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "da",
+        "Count": 30
+      },
+      {
+        "ItemId": "thoi_sat",
+        "Count": 4
+      },
+      {
+        "ItemId": "than_da",
+        "Count": 5
+      }
+    ],
+    "Station": "carpentry"
+  },
+  {
+    "Id": "r_bo_xuong",
+    "OutputId": "bo_xuong",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "wood",
+        "Count": 40
+      },
+      {
+        "ItemId": "thoi_bac",
+        "Count": 4
+      },
+      {
+        "ItemId": "da",
+        "Count": 20
+      }
+    ],
+    "Station": "forge"
+  },
+  {
+    "Id": "r_ao_long_thu",
+    "OutputId": "ao_long_thu",
+    "OutputCount": 1,
+    "Ingredients": [
+      {
+        "ItemId": "long_thu",
+        "Count": 6
+      },
+      {
+        "ItemId": "da_thu",
+        "Count": 3
+      },
+      {
+        "ItemId": "vai",
+        "Count": 2
+      }
+    ],
+    "Station": "workbench"
   }
 ]

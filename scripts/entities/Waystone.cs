@@ -28,7 +28,7 @@ namespace HiepSiVeVuon.Entities
             _crystalMat = new StandardMaterial3D { AlbedoColor = new Color(0.4f, 0.8f, 1f), EmissionEnabled = true, Emission = new Color(0.3f, 0.7f, 1f) };
             _crystal = new MeshInstance3D { Mesh = new PrismMesh { Size = new Vector3(12, 16, 12) }, Position = new Vector3(0, 60, 0), MaterialOverride = _crystalMat };
             AddChild(_crystal);
-            _light = new OmniLight3D { LightColor = new Color(0.4f, 0.8f, 1f), OmniRange = 90f, Position = Vector3.Up * 60f };
+            _light = new OmniLight3D { LightColor = new Color(0.4f, 0.8f, 1f), OmniRange = 90f, Position = Vector3.Up * 60f, DistanceFadeEnabled = true, DistanceFadeBegin = 700f, DistanceFadeLength = 200f };
             AddChild(_light);
             AdventureSystem.Instance.RegisterPoi(AdventureSystem.PoiKind.Waystone, WaystoneId, GlobalPosition, LabelKey);
             if (StartActive) AdventureSystem.Instance.Waystones.Add(WaystoneId);

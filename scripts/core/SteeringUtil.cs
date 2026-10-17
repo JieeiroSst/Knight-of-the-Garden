@@ -178,7 +178,9 @@ namespace HiepSiVeVuon.Core
         // "khoang khong" khong co san, khien vat the tiep tuc roi vo han + spam canh bao MOI FRAME
         // thay vi thuc su hoi phuc; goc toa do luon nam trong khu nong trai co san, co san tro lai
         // duoc ngay).
-        private const float MaxSaneDistance = 200_000f;
+        // Nong trai moi nguoi o toa do rieng cach nhau 5 km (100 000 don vi, xem FarmSpace) - xa nhat co
+        // the toi hang trieu don vi khi dong nguoi choi. Gioi han rong (chi bat NaN/vo cung/vat bay vu tru).
+        private const float MaxSaneDistance = 20_000_000f;
 
         public static Vector3 GuardAgainstRunaway(Vector3 pos, string debugName = null)
         {
@@ -187,7 +189,7 @@ namespace HiepSiVeVuon.Core
 
             GD.PushWarning($"SteeringUtil.GuardAgainstRunaway: vi tri bat thuong {pos}" +
                 (debugName != null ? $" ({debugName})" : "") + " - keo ve goc toa do.");
-            return Vector3.Up * 20f; // nhinh nhe tren mat dat, tranh ket cung vao san ngay khi roi vao
+            return FarmSpace.SpawnPoint + Vector3.Up * 20f; // ve nong trai cua minh (co san chac chan)
         }
 
         // Toc do roi toi da (don vi/s) - MOI script vat nuoi/NPC/quai deu tang Velocity.Y THEO

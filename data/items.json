@@ -9,7 +9,15 @@
     "SellPrice": 120,
     "BuyPrice": 300,
     "IconPath": "res://assets/items/sword.png",
-    "Damage": 25
+    "Damage": 25,
+    "MaxDurability": 250,
+    "RepairCost": [
+      {
+        "ItemId": "thoi_sat",
+        "Count": 1
+      }
+    ],
+    "RepairGold": 48
   },
   {
     "Id": "pickaxe",
@@ -21,7 +29,15 @@
     "SellPrice": 30,
     "BuyPrice": 80,
     "IconPath": "res://assets/items/pickaxe.png",
-    "Damage": 12
+    "Damage": 12,
+    "MaxDurability": 300,
+    "RepairCost": [
+      {
+        "ItemId": "thoi_sat",
+        "Count": 1
+      }
+    ],
+    "RepairGold": 20
   },
   {
     "Id": "hoe",
@@ -32,7 +48,15 @@
     "MaxStack": 1,
     "SellPrice": 25,
     "BuyPrice": 60,
-    "IconPath": "res://assets/items/hoe.png"
+    "IconPath": "res://assets/items/hoe.png",
+    "MaxDurability": 300,
+    "RepairCost": [
+      {
+        "ItemId": "wood",
+        "Count": 3
+      }
+    ],
+    "RepairGold": 20
   },
   {
     "Id": "dong_tho",
@@ -121,7 +145,8 @@
     "MaxStack": 99,
     "SellPrice": 7,
     "BuyPrice": 0,
-    "IconPath": "res://assets/items/coins.png"
+    "IconPath": "res://assets/items/coins.png",
+    "ShelfHours": 24
   },
   {
     "Id": "sen",
@@ -154,7 +179,15 @@
     "MaxStack": 1,
     "SellPrice": 28,
     "BuyPrice": 70,
-    "IconPath": "res://assets/items/can_cau.png"
+    "IconPath": "res://assets/items/can_cau.png",
+    "MaxDurability": 300,
+    "RepairCost": [
+      {
+        "ItemId": "wood",
+        "Count": 3
+      }
+    ],
+    "RepairGold": 20
   },
   {
     "Id": "co_vat",
@@ -190,7 +223,15 @@
     "SellPrice": 60,
     "BuyPrice": 150,
     "IconPath": "res://assets/items/shield.png",
-    "Defense": 10
+    "Defense": 10,
+    "MaxDurability": 200,
+    "RepairCost": [
+      {
+        "ItemId": "thoi_sat",
+        "Count": 1
+      }
+    ],
+    "RepairGold": 24
   },
   {
     "Id": "ring",
@@ -264,7 +305,9 @@
     "Rarity": "Common",
     "MaxStack": 99,
     "SellPrice": 10,
-    "IconPath": "res://assets/items/potion.png"
+    "IconPath": "res://assets/items/potion.png",
+    "ShelfHours": 48,
+    "Water": 30
   },
   {
     "Id": "egg",
@@ -274,7 +317,8 @@
     "Rarity": "Common",
     "MaxStack": 99,
     "SellPrice": 8,
-    "IconPath": "res://assets/items/coins.png"
+    "IconPath": "res://assets/items/coins.png",
+    "ShelfHours": 72
   },
   {
     "Id": "wool",
@@ -359,7 +403,8 @@
     "Rarity": "Common",
     "MaxStack": 99,
     "SellPrice": 15,
-    "IconPath": "res://assets/crops/tomato.png"
+    "IconPath": "res://assets/crops/tomato.png",
+    "ShelfHours": 72
   },
   {
     "Id": "wine",
@@ -379,7 +424,8 @@
     "Rarity": "Common",
     "MaxStack": 99,
     "SellPrice": 12,
-    "IconPath": "res://assets/crops/tomato.png"
+    "IconPath": "res://assets/crops/tomato.png",
+    "ShelfHours": 72
   },
   {
     "Id": "pear",
@@ -389,7 +435,8 @@
     "Rarity": "Common",
     "MaxStack": 99,
     "SellPrice": 13,
-    "IconPath": "res://assets/crops/tomato.png"
+    "IconPath": "res://assets/crops/tomato.png",
+    "ShelfHours": 72
   },
   {
     "Id": "cherry",
@@ -399,7 +446,8 @@
     "Rarity": "Common",
     "MaxStack": 99,
     "SellPrice": 16,
-    "IconPath": "res://assets/crops/tomato.png"
+    "IconPath": "res://assets/crops/tomato.png",
+    "ShelfHours": 72
   },
   {
     "Id": "peach",
@@ -409,7 +457,8 @@
     "Rarity": "Common",
     "MaxStack": 99,
     "SellPrice": 14,
-    "IconPath": "res://assets/crops/tomato.png"
+    "IconPath": "res://assets/crops/tomato.png",
+    "ShelfHours": 72
   },
   {
     "Id": "chestnut",
@@ -419,7 +468,8 @@
     "Rarity": "Common",
     "MaxStack": 99,
     "SellPrice": 11,
-    "IconPath": "res://assets/crops/pumpkin.png"
+    "IconPath": "res://assets/crops/pumpkin.png",
+    "ShelfHours": 72
   },
   {
     "Id": "pumpkin",
@@ -432,7 +482,8 @@
     "IconPath": "res://assets/crops/pumpkin.png",
     "GoodVariantId": "pumpkin_good",
     "PremiumVariantId": "pumpkin_premium",
-    "GiantCapable": true
+    "GiantCapable": true,
+    "ShelfHours": 72
   },
   {
     "Id": "pumpkin_good",
@@ -442,7 +493,8 @@
     "Rarity": "Uncommon",
     "MaxStack": 99,
     "SellPrice": 49,
-    "IconPath": "res://assets/crops/pumpkin.png"
+    "IconPath": "res://assets/crops/pumpkin.png",
+    "ShelfHours": 72
   },
   {
     "Id": "pumpkin_premium",
@@ -452,7 +504,8 @@
     "Rarity": "Rare",
     "MaxStack": 99,
     "SellPrice": 70,
-    "IconPath": "res://assets/crops/pumpkin.png"
+    "IconPath": "res://assets/crops/pumpkin.png",
+    "ShelfHours": 72
   },
   {
     "Id": "tomato",
@@ -464,7 +517,8 @@
     "SellPrice": 20,
     "IconPath": "res://assets/crops/tomato.png",
     "GoodVariantId": "tomato_good",
-    "PremiumVariantId": "tomato_premium"
+    "PremiumVariantId": "tomato_premium",
+    "ShelfHours": 72
   },
   {
     "Id": "tomato_good",
@@ -474,7 +528,8 @@
     "Rarity": "Uncommon",
     "MaxStack": 99,
     "SellPrice": 28,
-    "IconPath": "res://assets/crops/tomato.png"
+    "IconPath": "res://assets/crops/tomato.png",
+    "ShelfHours": 72
   },
   {
     "Id": "tomato_premium",
@@ -484,7 +539,8 @@
     "Rarity": "Rare",
     "MaxStack": 99,
     "SellPrice": 40,
-    "IconPath": "res://assets/crops/tomato.png"
+    "IconPath": "res://assets/crops/tomato.png",
+    "ShelfHours": 72
   },
   {
     "Id": "wheat",
@@ -496,7 +552,8 @@
     "SellPrice": 15,
     "IconPath": "res://assets/crops/wheat.png",
     "GoodVariantId": "wheat_good",
-    "PremiumVariantId": "wheat_premium"
+    "PremiumVariantId": "wheat_premium",
+    "ShelfHours": 72
   },
   {
     "Id": "wheat_good",
@@ -506,7 +563,8 @@
     "Rarity": "Uncommon",
     "MaxStack": 99,
     "SellPrice": 21,
-    "IconPath": "res://assets/crops/wheat.png"
+    "IconPath": "res://assets/crops/wheat.png",
+    "ShelfHours": 72
   },
   {
     "Id": "wheat_premium",
@@ -516,7 +574,8 @@
     "Rarity": "Rare",
     "MaxStack": 99,
     "SellPrice": 30,
-    "IconPath": "res://assets/crops/wheat.png"
+    "IconPath": "res://assets/crops/wheat.png",
+    "ShelfHours": 72
   },
   {
     "Id": "carrot",
@@ -528,7 +587,8 @@
     "SellPrice": 18,
     "IconPath": "res://assets/crops/tomato.png",
     "GoodVariantId": "carrot_good",
-    "PremiumVariantId": "carrot_premium"
+    "PremiumVariantId": "carrot_premium",
+    "ShelfHours": 72
   },
   {
     "Id": "carrot_good",
@@ -538,7 +598,8 @@
     "Rarity": "Uncommon",
     "MaxStack": 99,
     "SellPrice": 25,
-    "IconPath": "res://assets/crops/tomato.png"
+    "IconPath": "res://assets/crops/tomato.png",
+    "ShelfHours": 72
   },
   {
     "Id": "carrot_premium",
@@ -548,7 +609,8 @@
     "Rarity": "Rare",
     "MaxStack": 99,
     "SellPrice": 36,
-    "IconPath": "res://assets/crops/tomato.png"
+    "IconPath": "res://assets/crops/tomato.png",
+    "ShelfHours": 72
   },
   {
     "Id": "potato",
@@ -560,7 +622,8 @@
     "SellPrice": 16,
     "IconPath": "res://assets/crops/pumpkin.png",
     "GoodVariantId": "potato_good",
-    "PremiumVariantId": "potato_premium"
+    "PremiumVariantId": "potato_premium",
+    "ShelfHours": 72
   },
   {
     "Id": "potato_good",
@@ -570,7 +633,8 @@
     "Rarity": "Uncommon",
     "MaxStack": 99,
     "SellPrice": 22,
-    "IconPath": "res://assets/crops/pumpkin.png"
+    "IconPath": "res://assets/crops/pumpkin.png",
+    "ShelfHours": 72
   },
   {
     "Id": "potato_premium",
@@ -580,7 +644,8 @@
     "Rarity": "Rare",
     "MaxStack": 99,
     "SellPrice": 32,
-    "IconPath": "res://assets/crops/pumpkin.png"
+    "IconPath": "res://assets/crops/pumpkin.png",
+    "ShelfHours": 72
   },
   {
     "Id": "cabbage",
@@ -593,7 +658,8 @@
     "IconPath": "res://assets/crops/wheat.png",
     "GoodVariantId": "cabbage_good",
     "PremiumVariantId": "cabbage_premium",
-    "GiantCapable": true
+    "GiantCapable": true,
+    "ShelfHours": 72
   },
   {
     "Id": "cabbage_good",
@@ -603,7 +669,8 @@
     "Rarity": "Uncommon",
     "MaxStack": 99,
     "SellPrice": 31,
-    "IconPath": "res://assets/crops/wheat.png"
+    "IconPath": "res://assets/crops/wheat.png",
+    "ShelfHours": 72
   },
   {
     "Id": "cabbage_premium",
@@ -613,7 +680,8 @@
     "Rarity": "Rare",
     "MaxStack": 99,
     "SellPrice": 44,
-    "IconPath": "res://assets/crops/wheat.png"
+    "IconPath": "res://assets/crops/wheat.png",
+    "ShelfHours": 72
   },
   {
     "Id": "pumpkin_seed",
@@ -1014,7 +1082,10 @@
     "BuyPrice": 0,
     "IconPath": "res://assets/items/coins.png",
     "HealAmount": 40,
-    "StaminaAmount": 45
+    "StaminaAmount": 45,
+    "ShelfHours": 48,
+    "Food": 32,
+    "Water": 25
   },
   {
     "Id": "trung_chien",
@@ -1027,7 +1098,9 @@
     "BuyPrice": 0,
     "IconPath": "res://assets/items/coins.png",
     "HealAmount": 25,
-    "StaminaAmount": 30
+    "StaminaAmount": 30,
+    "ShelfHours": 48,
+    "Food": 20
   },
   {
     "Id": "banh_bi_ngo",
@@ -1040,7 +1113,9 @@
     "BuyPrice": 0,
     "IconPath": "res://assets/items/coins.png",
     "HealAmount": 55,
-    "StaminaAmount": 70
+    "StaminaAmount": 70,
+    "ShelfHours": 48,
+    "Food": 44
   },
   {
     "Id": "salad_ca_chua",
@@ -1053,7 +1128,9 @@
     "BuyPrice": 0,
     "IconPath": "res://assets/items/coins.png",
     "HealAmount": 50,
-    "StaminaAmount": 55
+    "StaminaAmount": 55,
+    "ShelfHours": 48,
+    "Food": 40
   },
   {
     "Id": "banh_mi_trung",
@@ -1066,7 +1143,9 @@
     "BuyPrice": 0,
     "IconPath": "res://assets/items/coins.png",
     "HealAmount": 35,
-    "StaminaAmount": 40
+    "StaminaAmount": 40,
+    "ShelfHours": 48,
+    "Food": 28
   },
   {
     "Id": "sup_ca",
@@ -1079,7 +1158,10 @@
     "BuyPrice": 0,
     "IconPath": "res://assets/items/coins.png",
     "HealAmount": 45,
-    "StaminaAmount": 50
+    "StaminaAmount": 50,
+    "ShelfHours": 48,
+    "Food": 36,
+    "Water": 25
   },
   {
     "Id": "cuoc_bac",
@@ -1090,7 +1172,15 @@
     "MaxStack": 1,
     "SellPrice": 60,
     "BuyPrice": 220,
-    "IconPath": "res://assets/items/cuoc_bac.png"
+    "IconPath": "res://assets/items/cuoc_bac.png",
+    "MaxDurability": 300,
+    "RepairCost": [
+      {
+        "ItemId": "thoi_bac",
+        "Count": 1
+      }
+    ],
+    "RepairGold": 24
   },
   {
     "Id": "cuoc_vang",
@@ -1101,7 +1191,15 @@
     "MaxStack": 1,
     "SellPrice": 150,
     "BuyPrice": 600,
-    "IconPath": "res://assets/items/cuoc_vang.png"
+    "IconPath": "res://assets/items/cuoc_vang.png",
+    "MaxDurability": 300,
+    "RepairCost": [
+      {
+        "ItemId": "thoi_vang",
+        "Count": 1
+      }
+    ],
+    "RepairGold": 60
   },
   {
     "Id": "pickaxe_bac",
@@ -1113,7 +1211,15 @@
     "SellPrice": 70,
     "BuyPrice": 240,
     "IconPath": "res://assets/items/pickaxe_bac.png",
-    "Damage": 24
+    "Damage": 24,
+    "MaxDurability": 300,
+    "RepairCost": [
+      {
+        "ItemId": "thoi_bac",
+        "Count": 1
+      }
+    ],
+    "RepairGold": 28
   },
   {
     "Id": "pickaxe_vang",
@@ -1125,7 +1231,15 @@
     "SellPrice": 160,
     "BuyPrice": 650,
     "IconPath": "res://assets/items/pickaxe_vang.png",
-    "Damage": 42
+    "Damage": 42,
+    "MaxDurability": 300,
+    "RepairCost": [
+      {
+        "ItemId": "thoi_vang",
+        "Count": 1
+      }
+    ],
+    "RepairGold": 64
   },
   {
     "Id": "may_tuoi_tu_dong",
@@ -1158,7 +1272,15 @@
     "MaxStack": 1,
     "SellPrice": 25,
     "BuyPrice": 60,
-    "IconPath": "res://assets/items/binh_tuoi.png"
+    "IconPath": "res://assets/items/binh_tuoi.png",
+    "MaxDurability": 400,
+    "RepairCost": [
+      {
+        "ItemId": "wood",
+        "Count": 3
+      }
+    ],
+    "RepairGold": 20
   },
   {
     "Id": "xeng",
@@ -1169,7 +1291,15 @@
     "MaxStack": 1,
     "SellPrice": 35,
     "BuyPrice": 90,
-    "IconPath": "res://assets/items/xeng.png"
+    "IconPath": "res://assets/items/xeng.png",
+    "MaxDurability": 300,
+    "RepairCost": [
+      {
+        "ItemId": "wood",
+        "Count": 3
+      }
+    ],
+    "RepairGold": 20
   },
   {
     "Id": "cao_co",
@@ -1180,7 +1310,15 @@
     "MaxStack": 1,
     "SellPrice": 22,
     "BuyPrice": 55,
-    "IconPath": "res://assets/items/cao_co.png"
+    "IconPath": "res://assets/items/cao_co.png",
+    "MaxDurability": 300,
+    "RepairCost": [
+      {
+        "ItemId": "wood",
+        "Count": 3
+      }
+    ],
+    "RepairGold": 20
   },
   {
     "Id": "ca_chep",
@@ -1191,7 +1329,8 @@
     "MaxStack": 99,
     "SellPrice": 15,
     "BuyPrice": 0,
-    "IconPath": "res://assets/items/coins.png"
+    "IconPath": "res://assets/items/coins.png",
+    "ShelfHours": 24
   },
   {
     "Id": "ca_ro_phi",
@@ -1202,7 +1341,8 @@
     "MaxStack": 99,
     "SellPrice": 22,
     "BuyPrice": 0,
-    "IconPath": "res://assets/items/coins.png"
+    "IconPath": "res://assets/items/coins.png",
+    "ShelfHours": 24
   },
   {
     "Id": "ca_tre",
@@ -1213,7 +1353,8 @@
     "MaxStack": 99,
     "SellPrice": 35,
     "BuyPrice": 0,
-    "IconPath": "res://assets/items/coins.png"
+    "IconPath": "res://assets/items/coins.png",
+    "ShelfHours": 24
   },
   {
     "Id": "ca_hoi",
@@ -1224,7 +1365,8 @@
     "MaxStack": 99,
     "SellPrice": 45,
     "BuyPrice": 0,
-    "IconPath": "res://assets/items/coins.png"
+    "IconPath": "res://assets/items/coins.png",
+    "ShelfHours": 24
   },
   {
     "Id": "ca_trich",
@@ -1235,7 +1377,8 @@
     "MaxStack": 99,
     "SellPrice": 30,
     "BuyPrice": 0,
-    "IconPath": "res://assets/items/coins.png"
+    "IconPath": "res://assets/items/coins.png",
+    "ShelfHours": 24
   },
   {
     "Id": "ca_loc",
@@ -1246,7 +1389,8 @@
     "MaxStack": 99,
     "SellPrice": 55,
     "BuyPrice": 0,
-    "IconPath": "res://assets/items/coins.png"
+    "IconPath": "res://assets/items/coins.png",
+    "ShelfHours": 24
   },
   {
     "Id": "ca_vang",
@@ -1257,7 +1401,8 @@
     "MaxStack": 99,
     "SellPrice": 500,
     "BuyPrice": 0,
-    "IconPath": "res://assets/items/coins.png"
+    "IconPath": "res://assets/items/coins.png",
+    "ShelfHours": 24
   },
   {
     "Id": "hanh_rung",
@@ -1395,7 +1540,9 @@
     "BuyPrice": 0,
     "IconPath": "res://assets/items/potion.png",
     "HealAmount": 10,
-    "StaminaAmount": 60
+    "StaminaAmount": 60,
+    "Food": 5,
+    "Water": 35
   },
   {
     "Id": "banh_nang_luong",
@@ -1408,7 +1555,8 @@
     "BuyPrice": 0,
     "IconPath": "res://assets/items/coins.png",
     "HealAmount": 15,
-    "StaminaAmount": 90
+    "StaminaAmount": 90,
+    "Food": 12
   },
   {
     "Id": "salad_rau_rung",
@@ -1421,7 +1569,8 @@
     "BuyPrice": 0,
     "IconPath": "res://assets/crops/wheat.png",
     "HealAmount": 20,
-    "StaminaAmount": 45
+    "StaminaAmount": 45,
+    "Food": 16
   },
   {
     "Id": "dau_tay",
@@ -1432,7 +1581,8 @@
     "MaxStack": 99,
     "SellPrice": 30,
     "BuyPrice": 0,
-    "IconPath": "res://assets/crops/tomato.png"
+    "IconPath": "res://assets/crops/tomato.png",
+    "ShelfHours": 72
   },
   {
     "Id": "dau_tay_seed",
@@ -1460,7 +1610,8 @@
     "MaxStack": 99,
     "SellPrice": 28,
     "BuyPrice": 0,
-    "IconPath": "res://assets/crops/wheat.png"
+    "IconPath": "res://assets/crops/wheat.png",
+    "ShelfHours": 72
   },
   {
     "Id": "toi_seed",
@@ -1488,7 +1639,8 @@
     "SellPrice": 55,
     "BuyPrice": 0,
     "IconPath": "res://assets/crops/wheat.png",
-    "GiantCapable": true
+    "GiantCapable": true,
+    "ShelfHours": 72
   },
   {
     "Id": "cai_xoan_seed",
@@ -1516,7 +1668,8 @@
     "SellPrice": 120,
     "BuyPrice": 0,
     "IconPath": "res://assets/crops/pumpkin.png",
-    "GiantCapable": true
+    "GiantCapable": true,
+    "ShelfHours": 72
   },
   {
     "Id": "dua_hau_seed",
@@ -1543,7 +1696,8 @@
     "MaxStack": 99,
     "SellPrice": 25,
     "BuyPrice": 0,
-    "IconPath": "res://assets/crops/wheat.png"
+    "IconPath": "res://assets/crops/wheat.png",
+    "ShelfHours": 72
   },
   {
     "Id": "ngo_seed",
@@ -1572,7 +1726,8 @@
     "MaxStack": 99,
     "SellPrice": 22,
     "BuyPrice": 0,
-    "IconPath": "res://assets/crops/tomato.png"
+    "IconPath": "res://assets/crops/tomato.png",
+    "ShelfHours": 72
   },
   {
     "Id": "viet_quat_seed",
@@ -1600,7 +1755,8 @@
     "MaxStack": 99,
     "SellPrice": 30,
     "BuyPrice": 0,
-    "IconPath": "res://assets/crops/tomato.png"
+    "IconPath": "res://assets/crops/tomato.png",
+    "ShelfHours": 72
   },
   {
     "Id": "ca_tim_seed",
@@ -1628,7 +1784,8 @@
     "MaxStack": 99,
     "SellPrice": 50,
     "BuyPrice": 0,
-    "IconPath": "res://assets/crops/tomato.png"
+    "IconPath": "res://assets/crops/tomato.png",
+    "ShelfHours": 72
   },
   {
     "Id": "cu_den_seed",
@@ -1655,7 +1812,8 @@
     "MaxStack": 99,
     "SellPrice": 60,
     "BuyPrice": 0,
-    "IconPath": "res://assets/crops/pumpkin.png"
+    "IconPath": "res://assets/crops/pumpkin.png",
+    "ShelfHours": 72
   },
   {
     "Id": "cu_cai_dong_seed",
@@ -1887,7 +2045,9 @@
     "BuyPrice": 0,
     "IconPath": "res://assets/items/coins.png",
     "HealAmount": 50,
-    "StaminaAmount": 80
+    "StaminaAmount": 80,
+    "Food": 40,
+    "Water": 10
   },
   {
     "Id": "cup_hoi_cho",
@@ -2023,7 +2183,15 @@
     "SellPrice": 400,
     "BuyPrice": 0,
     "IconPath": "res://assets/items/pickaxe_vang.png",
-    "Damage": 70
+    "Damage": 70,
+    "MaxDurability": 300,
+    "RepairCost": [
+      {
+        "ItemId": "kim_cuong",
+        "Count": 1
+      }
+    ],
+    "RepairGold": 160
   },
   {
     "Id": "kiem_dong",
@@ -2035,7 +2203,15 @@
     "SellPrice": 60,
     "BuyPrice": 0,
     "IconPath": "res://assets/items/sword.png",
-    "Damage": 32
+    "Damage": 32,
+    "MaxDurability": 250,
+    "RepairCost": [
+      {
+        "ItemId": "thoi_sat",
+        "Count": 1
+      }
+    ],
+    "RepairGold": 24
   },
   {
     "Id": "kiem_sat",
@@ -2047,7 +2223,15 @@
     "SellPrice": 120,
     "BuyPrice": 0,
     "IconPath": "res://assets/items/sword.png",
-    "Damage": 45
+    "Damage": 45,
+    "MaxDurability": 250,
+    "RepairCost": [
+      {
+        "ItemId": "thoi_sat",
+        "Count": 1
+      }
+    ],
+    "RepairGold": 48
   },
   {
     "Id": "kiem_bac",
@@ -2059,7 +2243,15 @@
     "SellPrice": 250,
     "BuyPrice": 0,
     "IconPath": "res://assets/items/sword.png",
-    "Damage": 62
+    "Damage": 62,
+    "MaxDurability": 250,
+    "RepairCost": [
+      {
+        "ItemId": "thoi_bac",
+        "Count": 1
+      }
+    ],
+    "RepairGold": 100
   },
   {
     "Id": "kiem_vang",
@@ -2071,7 +2263,15 @@
     "SellPrice": 500,
     "BuyPrice": 0,
     "IconPath": "res://assets/items/sword.png",
-    "Damage": 85
+    "Damage": 85,
+    "MaxDurability": 250,
+    "RepairCost": [
+      {
+        "ItemId": "thoi_vang",
+        "Count": 1
+      }
+    ],
+    "RepairGold": 200
   },
   {
     "Id": "giap_da",
@@ -2083,7 +2283,16 @@
     "SellPrice": 40,
     "BuyPrice": 0,
     "IconPath": "res://assets/items/shield.png",
-    "Defense": 8
+    "Defense": 8,
+    "MaxDurability": 200,
+    "RepairCost": [
+      {
+        "ItemId": "da_thu",
+        "Count": 2
+      }
+    ],
+    "RepairGold": 20,
+    "Warmth": 8
   },
   {
     "Id": "giap_sat",
@@ -2095,7 +2304,16 @@
     "SellPrice": 140,
     "BuyPrice": 0,
     "IconPath": "res://assets/items/shield.png",
-    "Defense": 18
+    "Defense": 18,
+    "MaxDurability": 200,
+    "RepairCost": [
+      {
+        "ItemId": "thoi_sat",
+        "Count": 1
+      }
+    ],
+    "RepairGold": 56,
+    "Warmth": 4
   },
   {
     "Id": "giap_bac",
@@ -2107,7 +2325,16 @@
     "SellPrice": 260,
     "BuyPrice": 0,
     "IconPath": "res://assets/items/shield.png",
-    "Defense": 28
+    "Defense": 28,
+    "MaxDurability": 200,
+    "RepairCost": [
+      {
+        "ItemId": "thoi_bac",
+        "Count": 1
+      }
+    ],
+    "RepairGold": 104,
+    "Warmth": 4
   },
   {
     "Id": "giap_vang",
@@ -2119,7 +2346,16 @@
     "SellPrice": 520,
     "BuyPrice": 0,
     "IconPath": "res://assets/items/shield.png",
-    "Defense": 40
+    "Defense": 40,
+    "MaxDurability": 200,
+    "RepairCost": [
+      {
+        "ItemId": "thoi_vang",
+        "Count": 1
+      }
+    ],
+    "RepairGold": 208,
+    "Warmth": 5
   },
   {
     "Id": "to_ong",
@@ -2242,7 +2478,9 @@
     "BuyPrice": 0,
     "IconPath": "res://assets/items/coins.png",
     "HealAmount": 20,
-    "StaminaAmount": 40
+    "StaminaAmount": 40,
+    "Food": 5,
+    "Water": 45
   },
   {
     "Id": "cua",
@@ -2265,7 +2503,8 @@
     "SellPrice": 800,
     "BuyPrice": 0,
     "IconPath": "res://assets/items/coins.png",
-    "Collectible": true
+    "Collectible": true,
+    "ShelfHours": 24
   },
   {
     "Id": "ca_than_ha",
@@ -2277,7 +2516,8 @@
     "SellPrice": 800,
     "BuyPrice": 0,
     "IconPath": "res://assets/items/coins.png",
-    "Collectible": true
+    "Collectible": true,
+    "ShelfHours": 24
   },
   {
     "Id": "ca_than_thu",
@@ -2289,7 +2529,8 @@
     "SellPrice": 800,
     "BuyPrice": 0,
     "IconPath": "res://assets/items/coins.png",
-    "Collectible": true
+    "Collectible": true,
+    "ShelfHours": 24
   },
   {
     "Id": "ca_than_dong",
@@ -2301,7 +2542,8 @@
     "SellPrice": 800,
     "BuyPrice": 0,
     "IconPath": "res://assets/items/coins.png",
-    "Collectible": true
+    "Collectible": true,
+    "ShelfHours": 24
   },
   {
     "Id": "decor_sofa",
@@ -2610,7 +2852,16 @@
     "SellPrice": 380,
     "BuyPrice": 0,
     "IconPath": "res://assets/items/shield.png",
-    "Defense": 34
+    "Defense": 34,
+    "MaxDurability": 200,
+    "RepairCost": [
+      {
+        "ItemId": "thoi_sat",
+        "Count": 1
+      }
+    ],
+    "RepairGold": 152,
+    "Warmth": 6
   },
   {
     "Id": "giap_hac_ky_si",
@@ -2622,7 +2873,16 @@
     "SellPrice": 900,
     "BuyPrice": 0,
     "IconPath": "res://assets/items/shield.png",
-    "Defense": 52
+    "Defense": 52,
+    "MaxDurability": 200,
+    "RepairCost": [
+      {
+        "ItemId": "thoi_sat",
+        "Count": 1
+      }
+    ],
+    "RepairGold": 360,
+    "Warmth": 10
   },
   {
     "Id": "do_yem_nong_dan",
@@ -2660,7 +2920,8 @@
     "SellPrice": 160,
     "BuyPrice": 0,
     "IconPath": "res://assets/items/shield.png",
-    "OutfitSpeedBonus": 0.08
+    "OutfitSpeedBonus": 0.08,
+    "Warmth": 6
   },
   {
     "Id": "do_thuong_ngay",
@@ -2687,5 +2948,401 @@
     "IconPath": "res://assets/items/shield.png",
     "OutfitSkill": "Animal",
     "OutfitStaminaDiscount": 0.15
+  },
+  {
+    "Id": "bo_tuong_go",
+    "Name": "Bộ Tường Gỗ",
+    "Description": "Trang bị rồi bấm [Space] để dựng 1 đoạn tường gỗ (800 máu) ở vùng hoang dã - chặn đường kẻ địch, người khác đập phá được.",
+    "Type": "Tool",
+    "Rarity": "Common",
+    "MaxStack": 20,
+    "SellPrice": 60,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "bo_leu_trai",
+    "Name": "Bộ Lều Trại",
+    "Description": "Dựng lều ở thế giới mở (600 máu) - đứng trong lều để ẩn nấp, người khác ở xa không thấy bạn. Muốn hồi sinh tại căn cứ hãy dựng Giường.",
+    "Type": "Tool",
+    "Rarity": "Common",
+    "MaxStack": 20,
+    "SellPrice": 120,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "bo_ruong_can_cu",
+    "Name": "Bộ Rương Căn Cứ",
+    "Description": "Dựng rương cất đồ ở căn cứ (500 máu). Chỉ bạn, tổ đội và bang hội mở được - kẻ địch phá rương sẽ lấy hết đồ bên trong.",
+    "Type": "Tool",
+    "Rarity": "Common",
+    "MaxStack": 20,
+    "SellPrice": 100,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/chest.png"
+  },
+  {
+    "Id": "bo_lua_trai",
+    "Name": "Bộ Lửa Trại",
+    "Description": "Dựng lửa trại (300 máu) - bạn và đồng đội đứng gần sẽ hồi máu dần.",
+    "Type": "Tool",
+    "Rarity": "Common",
+    "MaxStack": 20,
+    "SellPrice": 50,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "cung_go",
+    "Name": "Cung Gỗ",
+    "Description": "Vũ khí tầm xa - trang bị rồi bấm tấn công để bắn (tốn 1 Mũi Tên mỗi phát, tầm ~45m). Giữ chuột phải xoay camera để ngắm.",
+    "Type": "Weapon",
+    "Rarity": "Common",
+    "MaxStack": 1,
+    "SellPrice": 60,
+    "BuyPrice": 220,
+    "IconPath": "res://assets/items/sword.png",
+    "Damage": 16,
+    "Ranged": true,
+    "Range": 900,
+    "MaxDurability": 200,
+    "RepairCost": [
+      {
+        "ItemId": "wood",
+        "Count": 3
+      }
+    ],
+    "RepairGold": 24
+  },
+  {
+    "Id": "cung_san",
+    "Name": "Cung Săn Thép",
+    "Description": "Cung tầm xa gia cố thép - sát thương cao, tầm ~55m. Tốn 1 Mũi Tên mỗi phát.",
+    "Type": "Weapon",
+    "Rarity": "Rare",
+    "MaxStack": 1,
+    "SellPrice": 180,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/sword.png",
+    "Damage": 28,
+    "Ranged": true,
+    "Range": 1100,
+    "MaxDurability": 200,
+    "RepairCost": [
+      {
+        "ItemId": "wood",
+        "Count": 3
+      }
+    ],
+    "RepairGold": 72
+  },
+  {
+    "Id": "mui_ten",
+    "Name": "Mũi Tên",
+    "Description": "Đạn cho cung - mỗi phát bắn tốn 1 mũi.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 1,
+    "BuyPrice": 3,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "bo_giuong",
+    "Name": "Bộ Giường Căn Cứ",
+    "Description": "Dựng giường ở thế giới mở (400 máu) - khi bị hạ bạn hồi sinh tại giường gần nhất. Mất hết giường thì lần chết sau phải đợi 1 giờ mới hồi sinh ở nông trại!",
+    "Type": "Tool",
+    "Rarity": "Common",
+    "MaxStack": 20,
+    "SellPrice": 90,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "thit_bo",
+    "Name": "Thịt Bò",
+    "Description": "Thịt bò tươi từ bò trong trang trại. Nướng ở bếp để hồi nhiều máu.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 30,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png",
+    "ShelfHours": 12
+  },
+  {
+    "Id": "thit_heo",
+    "Name": "Thịt Heo",
+    "Description": "Thịt heo tươi. Nướng ở bếp thành Heo Quay.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 24,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png",
+    "ShelfHours": 12
+  },
+  {
+    "Id": "thit_cuu",
+    "Name": "Thịt Cừu",
+    "Description": "Thịt cừu tươi. Nướng ở bếp thành Cừu Nướng.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 26,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png",
+    "ShelfHours": 12
+  },
+  {
+    "Id": "thit_ga",
+    "Name": "Thịt Gà",
+    "Description": "Thịt gà/vịt tươi. Nướng ở bếp thành Gà Nướng.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 12,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png",
+    "ShelfHours": 12
+  },
+  {
+    "Id": "thit_de",
+    "Name": "Thịt Dê",
+    "Description": "Thịt dê tươi. Nướng ở bếp thành Dê Nướng.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 24,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png",
+    "ShelfHours": 12
+  },
+  {
+    "Id": "thit_rung",
+    "Name": "Thịt Thú Rừng",
+    "Description": "Thịt săn được ngoài hoang dã (hươu, thỏ, sói...).",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 20,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png",
+    "ShelfHours": 12
+  },
+  {
+    "Id": "da_thu",
+    "Name": "Da Động Vật",
+    "Description": "Da thuộc từ động vật - chế giáp da, túi, lều.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 18,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "long_thu",
+    "Name": "Lông Thú",
+    "Description": "Lông thú dày và ấm - chế giáp/áo chống rét.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 16,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "long_vu",
+    "Name": "Lông Vũ",
+    "Description": "Lông gà/vịt - gắn đuôi mũi tên giúp bay thẳng.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 3,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "bo_nuong",
+    "Name": "Bò Nướng",
+    "Description": "Món nướng thơm lừng - hồi 70 máu và 25 thể lực.",
+    "Type": "Consumable",
+    "Rarity": "Common",
+    "MaxStack": 20,
+    "SellPrice": 70,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/potion.png",
+    "HealAmount": 70,
+    "StaminaAmount": 25,
+    "ShelfHours": 48,
+    "Food": 56
+  },
+  {
+    "Id": "heo_quay",
+    "Name": "Heo Quay",
+    "Description": "Món nướng thơm lừng - hồi 60 máu và 20 thể lực.",
+    "Type": "Consumable",
+    "Rarity": "Common",
+    "MaxStack": 20,
+    "SellPrice": 58,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/potion.png",
+    "HealAmount": 60,
+    "StaminaAmount": 20,
+    "ShelfHours": 48,
+    "Food": 48
+  },
+  {
+    "Id": "cuu_nuong",
+    "Name": "Cừu Nướng",
+    "Description": "Món nướng thơm lừng - hồi 60 máu và 25 thể lực.",
+    "Type": "Consumable",
+    "Rarity": "Common",
+    "MaxStack": 20,
+    "SellPrice": 62,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/potion.png",
+    "HealAmount": 60,
+    "StaminaAmount": 25,
+    "ShelfHours": 48,
+    "Food": 48
+  },
+  {
+    "Id": "ga_nuong",
+    "Name": "Gà Nướng",
+    "Description": "Món nướng thơm lừng - hồi 35 máu và 15 thể lực.",
+    "Type": "Consumable",
+    "Rarity": "Common",
+    "MaxStack": 20,
+    "SellPrice": 30,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/potion.png",
+    "HealAmount": 35,
+    "StaminaAmount": 15,
+    "ShelfHours": 48,
+    "Food": 28
+  },
+  {
+    "Id": "de_nuong",
+    "Name": "Dê Nướng",
+    "Description": "Món nướng thơm lừng - hồi 55 máu và 20 thể lực.",
+    "Type": "Consumable",
+    "Rarity": "Common",
+    "MaxStack": 20,
+    "SellPrice": 58,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/potion.png",
+    "HealAmount": 55,
+    "StaminaAmount": 20,
+    "ShelfHours": 48,
+    "Food": 44
+  },
+  {
+    "Id": "thit_rung_nuong",
+    "Name": "Thịt Rừng Nướng",
+    "Description": "Món nướng thơm lừng - hồi 50 máu và 25 thể lực.",
+    "Type": "Consumable",
+    "Rarity": "Common",
+    "MaxStack": 20,
+    "SellPrice": 48,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/potion.png",
+    "HealAmount": 50,
+    "StaminaAmount": 25,
+    "ShelfHours": 48,
+    "Food": 40
+  },
+  {
+    "Id": "do_thoi",
+    "Name": "Đồ Ôi Thiu",
+    "Description": "Thức ăn/nông sản để quá hạn đã thối rữa - không ăn, nấu hay bán được. Bỏ vào Thùng Ủ Phân để làm phân bón.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 0,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "bo_ban_che_tac",
+    "Name": "Bộ Bàn Chế Tác",
+    "Description": "Dựng Bàn Chế Tác (cấp 1) ở căn cứ: chế lều, rương, giường, cung gỗ, giáp da.",
+    "Type": "Tool",
+    "Rarity": "Uncommon",
+    "MaxStack": 5,
+    "SellPrice": 40,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "bo_ban_moc",
+    "Name": "Bộ Bàn Mộc",
+    "Description": "Dựng Bàn Mộc (cấp 2): chế cung săn thép, máy ép/làm mứt, bộ Lò Rèn.",
+    "Type": "Tool",
+    "Rarity": "Uncommon",
+    "MaxStack": 5,
+    "SellPrice": 120,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "bo_lo_ren",
+    "Name": "Bộ Lò Rèn Căn Cứ",
+    "Description": "Dựng Lò Rèn (cấp 3) ở căn cứ: rèn kiếm/giáp, sửa đồ, chế bộ Xưởng.",
+    "Type": "Tool",
+    "Rarity": "Uncommon",
+    "MaxStack": 5,
+    "SellPrice": 260,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "bo_xuong",
+    "Name": "Bộ Xưởng Chế Tạo",
+    "Description": "Dựng Xưởng (cấp 4 - cao nhất): kiếm/giáp vàng, giáp Hắc Kỵ Sĩ, cuốc/cuốc chim cao cấp.",
+    "Type": "Tool",
+    "Rarity": "Uncommon",
+    "MaxStack": 5,
+    "SellPrice": 520,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/coins.png"
+  },
+  {
+    "Id": "nuoc_sach",
+    "Name": "Nước Sạch",
+    "Description": "Bình nước uống - giải khát (+45 nước). Có thể uống trực tiếp ở hồ/sông/giếng bằng [E].",
+    "Type": "Consumable",
+    "Rarity": "Common",
+    "MaxStack": 20,
+    "SellPrice": 2,
+    "BuyPrice": 6,
+    "IconPath": "res://assets/items/potion.png",
+    "Food": 0,
+    "Water": 45
+  },
+  {
+    "Id": "ao_long_thu",
+    "Name": "Áo Lông Thú",
+    "Description": "Áo khoác lông dày - giữ ấm rất tốt khi đi vùng núi, đêm lạnh và mùa đông (+18 độ ấm).",
+    "Type": "Outfit",
+    "Rarity": "Uncommon",
+    "MaxStack": 1,
+    "SellPrice": 90,
+    "BuyPrice": 0,
+    "IconPath": "res://assets/items/shield.png",
+    "Warmth": 18
+  },
+  {
+    "Id": "co_kho",
+    "Name": "Cỏ Khô",
+    "Description": "Bó cỏ khô thơm - ngựa hoang rất thích. Mang theo để thuần hoá ngựa hoang.",
+    "Type": "Material",
+    "Rarity": "Common",
+    "MaxStack": 99,
+    "SellPrice": 2,
+    "BuyPrice": 5,
+    "IconPath": "res://assets/items/coins.png"
   }
 ]

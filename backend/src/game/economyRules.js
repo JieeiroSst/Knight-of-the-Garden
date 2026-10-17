@@ -22,6 +22,10 @@ const ORES = new Set([
 ]);
 const ANIMAL = new Set(["milk", "egg", "wool", "honey", "mat_ong", "beeswax"]);
 const PROCESSED_FIXED = new Set(["pho_mai", "cheese", "mayonnaise", "vai", "wine", "mut_trai_cay", "nuoc_ep"]);
+// San pham giet thit/san ban (nguon "hunt").
+const HUNT = new Set(["thit_bo", "thit_heo", "thit_cuu", "thit_ga", "thit_de", "thit_rung", "da_thu", "long_thu", "long_vu", "wool"]);
+const itemState = require("./itemState");
+const { stationOk } = require("./pvpRules");
 const FORBIDDEN_WORLD_TYPES = new Set(["Tool", "Weapon", "Armor", "Outfit"]);
 
 // Nguon nhan VAT PHAM: dieu kien item + gioi han so luong / gio + co bat buoc key duy nhat khong.
@@ -35,6 +39,10 @@ function itemSources(cat) {
     tree: { ok: (id) => id === "wood", perHour: 400 },
     loot: { ok: (id) => cat.lootItems.has(id), perHour: 400 },
     animal: { ok: (id) => ANIMAL.has(id), perHour: 300 },
+    // Giet thit vat nuoi / san thu rung: thit, da, long (xem Huntable.cs ben Godot).
+    hunt: { ok: (id) => HUNT.has(id), perHour: 240 },
+    // Lay nuoc sach o ho/song/gieng.
+    water: { ok: (id) => id === "nuoc_sach", perHour: 60 },
     process: { ok: (id) => id.startsWith("mut_") || id.startsWith("ruou_") || PROCESSED_FIXED.has(id), perHour: 200 },
     compost: { ok: (id) => id === "fertilizer_basic", perHour: 80 },
     festival: { ok: (id) => id === "trung_le_hoi", perHour: 40 },
@@ -83,6 +91,10 @@ function applyOps(state, ops, ctx) {
     else state.items.delete(id);
   };
   const has = (needs) => needs.every(([id, n]) => count(id) >= n);
+  // Trang thai han dung/do ben (state.itemStates: Map item -> state) - xem itemState.js.
+  const states = state.itemStates || (state.itemStates = new Map());
+  const getSt = (id) => itemState.normalize(states.get(id), count(id), cat.items.get(id), ctx.nowMs || Date.now());
+  const setSt = (id, st) => states.set(id, st);
   const counter = (key) => state.counters.get(key) || 0;
   const bump = (key, n) => state.counters.set(key, counter(key) + n);
   const claimKey = (key) => {
@@ -127,6 +139,28 @@ function applyOps(state, ops, ctx) {
         bump(ck, op.n);
         if (rule.needsKey) markClaimed(op.key);
         add(op.item, op.n);
+        return null;
+      }
+      // Hao mon do ben (client bao sau moi lan vung/dung/bi danh) - chi tru, khong bao gio tang.
+      case "wear": {
+        if (!item || !itemState.maxDur(item)) return "vat pham khong co do ben";
+        if (!Number.isInteger(op.n) || op.n <= 0 || op.n > 500) return "so luong khong hop le";
+        if (count(op.item) <= 0) return "khong so huu vat pham";
+        setSt(op.item, itemState.wear(getSt(op.item), op.n));
+        return null;
+      }
+      // Sua do: ton vang + nguyen lieu theo items.json (RepairGold/RepairCost) -> mon tot nhat chua day ve toi da.
+      case "repair": {
+        if (!item || !itemState.maxDur(item)) return "vat pham khong sua duoc";
+        if (count(op.item) <= 0) return "khong so huu vat pham";
+        const fixed = itemState.repair(getSt(op.item), item);
+        if (!fixed) return "do con nguyen ven";
+        const cost = itemState.repairCost(item);
+        if (state.gold < cost.gold) return "khong du vang de sua";
+        if (!has(cost.mats)) return "thieu nguyen lieu de sua";
+        state.gold -= cost.gold;
+        for (const [id, n] of cost.mats) take(id, n);
+        setSt(op.item, fixed);
         return null;
       }
       case "consume": {
@@ -179,6 +213,8 @@ function applyOps(state, ops, ctx) {
       case "cook": {
         const recipe = (op.t === "craft" ? cat.recipes : cat.cooking).get(op.recipe);
         if (!recipe) return "cong thuc khong ton tai";
+        // Tram che tao theo cap: Ban Moc/Xuong phai tu xay o can cu (ctx.stations = loai tram dang so huu).
+        if (op.t === "craft" && !stationOk(recipe.Station, ctx.stations)) return `can tram che tao: ${recipe.Station}`;
         const needs = recipe.Ingredients.map((i) => [i.ItemId, i.Count]);
         if (!has(needs)) return "thieu nguyen lieu";
         for (const [id, n] of needs) take(id, n);

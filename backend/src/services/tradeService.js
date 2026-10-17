@@ -141,8 +141,9 @@ async function execute(client, t) {
       await econ.addGold(client, to, offer.gold);
     }
     for (const [id, n] of Object.entries(offer.items)) {
-      if (!(await econ.adjustItem(client, from, id, -n))) throw new AppError(400, "Mot ben khong con du vat pham.");
-      await econ.adjustItem(client, to, id, n);
+      const carry = await econ.adjustItem(client, from, id, -n);
+      if (!carry) throw new AppError(400, "Mot ben khong con du vat pham.");
+      await econ.adjustItem(client, to, id, n, carry); // han dung/do ben di theo mon do
     }
   }
 }

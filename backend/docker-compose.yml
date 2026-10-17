@@ -18,9 +18,15 @@ services:
       timeout: 5s
       retries: 10
 
+  # Redis: pub/sub giua gateway + cache doc (xem src/cache/cache.js) + trang thai realtime (kenh, to doi,
+  # dau truong). Bat AOF (ghi lenh ra dia moi giay) + volume rieng -> khoi dong lai khong mat trang thai
+  # realtime. Du lieu nguoi choi (vang/do/can cu) van luon nam trong Postgres (cache chi la ban sao).
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec", "--maxmemory", "512mb", "--maxmemory-policy", "volatile-lru"]
+    volumes:
+      - hsvv_redisdata:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -82,3 +88,4 @@ services:
 
 volumes:
   hsvv_pgdata:
+  hsvv_redisdata:

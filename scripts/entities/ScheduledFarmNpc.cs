@@ -137,8 +137,11 @@ namespace HiepSiVeVuon.Entities
             };
         }
 
+        private bool _simAsleep;
+
         public override void _PhysicsProcess(double delta)
         {
+            if (HiepSiVeVuon.Core.SimLod.Sleep(this, ref _simAsleep)) return; // xa nguoi choi -> ngu mo phong
             float dt = (float)delta;
 
             var (desiredDir, targetSpeed) = _brain.Tick(dt, this, ArriveDist, Speed, null, null);

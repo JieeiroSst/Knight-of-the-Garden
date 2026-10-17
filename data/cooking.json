@@ -4,5 +4,11 @@
   { "Id": "c_banh_bi_ngo", "OutputId": "banh_bi_ngo", "OutputCount": 1, "Ingredients": [ { "ItemId": "pumpkin", "Count": 1 }, { "ItemId": "milk", "Count": 1 } ] },
   { "Id": "c_salad_ca_chua", "OutputId": "salad_ca_chua", "OutputCount": 1, "Ingredients": [ { "ItemId": "tomato", "Count": 2 }, { "ItemId": "pho_mai", "Count": 1 } ] },
   { "Id": "c_banh_mi_trung", "OutputId": "banh_mi_trung", "OutputCount": 1, "Ingredients": [ { "ItemId": "wheat", "Count": 1 }, { "ItemId": "egg", "Count": 1 } ] },
-  { "Id": "c_sup_ca", "OutputId": "sup_ca", "OutputCount": 1, "Ingredients": [ { "ItemId": "ca", "Count": 1 }, { "ItemId": "carrot", "Count": 1 } ] }
+  { "Id": "c_sup_ca", "OutputId": "sup_ca", "OutputCount": 1, "Ingredients": [ { "ItemId": "ca", "Count": 1 }, { "ItemId": "carrot", "Count": 1 } ] },
+  { "Id": "c_bo_nuong", "OutputId": "bo_nuong", "OutputCount": 1, "Ingredients": [ { "ItemId": "thit_bo", "Count": 1 } ] },
+  { "Id": "c_heo_quay", "OutputId": "heo_quay", "OutputCount": 1, "Ingredients": [ { "ItemId": "thit_heo", "Count": 1 } ] },
+  { "Id": "c_cuu_nuong", "OutputId": "cuu_nuong", "OutputCount": 1, "Ingredients": [ { "ItemId": "thit_cuu", "Count": 1 } ] },
+  { "Id": "c_ga_nuong", "OutputId": "ga_nuong", "OutputCount": 1, "Ingredients": [ { "ItemId": "thit_ga", "Count": 1 } ] },
+  { "Id": "c_de_nuong", "OutputId": "de_nuong", "OutputCount": 1, "Ingredients": [ { "ItemId": "thit_de", "Count": 1 } ] },
+  { "Id": "c_thit_rung_nuong", "OutputId": "thit_rung_nuong", "OutputCount": 1, "Ingredients": [ { "ItemId": "thit_rung", "Count": 1 } ] }
 ]

@@ -115,3 +115,17 @@ test("bo khoi dau + nhap ban luu cu (bo item la, kep so luong)", () => {
   assert.equal(imp.items.get("egg"), 6);
   assert.equal(imp.items.has("khong_ton_tai"), false);
 });
+
+test("san ban / giet thit: chi nhan thit/da/long qua nguon hunt, co gioi han moi gio", () => {
+  const s = state();
+  const r = applyOps(s, [
+    { t: "gain", item: "thit_bo", n: 4, src: "hunt" },
+    { t: "gain", item: "da_thu", n: 2, src: "hunt" },
+    { t: "gain", item: "kim_cuong", n: 1, src: "hunt" },
+    { t: "gain", item: "thit_bo", n: 1, src: "harvest" },
+  ], ctx);
+  assert.deepEqual(r.rejected.map((x) => x.index), [2, 3]);
+  assert.equal(s.items.get("thit_bo"), 4);
+  const r2 = applyOps(state(), [{ t: "gain", item: "thit_heo", n: 999, src: "hunt" }], ctx);
+  assert.equal(r2.rejected.length, 1, "vuot gioi han moi gio");
+});

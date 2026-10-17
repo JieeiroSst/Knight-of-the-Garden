@@ -293,12 +293,60 @@ namespace HiepSiVeVuon.Systems
 
         public void RequestSync() => _syncRequested = true;
 
+        // ==== Do ben / han dung (xem ItemConditions) ====
+        private double _sinceWearDrain, _sinceSpoilCheck;
+
+        private void PushWear(string id, int n)
+        {
+            if (n > 0) Push(new() { ["t"] = "wear", ["item"] = id, ["n"] = Math.Min(n, 500) }, new(), 0, flushSoon: false);
+        }
+
+        // Sua mon tot nhat chua day do ben (ton vang + nguyen lieu theo items.json) - server kiem lai.
+        public bool Repair(string itemId)
+        {
+            var def = ItemDatabase.Instance.GetItem(itemId);
+            if (def == null || def.MaxDurability <= 0 || !ItemConditions.CanAffordRepair(itemId)) return false;
+            var (cur, max) = ItemConditions.Durability(itemId);
+            if (cur >= max) return false;
+            // Hao mon chua gui phai toi server TRUOC lenh sua (neu khong server thay do con nguyen ven).
+            PushWear(itemId, ItemConditions.DrainWear(itemId));
+            var effects = new Dictionary<string, int>();
+            using (Suppress())
+            {
+                GameManager.Instance.SpendGold(def.RepairGold);
+                foreach (var c in def.RepairCost)
+                {
+                    int fromInv = Math.Min(c.Count, Inventory.Instance.CountOf(c.ItemId));
+                    if (fromInv > 0) Inventory.Instance.RemoveItem(c.ItemId, fromInv);
+                    if (c.Count - fromInv > 0) Backpack.Instance.RemoveItem(c.ItemId, c.Count - fromInv);
+                    effects[c.ItemId] = -c.Count;
+                }
+            }
+            ItemConditions.MarkRepaired(itemId);
+            Push(new() { ["t"] = "repair", ["item"] = itemId }, effects, -def.RepairGold);
+            Notify.Show(string.Format(Loc.T("dur.repaired_fmt"), ItemDatabase.Instance.GetDisplayName(itemId)));
+            return true;
+        }
+
         private static bool Online => BackendClient.Instance != null && BackendClient.Instance.IsLoggedIn;
 
         // ==== Vong gui/dong bo ====
         public override void _Process(double delta)
         {
             if (!Online || _busy) return;
+            _sinceWearDrain += delta;
+            _sinceSpoilCheck += delta;
+            if (_sinceWearDrain >= FlushInterval)
+            {
+                _sinceWearDrain = 0;
+                foreach (var (id, n) in ItemConditions.DrainWear()) PushWear(id, n);
+            }
+            // Co lo thit/nong san vua het han -> dong bo de server doi thanh Do Oi Thiu.
+            if (_sinceSpoilCheck >= 15.0)
+            {
+                _sinceSpoilCheck = 0;
+                if (ItemConditions.AnyExpired()) _syncRequested = true;
+            }
             _sinceFlush += delta;
             _sinceFullSync += delta;
             bool hasLocal = _queue.Count > 0 || _gains.Count > 0 || _consumes.Count > 0 || _goldGains.Count > 0 || _goldSpend > 0;
@@ -403,6 +451,7 @@ namespace HiepSiVeVuon.Systems
             gold += _goldGains.Values.Sum() - _goldSpend;
 
             Reconcile(target, Math.Max(0, gold));
+            ItemConditions.ApplySnapshot(root);
 
             HouseLevel = root.GetProperty("houseLevel").GetInt32();
             Bin = root.GetProperty("bin").EnumerateArray()
@@ -493,6 +542,10 @@ namespace HiepSiVeVuon.Systems
                     string.Format(Loc.T("mail.ship_body_fmt"), string.Join("\n", lines), gold));
                 Notify.Show(string.Format(Loc.T("ship.paid_fmt"), gold));
             }
+            else if (type == "spoiled")
+            {
+                Notify.Show(string.Format(Loc.T("fresh.spoiled_fmt"), e.GetProperty("count").GetInt32(), ItemDatabase.Instance.GetDisplayName(e.GetProperty("item").GetString())));
+            }
             else if (type == "market_expired")
             {
                 Notify.Show(string.Format(Loc.T("market.expired_fmt"), ItemDatabase.Instance.GetDisplayName(e.GetProperty("item").GetString()), e.GetProperty("count").GetInt32()));
@@ -502,6 +555,7 @@ namespace HiepSiVeVuon.Systems
         // Dang xuat/doi tai khoan: bo trang thai cu.
         public void Reset()
         {
+            ItemConditions.Reset();
             _queue.Clear();
             _inflight = null;
             _gains.Clear();

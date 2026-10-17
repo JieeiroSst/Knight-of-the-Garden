@@ -137,3 +137,11 @@ res://scripts/ui/WardrobeUI.cs
 res://scripts/entities/TailorStation.cs
 res://scripts/entities/ArmPoseModifier.cs
 res://scenes/Main.tscn
+res://scripts/systems/VoiceChat.cs
+res://scripts/entities/CameraRig.cs
+res://scripts/ui/BaseUI.cs
+res://scripts/entities/LootBag.cs
+res://scripts/systems/PvpClient.cs
+res://scripts/entities/BaseStructure.cs
+res://scripts/entities/ArrowProjectile.cs
+res://scripts/entities/Huntable.cs

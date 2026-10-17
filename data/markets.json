@@ -1,0 +1,9 @@
+[
+  { "Id": "cho_thi_tran", "Name": "Chợ Thị Trấn", "NameEn": "Town Market", "X": 9410, "Z": 3190, "SafeRadius": 350, "Built": false },
+  { "Id": "cho_nga_tu", "Name": "Chợ Ngã Tư Đường Lớn", "NameEn": "Crossroads Market", "X": 4950, "Z": 2040, "SafeRadius": 350, "Built": true },
+  { "Id": "cho_bac", "Name": "Chợ Phương Bắc", "NameEn": "Northern Market", "X": -1000, "Z": -9800, "SafeRadius": 350, "Built": true },
+  { "Id": "cho_dong", "Name": "Chợ Phương Đông", "NameEn": "Eastern Market", "X": 12500, "Z": -1500, "SafeRadius": 350, "Built": true },
+  { "Id": "cho_nam", "Name": "Chợ Phương Nam", "NameEn": "Southern Market", "X": 2500, "Z": 11000, "SafeRadius": 350, "Built": true },
+  { "Id": "cho_tay", "Name": "Chợ Phương Tây", "NameEn": "Western Market", "X": -11500, "Z": -500, "SafeRadius": 350, "Built": true },
+  { "Id": "cho_bien_vien", "Name": "Chợ Biên Viễn", "NameEn": "Frontier Market", "X": 21000, "Z": 19000, "SafeRadius": 350, "Built": true }
+]

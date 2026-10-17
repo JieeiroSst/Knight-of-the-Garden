@@ -1,10 +1,10 @@
 const { pool } = require("../db/pool");
 
-async function insert(client, sellerId, itemId, count, price, days) {
+async function insert(client, sellerId, itemId, count, price, days, itemStateCarry = null) {
   const r = await client.query(
-    `INSERT INTO market_listings (seller_id, item_id, count, price, expires_at)
-     VALUES ($1, $2, $3, $4, now() + make_interval(days => $5)) RETURNING *`,
-    [sellerId, itemId, count, price, days]
+    `INSERT INTO market_listings (seller_id, item_id, count, price, expires_at, item_state)
+     VALUES ($1, $2, $3, $4, now() + make_interval(days => $5), $6) RETURNING *`,
+    [sellerId, itemId, count, price, days, itemStateCarry && Object.keys(itemStateCarry).length ? JSON.stringify(itemStateCarry) : null]
   );
   return r.rows[0];
 }
@@ -28,7 +28,7 @@ async function close(client, id, status, buyerId = null) {
 async function expireForSeller(client, sellerId) {
   const r = await client.query(
     `UPDATE market_listings SET status = 'expired', closed_at = now()
-     WHERE seller_id = $1 AND status = 'active' AND expires_at <= now() RETURNING item_id, count`,
+     WHERE seller_id = $1 AND status = 'active' AND expires_at <= now() RETURNING item_id, count, item_state`,
     [sellerId]
   );
   return r.rows;

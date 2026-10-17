@@ -34,7 +34,7 @@ namespace HiepSiVeVuon.Entities
                 });
 
             if (def.Ghostly && glow.HasValue)
-                owner.AddChild(new OmniLight3D { LightColor = glow.Value, LightEnergy = 0.9f, OmniRange = 55f, Position = Vector3.Up * (def.HoverHeight + 12f) });
+                owner.AddChild(new OmniLight3D { LightColor = glow.Value, LightEnergy = 0.9f, OmniRange = 55f, Position = Vector3.Up * (def.HoverHeight + 12f), DistanceFadeEnabled = true, DistanceFadeBegin = 700f, DistanceFadeLength = 200f });
 
             // Bong do tron duoi quai bay - giu cam giac "dang lo lung tren mat dat".
             if (def.HoverHeight > 0f)

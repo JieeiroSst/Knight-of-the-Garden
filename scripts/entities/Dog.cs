@@ -87,8 +87,11 @@ namespace HiepSiVeVuon.Entities
             else if (hour == SleepEndHour) _sleeping = false;
         }
 
+        private bool _simAsleep;
+
         public override void _PhysicsProcess(double delta)
         {
+            if (HiepSiVeVuon.Core.SimLod.Sleep(this, ref _simAsleep)) return; // xa nguoi choi -> ngu mo phong
             float dt = (float)delta;
             if (_target == null || !IsInstanceValid(_target))
                 _target = GetTree().GetFirstNodeInGroup("player") as Node3D;

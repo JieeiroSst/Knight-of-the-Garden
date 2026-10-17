@@ -44,6 +44,7 @@ namespace HiepSiVeVuon.Entities
         private static Hold HoldOf(string itemId) => itemId switch
         {
             "sword" => new(1.8f, new Vector3(0, -0.7f, 0)),
+            "cung_go" or "cung_san" => new(2.2f, Vector3.Zero),
             "hoe" or "cuoc_bac" or "cuoc_vang" => new(3.6f, new Vector3(0, 0.8f, 0)),
             "xeng" => new(3.2f, new Vector3(0, 0.8f, 0)),
             "cao_co" => new(2.5f, new Vector3(0, 0.6f, 0)),
@@ -213,6 +214,8 @@ namespace HiepSiVeVuon.Entities
         private static Node3D BuildMesh(string itemId) => itemId switch
         {
             "sword" => MakeSword(),
+            "cung_go" => MakeBow(new Color(0.5f, 0.33f, 0.18f), null),
+            "cung_san" => MakeBow(new Color(0.32f, 0.22f, 0.14f), new Color(0.7f, 0.72f, 0.76f)),
             "hoe" => MakeImportedTool("hoe", new Color(0.42f, 0.42f, 0.45f)),
             "cuoc_bac" => MakeImportedTool("hoe", new Color(0.82f, 0.83f, 0.86f)),
             "cuoc_vang" => MakeImportedTool("hoe", new Color(0.85f, 0.68f, 0.2f)),
@@ -283,6 +286,38 @@ namespace HiepSiVeVuon.Entities
                 new Color(0.32f, 0.2f, 0.12f), roughness: 0.85f)); // chuoi cam
             root.AddChild(MakeMesh(new SphereMesh { Radius = 0.38f, Height = 0.76f }, new Vector3(0, -1.65f, 0),
                 new Color(0.55f, 0.45f, 0.2f), roughness: 0.4f, metallic: 0.5f)); // nut chan
+            return root;
+        }
+
+        // Cung: 2 canh cong (nhieu doan tru noi tiep theo cung tron) doi xung qua tay cam o goc toa do,
+        // day cung thang noi 2 dau. trim != null: bit kim loai o 2 dau canh (Cung San Thep).
+        private static Node3D MakeBow(Color wood, Color? trim)
+        {
+            var root = new Node3D();
+            const float R = 7f;
+            const int seg = 6;
+            const float maxAng = 0.85f; // rad moi canh
+            Vector3 P(float a) => new(0, R * Mathf.Sin(a), -R * (1f - Mathf.Cos(a)));
+            for (int side = -1; side <= 1; side += 2)
+                for (int i = 0; i < seg; i++)
+                {
+                    float a0 = side * maxAng * i / seg, a1 = side * maxAng * (i + 1) / seg;
+                    var p0 = P(a0); var p1 = P(a1);
+                    float thick = Mathf.Lerp(0.42f, 0.22f, (i + 0.5f) / seg);
+                    var limb = MakeMesh(new CylinderMesh { TopRadius = thick, BottomRadius = thick, Height = p0.DistanceTo(p1) + 0.05f },
+                        (p0 + p1) / 2f, wood, roughness: 0.7f);
+                    var d = (p1 - p0).Normalized();
+                    limb.Basis = new Basis(new Quaternion(Vector3.Up, d));
+                    root.AddChild(limb);
+                }
+            var tipTop = P(maxAng); var tipBot = P(-maxAng);
+            var str = MakeMesh(new CylinderMesh { TopRadius = 0.05f, BottomRadius = 0.05f, Height = tipTop.DistanceTo(tipBot) },
+                (tipTop + tipBot) / 2f, new Color(0.9f, 0.88f, 0.8f), roughness: 0.9f);
+            root.AddChild(str);
+            root.AddChild(MakeMesh(new CylinderMesh { TopRadius = 0.5f, BottomRadius = 0.5f, Height = 1.6f }, Vector3.Zero, new Color(0.25f, 0.16f, 0.1f), roughness: 0.9f)); // quan tay cam
+            if (trim is Color t)
+                foreach (var tip in new[] { tipTop, tipBot })
+                    root.AddChild(MakeMesh(new SphereMesh { Radius = 0.45f, Height = 0.9f }, tip, t, roughness: 0.3f, metallic: 0.7f));
             return root;
         }
 

@@ -6,7 +6,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const FILES = ["items.json", "recipes.json", "cooking.json", "enemies.json", "achievements.json", "house.json", "starter.json", "fish.json", "forage.json"];
+const FILES = ["items.json", "recipes.json", "cooking.json", "enemies.json", "achievements.json", "house.json", "starter.json", "fish.json", "forage.json", "markets.json"];
 const SRC = path.join(__dirname, "..", "..", "data");
 const DST = path.join(__dirname, "..", "gamedata");
 

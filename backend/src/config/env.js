@@ -33,6 +33,12 @@ const envSchema = z.object({
 });
 
 const parsed = envSchema.safeParse(process.env);
+// Production chay nhieu process (api/gateway rieng): BAT BUOC Redis - pub/sub giua gateway, to doi,
+// kenh, cache. Thieu Redis thi moi process giu trang thai rieng -> mat to doi khi khoi dong lai.
+if (parsed.success && parsed.data.NODE_ENV === "production" && parsed.data.ROLE !== "all" && !parsed.data.REDIS_URL) {
+  parsed.success = false;
+  parsed.error = { issues: [{ path: ["REDIS_URL"], message: "bat buoc khi NODE_ENV=production va ROLE=api/gateway (to doi/kenh/cache phai dung chung qua Redis)." }] };
+}
 if (!parsed.success) {
   console.error("Bien moi truong khong hop le, dung khoi dong:");
   for (const issue of parsed.error.issues) {

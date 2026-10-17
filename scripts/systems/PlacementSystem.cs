@@ -92,7 +92,7 @@ namespace HiepSiVeVuon.Systems
                 _ => null,
             };
             if (node == null) return null;
-            node.Position = new Vector3(e.X, e.Y, e.Z);
+            node.Position = Core.FarmSpace.Display(new Vector3(e.X, e.Y, e.Z));
             node.RotationDegrees = new Vector3(0, e.RotY, 0);
             node.AddToGroup("placed_objects");
             parent.AddChild(node);

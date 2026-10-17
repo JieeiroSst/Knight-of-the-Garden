@@ -7,6 +7,8 @@ const combat = require("../game/combatRules");
 const { catalog } = require("../game/catalog");
 const { calendar } = require("./timeService");
 const { AppError } = require("../utils/AppError");
+const cache = require("../cache/cache");
+const itemState = require("../game/itemState");
 
 const HOUR = 3600000;
 const dayBuckets = (day) => {
@@ -28,6 +30,7 @@ async function questView(playerId, kind, info) {
     return {
       idx, id: q.id, target, progress: Math.min(target, counters.get(q.counter) || 0),
       gold: isDay ? q.gold : q.gold * 4, claimed: claimed.has(idx),
+      item: q.item || null, n: q.item ? (isDay ? q.n : q.n * 3) : 0,
     };
   });
 }
@@ -79,9 +82,9 @@ async function claimQuest(playerId, kind, idx) {
   await econ.withTransaction(async (client) => {
     await ensureWallet(client, playerId);
     if (!(await prog.insertClaim(client, playerId, key, idx))) throw new AppError(409, "Da nhan thuong nhiem vu nay.");
-    await grant(client, playerId, q.gold);
+    await grant(client, playerId, q.gold, q.item, q.n);
   });
-  return { gold: q.gold };
+  return { gold: q.gold, item: q.item, n: q.n };
 }
 
 // ==== Bang xep hang ====
@@ -137,13 +140,27 @@ async function enhance(playerId, itemId, rand = Math.random) {
     const newLevel = success ? level + 1 : level >= 6 ? level - 1 : level;
     await prog.setEnhancement(client, playerId, itemId, newLevel);
     return { itemId, success, level: newLevel };
-  });
+  }).then(async (r) => { await cache.invalidate(powerKey(playerId)); return r; });
 }
 
 // ==== Dau truong ====
+// Suc manh PvP (vu khi/giap/cung manh nhat dang so huu + cuong hoa). Hoi moi don danh -> cache ngan
+// (do moi mua/che tao co hieu luc sau toi da POWER_TTL giay; cuong hoa xoa cache ngay).
+const POWER_TTL = 20;
+const powerKey = (id) => `power:${id}`;
 async function duelPower(playerId) {
-  const owned = await prog.ownedItems(playerId);
-  return combat.duelPower(owned, await prog.enhancements(playerId), catalog);
+  return cache.cached(powerKey(playerId), POWER_TTL, async () => {
+    const owned = await prog.ownedItemCounts(playerId);
+    const states = await prog.itemStates(playerId);
+    const usable = (id) => {
+      const def = catalog.items.get(id);
+      const max = itemState.maxDur(def);
+      if (!max) return true;
+      const st = itemState.normalize(states.get(id), owned.get(id) || 0, def, Date.now());
+      return itemState.usable(itemState.bestDur(st) ?? max, max);
+    };
+    return combat.duelPower([...owned.keys()], await prog.enhancements(playerId), catalog, owned, usable);
+  });
 }
 
 async function recordDuel(winnerId, loserId) {

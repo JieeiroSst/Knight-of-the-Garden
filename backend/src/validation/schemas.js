@@ -38,7 +38,7 @@ const characterSchema = z.object({
 // 1 op kinh te - chi kiem tra HINH DANG o day; luat that nam o game/economyRules.js.
 const opSchema = z
   .object({
-    t: z.enum(["gain", "consume", "gold+", "gold-", "buy", "sell", "craft", "cook", "ship", "unship", "house", "achievement"]),
+    t: z.enum(["gain", "consume", "gold+", "gold-", "buy", "sell", "craft", "cook", "ship", "unship", "house", "achievement", "wear", "repair"]),
     item: z.string().max(60).optional(),
     n: z.number().int().optional(),
     src: z.string().max(20).optional(),
@@ -77,8 +77,14 @@ const helpSchema = z.object({ plots: z.array(z.string().max(40)).min(1).max(60) 
 const statsSchema = z.object({ stats: z.record(z.string().max(40), z.number().int().min(0)) });
 const claimSchema = z.object({ period: z.enum(["d", "w"]), idx: z.number().int().min(0).max(2) });
 const enhanceSchema = z.object({ itemId: z.string().min(1).max(60) });
+// Treo thuong: theo id hoac ten nhan vat.
+const bountySchema = z.object({
+  targetId: z.number().int().positive().optional(),
+  targetName: z.string().trim().min(1).max(20).optional(),
+  amount: z.number().int().positive().max(100000),
+}).refine((v) => v.targetId || v.targetName, { message: "Thieu nguoi bi treo thuong." });
 
 module.exports = {
   credentialsSchema, saveSchema, characterSchema, economyBatchSchema, tradeInviteSchema, tradeOfferSchema, listingSchema,
-  nameSchema, guildCreateSchema, itemCountSchema, roleSchema, helpSchema, statsSchema, claimSchema, enhanceSchema,
+  nameSchema, guildCreateSchema, itemCountSchema, roleSchema, helpSchema, statsSchema, claimSchema, enhanceSchema, bountySchema,
 };

@@ -67,6 +67,7 @@ namespace HiepSiVeVuon.Entities
         {
             if (def == null) return false;
             if (def.Type == ItemType.Crop) return true;
+            if (def.Id == ItemConditions.Rotten) return true; // do thoi -> phan bon
             if (ItemDatabase.Instance.Forage.Any(f => f.ItemId == def.Id)) return true;
             return def.Id is "rong" or "sen" or "thao_duoc_rung" or "thao_duoc_dam_lay";
         }

@@ -31,8 +31,9 @@ async function createListing(sellerId, { itemId, count, price }) {
   return econ.withTransaction(async (client) => {
     await ensureWallet(client, sellerId);
     if ((await market.countActive(client, sellerId)) >= MAX_ACTIVE_LISTINGS) throw new AppError(400, `Toi da ${MAX_ACTIVE_LISTINGS} tin dang cung luc.`);
-    if (!(await econ.adjustItem(client, sellerId, itemId, -count))) throw new AppError(400, "Khong du vat pham de rao ban.");
-    return toPublic(await market.insert(client, sellerId, itemId, count, price, env.MARKET_LISTING_DAYS));
+    const carry = await econ.adjustItem(client, sellerId, itemId, -count);
+    if (!carry) throw new AppError(400, "Khong du vat pham de rao ban.");
+    return toPublic(await market.insert(client, sellerId, itemId, count, price, env.MARKET_LISTING_DAYS, carry));
   });
 }
 
@@ -47,7 +48,7 @@ async function buy(buyerId, listingId) {
     const tax = Math.floor((price * env.MARKET_TAX_PERCENT) / 100);
     await econ.addGold(client, buyerId, -price);
     await econ.addGold(client, l.seller_id, price - tax);
-    await econ.adjustItem(client, buyerId, l.item_id, l.count);
+    await econ.adjustItem(client, buyerId, l.item_id, l.count, l.item_state);
     await market.close(client, l.id, "sold", buyerId);
     return { listing: l, earned: price - tax };
   });
@@ -61,7 +62,7 @@ async function cancel(sellerId, listingId) {
     if (!l || l.seller_id !== sellerId) throw new AppError(404, "Khong tim thay tin rao.");
     if (l.status !== "active") throw new AppError(400, "Tin rao da dong.");
     await ensureWallet(client, sellerId);
-    await econ.adjustItem(client, sellerId, l.item_id, l.count);
+    await econ.adjustItem(client, sellerId, l.item_id, l.count, l.item_state);
     await market.close(client, l.id, "cancelled");
     return { ok: true };
   });

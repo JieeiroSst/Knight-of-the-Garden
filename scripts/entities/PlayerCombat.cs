@@ -143,10 +143,21 @@ namespace HiepSiVeVuon.Entities
             if (now < _nextSwingAt) return;
             // Dang vung nong cu: cho xong roi moi danh (khong cat ngang nhat cuoc).
             if (_armPose != null && _armPose.Busy && _armPose.CurrentMotion != "TwistSlash") { _attackBuffered = true; return; }
+            FaceCameraForAction();
+            // Tren lung ngua: ban cung binh thuong, can chien = chem quet tu yen ngua (xem TryMountedSlash).
+            if (_mountedHorse != null)
+            {
+                if (EquippedBow is ItemDef horseBow) TryShoot(horseBow);
+                else TryMountedSlash();
+                return;
+            }
             // Cam cuoc da + co quang truoc mat (khong co quai gan): bo cuoc da that su.
             if (!mounted && TryMineSwing()) return;
+            // Cung: ban mui ten tam xa thay vi chem.
+            if (EquippedBow is ItemDef bow) { TryShoot(bow); return; }
 
-            bool armed = Inventory.Instance.EquippedWeapon != null;
+            bool armed = WeaponUsable();
+            if (armed) ItemConditions.Wear(Inventory.Instance.EquippedWeapon);
             var combo = armed ? WeaponCombo : FistCombo;
             if (now > _comboExpire) _comboStep = 0;
             var swing = combo[_comboStep];
@@ -205,6 +216,187 @@ namespace HiepSiVeVuon.Entities
             };
         }
 
+        // ==== Cung ten ====
+        public const string ArrowItem = "mui_ten";
+        private const float AimConeDeg = 24f;
+        private ulong _noArrowWarnAt;
+
+        // Cung con dung duoc (do ben >= 40%) - cung hong thi danh tay khong.
+        private static ItemDef EquippedBow =>
+            Inventory.Instance.EquippedWeapon is string w && ItemDatabase.Instance.GetItem(w) is ItemDef d && d.Ranged && ItemConditions.IsUsable(w) ? d : null;
+
+        // Vu khi dang cam con dung duoc khong; hong thi nhac (toi da 1 lan/3s).
+        private ulong _brokenWarnAt;
+        private bool WeaponUsable()
+        {
+            string w = Inventory.Instance.EquippedWeapon;
+            if (w == null) return false;
+            if (ItemConditions.IsUsable(w)) return true;
+            if (Time.GetTicksMsec() > _brokenWarnAt)
+            {
+                _brokenWarnAt = Time.GetTicksMsec() + 3000;
+                Notify.Show(string.Format(Loc.T("dur.cannot_use_fmt"), ItemDatabase.Instance.GetDisplayName(w)));
+            }
+            return false;
+        }
+
+        private void TryShoot(ItemDef bow)
+        {
+            ulong now = Time.GetTicksMsec();
+            if (Inventory.Instance.CountOf(ArrowItem) <= 0)
+            {
+                if (now > _noArrowWarnAt) { Notify.Show(Loc.T("bow.no_arrows")); _noArrowWarnAt = now + 2000; }
+                return;
+            }
+            float range = bow.Range > 0 ? bow.Range : 900f;
+            _nextSwingAt = now + 650;
+            _lastAttackTime = now;
+            _stanceUntil = now + (ulong)(StanceSeconds * 1000f);
+
+            // Ngam theo HUONG CAMERA (xoay bang chuot phai): chon muc tieu gan tam nhat trong non ~24 do.
+            float yaw = CameraRig.Current?.Yaw ?? Mathf.Atan2(-_facing.X, -_facing.Z);
+            var aim = new Vector3(0, 0, -1).Rotated(Vector3.Up, yaw);
+            Node3D target = null;
+            float bestScore = float.MaxValue;
+            void Consider(Node3D n)
+            {
+                var to = n.GlobalPosition - GlobalPosition;
+                to.Y = 0;
+                float d = to.Length();
+                if (d < 1f || d > range) return;
+                float ang = Mathf.RadToDeg(aim.AngleTo(to / d));
+                if (ang > AimConeDeg) return;
+                float score = ang * 10f + d * 0.02f;
+                if (score < bestScore) { bestScore = score; target = n; }
+            }
+            foreach (var node in GetTree().GetNodesInGroup("enemies"))
+                if (node is Enemy e && IsInstanceValid(e) && !e.IsDead) Consider(e);
+            foreach (var node in GetTree().GetNodesInGroup("remote_players"))
+                if (node is RemotePlayer rp && IsInstanceValid(rp) && !rp.IsHidden && PvpClient.Instance?.IsFriendly(rp) == false) Consider(rp);
+            if (target == null)
+                foreach (var node in GetTree().GetNodesInGroup("huntables"))
+                    if (node is Node3D an && IsInstanceValid(an) && Huntable.Of(an) is Huntable hh && !hh.IsDead && !(hh.IsFarmAnimal && VisitSystem.Active)) Consider(an);
+
+            var dir = target != null ? (target.GlobalPosition - GlobalPosition) with { Y = 0 } : aim;
+            FaceInstantly(dir);
+            if (!Inventory.Instance.RemoveItem(ArrowItem, 1)) return;
+            ItemConditions.Wear(Inventory.Instance.EquippedWeapon);
+            int dmg = Mathf.Max(1, Inventory.Instance.GetWeaponDamage());
+            var tgt = target;
+            StartMotion(Motions.Cast, 1.6f, () =>
+            {
+                if (_dying) return;
+                var from = GlobalPosition + Vector3.Up * 30f + _facing * 12f;
+                var to = tgt != null && IsInstanceValid(tgt) ? tgt.GlobalPosition + Vector3.Up * 22f : from + _facing * range - Vector3.Up * 25f;
+                PvpClient.Instance?.Shoot(to, tgt as RemotePlayer);
+                ArrowProjectile.Spawn(GetTree().CurrentScene, from, to, () =>
+                {
+                    if (tgt is Enemy en && IsInstanceValid(en) && !en.IsDead)
+                    {
+                        en.TakeDamage(dmg);
+                        Sparks(en.GlobalPosition + Vector3.Up * 18f, false);
+                    }
+                    else if (tgt != null && IsInstanceValid(tgt) && Huntable.Of(tgt) is Huntable prey) prey.TakeHit(dmg);
+                });
+            }, 0.5f);
+        }
+
+        // ==== Giet thit / san ban (xem Huntable.cs) ====
+        private bool HitNearestHuntable(Vector3 facing, int dmg, float reach, bool mounted)
+        {
+            Huntable best = null;
+            float bestD = float.MaxValue;
+            foreach (var node in GetTree().GetNodesInGroup("huntables"))
+            {
+                if (node is not Node3D a || !IsInstanceValid(a) || Huntable.Of(a) is not Huntable h || h.IsDead) continue;
+                if (h.IsFarmAnimal && VisitSystem.Active) continue; // dang tham nong trai ban be
+                bool inArc = mounted ? InMountedArc(a.GlobalPosition, facing, reach) : InArc(a.GlobalPosition, facing, reach);
+                if (!inArc) continue;
+                float d = a.GlobalPosition.DistanceTo(GlobalPosition);
+                if (d < bestD) { bestD = d; best = h; }
+            }
+            if (best == null) return false;
+            best.TakeHit(dmg);
+            Sparks(best.GetParent<Node3D>().GlobalPosition + Vector3.Up * 14f, false);
+            return true;
+        }
+
+        // ==== Chien dau tren lung ngua ====
+        // Chem QUET NGANG tu tren yen (chi than tren chuyen dong - chan van ngoi yen, ngua van chay):
+        // tam xa hon (ngoi cao), cung rong ca 2 ben suon, luan phien trai/phai. Sat thuong tang theo toc
+        // do ngua; dang PHI NUOC DAI (toc do > 68%) = XUNG PHONG: hat nguoi dang cuoi xuong (server tu
+        // kiem toc do that, xem pvpRules.mountedHit), rung man hinh manh.
+        private int _mountedSide = 1;
+
+        private void TryMountedSlash()
+        {
+            ulong now = Time.GetTicksMsec();
+            float ratio = Mathf.Clamp(_mountedHorse.SpeedRatio, 0f, Horse.GallopMult);
+            bool charge = ratio > 0.68f;
+            bool armed = WeaponUsable();
+            if (armed) ItemConditions.Wear(Inventory.Instance.EquippedWeapon, charge ? 2 : 1);
+            _nextSwingAt = now + (ulong)(charge ? 900 : 700);
+            _lastAttackTime = now;
+            if (armed) _stanceUntil = now + (ulong)(StanceSeconds * 1000f);
+            _lastActionWasAttack = true;
+            RefreshHeldItem();
+            _mountedSide = -_mountedSide;
+            int side = _mountedSide;
+            int dmg = Mathf.Max(1, Mathf.RoundToInt(Inventory.Instance.GetWeaponDamage() * (1f + 0.5f * ratio)));
+            var motion = charge ? Motions.Slam : Motions.Sweep;
+            StartMotion(motion, charge ? 1.15f : 1.35f, () =>
+            {
+                if (_dying || _mountedHorse == null) return;
+                var facing = _mountedHorse.Facing;
+                SpawnSlash(facing, side, charge, armed);
+                ApplyMountedHit(facing, dmg, charge);
+                if (charge) Dust(GlobalPosition + facing * 50f - Vector3.Up * 10f, 18, new Color(0.7f, 0.62f, 0.5f));
+            }, 1f);
+            _heldItem?.StartTrail(0.3f, charge ? new Color(1f, 0.8f, 0.4f) : new Color(0.75f, 0.9f, 1f));
+        }
+
+        private bool InMountedArc(Vector3 target, Vector3 facing, float reach)
+        {
+            var to = target - GlobalPosition;
+            to.Y = 0;
+            float d = to.Length();
+            return d <= reach && (d < 15f || facing.Dot(to / d) > -0.25f); // truoc mat + 2 ben suon ngua
+        }
+
+        private void ApplyMountedHit(Vector3 facing, int dmg, bool charge)
+        {
+            float reach = AttackRange * 1.45f + 20f;
+            bool landed = false;
+            foreach (var node in GetTree().GetNodesInGroup("remote_players"))
+            {
+                if (node is not RemotePlayer rp || !IsInstanceValid(rp) || PvpClient.Instance?.IsFriendly(rp) != false) continue;
+                if (!InMountedArc(rp.GlobalPosition, facing, reach + 30f)) continue;
+                PvpClient.Instance.Hit(rp, charge);
+                Sparks(rp.GlobalPosition + Vector3.Up * 25f, charge);
+                landed = true;
+            }
+            foreach (var node in GetTree().GetNodesInGroup("enemies"))
+                if (node is Enemy e && IsInstanceValid(e) && !e.IsDead && InMountedArc(e.GlobalPosition, facing, reach))
+                {
+                    e.TakeDamage(dmg);
+                    Sparks(e.GlobalPosition + Vector3.Up * 18f, charge);
+                    landed = true;
+                }
+            foreach (var node in GetTree().GetNodesInGroup("base_structures"))
+                if (node is BaseStructure bs && IsInstanceValid(bs) && PvpClient.Instance?.IsAlly(bs.Info.OwnerId) == false && InMountedArc(bs.GlobalPosition, facing, reach + 35f))
+                {
+                    PvpClient.Instance.HitStructure(bs);
+                    landed = true;
+                    break;
+                }
+            if (!landed) landed = HitNearestHuntable(facing, dmg, reach, mounted: true);
+            if (landed)
+            {
+                HitStop(charge ? 0.1f : 0.05f);
+                Shake(charge ? 4f : 1.8f, charge ? 0.28f : 0.14f);
+            }
+        }
+
         private void ApplyHit(Vector3 facing, int dmg, bool finisher)
         {
             float reach = AttackRange * (finisher ? 1.35f : 1f);
@@ -217,6 +409,27 @@ namespace HiepSiVeVuon.Entities
                 toFoe.Y = 0;
                 if (toFoe.Length() <= reach + 40f) { NetworkClient.Instance.DuelHit(DuelUI.ActiveDuelId); landed = true; }
             }
+            // PvP the gioi mo: trung nguoi choi khac (khong phai dong doi) -> bao server; server tinh mau
+            // bang vu khi/giap that, kiem tam theo vi tri server biet (xem PvpClient/backend pvp.js).
+            foreach (var node in GetTree().GetNodesInGroup("remote_players"))
+            {
+                if (node is not RemotePlayer rp || !IsInstanceValid(rp)) continue;
+                if (DuelUI.ActiveDuelId != null && rp.PlayerId == DuelUI.OpponentId) continue; // da tinh o tren
+                if (PvpClient.Instance?.IsFriendly(rp) != false || !InArc(rp.GlobalPosition, facing, reach + 20f)) continue;
+                PvpClient.Instance.Hit(rp, finisher);
+                Sparks(rp.GlobalPosition + Vector3.Up * 22f, finisher);
+                landed = true;
+            }
+            // Pha can cu cua nguoi khac.
+            foreach (var node in GetTree().GetNodesInGroup("base_structures"))
+            {
+                if (node is not BaseStructure bs || !IsInstanceValid(bs) || PvpClient.Instance?.IsAlly(bs.Info.OwnerId) != false) continue;
+                if (!InArc(bs.GlobalPosition, facing, reach + 35f)) continue;
+                PvpClient.Instance.HitStructure(bs);
+                Sparks(bs.GlobalPosition + Vector3.Up * 20f, finisher);
+                landed = true;
+                break; // 1 nhat chi tinh 1 cong trinh
+            }
             foreach (var node in GetTree().GetNodesInGroup("enemies"))
             {
                 if (node is Enemy enemy && IsInstanceValid(enemy) && !enemy.IsDead && InArc(enemy.GlobalPosition, facing, reach))
@@ -226,6 +439,9 @@ namespace HiepSiVeVuon.Entities
                     landed = true;
                 }
             }
+            // Giet thit / san ban: chi khi nhat nay KHONG trung quai/nguoi/cong trinh (danh quai trong
+            // chuong khong vo tinh giet ca dan) va chi con GAN NHAT.
+            if (!landed) landed = HitNearestHuntable(facing, dmg, reach, mounted: false);
             // Chat cay trong tam neu co (lay go) - ton the luc (giam theo cap Hai Luom).
             foreach (var node in GetTree().GetNodesInGroup("choppable_trees"))
             {
@@ -323,6 +539,7 @@ namespace HiepSiVeVuon.Entities
         {
             string tool = Inventory.Instance.EquippedTool;
             if (_armPose == null || tool == null || !tool.StartsWith("pickaxe")) return false;
+            if (!ItemConditions.IsUsable(tool)) return false; // cuoc hong -> khong dao duoc
             int power = Inventory.Instance.GetToolPower();
             OreNode target = null;
             float best = AttackRange + 10f;
@@ -348,6 +565,7 @@ namespace HiepSiVeVuon.Entities
                 if (!IsInstanceValid(ore) || _dying) return;
                 if (SpendStamina(SkillType.Mining, 3f))
                 {
+                    ItemConditions.Wear(tool);
                     ore.Mine(power);
                     Sparks(ore.GlobalPosition + Vector3.Up * 10f, false);
                     Dust(ore.GlobalPosition + Vector3.Up * 4f, 10, new Color(0.55f, 0.53f, 0.5f));
@@ -409,6 +627,8 @@ namespace HiepSiVeVuon.Entities
                 if (node is Enemy e && IsInstanceValid(e) && !e.IsDead) Consider(e.GlobalPosition);
             if (DuelUI.ActiveDuelId != null && NetworkClient.Instance.FindRemote(DuelUI.OpponentId) is RemotePlayer foe)
                 Consider(foe.GlobalPosition);
+            foreach (var node in GetTree().GetNodesInGroup("remote_players"))
+                if (node is RemotePlayer rp && IsInstanceValid(rp) && !rp.IsHidden && PvpClient.Instance?.IsFriendly(rp) == false) Consider(rp.GlobalPosition);
             if (dir is Vector3 d2) FaceInstantly(d2);
         }
 
@@ -554,7 +774,7 @@ namespace HiepSiVeVuon.Entities
         public Vector3 PlayRoll()
         {
             var input = Input.GetVector("move_left", "move_right", "move_up", "move_down");
-            var dir = input.LengthSquared() > 0.01f ? new Vector3(input.X, 0, input.Y).Normalized() : _facing;
+            var dir = input.LengthSquared() > 0.01f ? CameraRig.RelativeMove(input).Normalized() : _facing;
             FaceInstantly(dir);
             float len = AnimLength("Roll", 0.5f);
             float speed = Mathf.Max(1f, len / 0.42f);
@@ -600,6 +820,8 @@ namespace HiepSiVeVuon.Entities
         private void OnHurt(int dmg)
         {
             if (_dying || !IsInstanceValid(this)) return;
+            // Giap mon khi bi quai danh (don PvP: server da tu tinh).
+            if (Inventory.Instance.EquippedArmor is string armor && !(PvpClient.Instance?.RecentPvpHurt ?? false)) ItemConditions.Wear(armor);
             Shake(Mathf.Clamp(1f + dmg * 0.08f, 1f, 4f), 0.18f);
             if (_hurtRect != null)
             {
@@ -632,6 +854,7 @@ namespace HiepSiVeVuon.Entities
             if (_dying) return;
             _dying = true;
             _attackHeld = _attackBuffered = false;
+            var deathPos = GlobalPosition;
             GameManager.Instance.SetInvulnerable(5);
             if (_mountedHorse != null) DismountHorse();
             if (_mountedBoat != null) DismountBoat();
@@ -644,23 +867,81 @@ namespace HiepSiVeVuon.Entities
             var tw = CreateTween();
             tw.TweenInterval(wait);
             tw.TweenProperty(_fadeRect, "color:a", 1f, 0.4f);
+            // Man hinh toi -> hoi server hoi sinh o dau (giuong gan nhat / nong trai) va bao gio (MAT
+            // giuong -> phai doi 1 gio, dem nguoc tren man hinh den, khong dieu khien duoc).
             tw.TweenCallback(Callable.From(() =>
             {
-                GameManager.Instance.Hp = GameManager.Instance.MaxHp / 2;
-                if (_indoors)
+                var pvp = PvpClient.Instance;
+                if (pvp == null) { FinishRespawn(Vector3.Zero); return; }
+                pvp.ResolveRespawn(deathPos, (pos, readyAtMs) =>
                 {
-                    _indoors = false;
-                    if (_camera != null) _camera.Position = OutdoorCameraOffset;
-                }
-                Velocity = Vector3.Zero;
-                GlobalPosition = Vector3.Zero;
-                _actionPlaying = false;
-                _currentAnim = "";
-                _dying = false;
-                GameManager.Instance.SetInvulnerable(2);
-                GameManager.Instance.EmitSignal(GameManager.SignalName.StatsChanged);
+                    if (!IsInstanceValid(this)) return;
+                    if (readyAtMs > (long)GameManager.Instance.ServerNowMs) BeginRespawnWait(pos, readyAtMs);
+                    else FinishRespawn(pos);
+                });
             }));
-            tw.TweenProperty(_fadeRect, "color:a", 0f, 0.4f);
+        }
+
+        // ==== Cho hoi sinh (mat giuong) ====
+        private long _respawnReadyAt;
+        private Vector3 _respawnPos;
+        private Label _respawnLabel;
+
+        private void BeginRespawnWait(Vector3 pos, long readyAtMs)
+        {
+            _respawnReadyAt = readyAtMs;
+            _respawnPos = pos;
+            if (_respawnLabel == null && _fadeRect?.GetParent() is CanvasLayer layer)
+            {
+                _respawnLabel = new Label
+                {
+                    HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+                    AutowrapMode = TextServer.AutowrapMode.Word, MouseFilter = Control.MouseFilterEnum.Ignore,
+                };
+                _respawnLabel.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+                _respawnLabel.AddThemeFontSizeOverride("font_size", 22);
+                _respawnLabel.AddThemeColorOverride("font_color", new Color(1f, 0.85f, 0.7f));
+                layer.AddChild(_respawnLabel);
+            }
+            if (_respawnLabel != null) _respawnLabel.Visible = true;
+            if (_fadeRect != null) _fadeRect.Color = new Color(_fadeRect.Color, 1f);
+        }
+
+        // Goi moi khung hinh (Player._Process) khi dang cho.
+        private void UpdateRespawnWait()
+        {
+            if (_respawnReadyAt <= 0) return;
+            long left = _respawnReadyAt - (long)GameManager.Instance.ServerNowMs;
+            if (left > 0)
+            {
+                var ts = System.TimeSpan.FromMilliseconds(left);
+                if (_respawnLabel != null) _respawnLabel.Text = string.Format(Loc.T("respawn.wait_fmt"), $"{(int)ts.TotalMinutes:00}:{ts.Seconds:00}");
+                return;
+            }
+            _respawnReadyAt = 0;
+            if (_respawnLabel != null) _respawnLabel.Visible = false;
+            FinishRespawn(_respawnPos);
+        }
+
+        private void FinishRespawn(Vector3 pos)
+        {
+            SurvivalSystem.Instance?.OnRespawn();
+            GameManager.Instance.Hp = GameManager.Instance.MaxHp / 2;
+            if (_indoors)
+            {
+                _indoors = false;
+                _camRig?.SetProfile(CameraRig.Profile.Outdoor);
+            }
+            Velocity = Vector3.Zero;
+            // Zero = "ve nong trai" -> nong trai rieng cua minh (toa do server cap, xem FarmSpace).
+            if (pos == Vector3.Zero) pos = Core.FarmSpace.SpawnPoint;
+            GlobalPosition = pos + Vector3.Up * 8f;
+            _actionPlaying = false;
+            _currentAnim = "";
+            _dying = false;
+            GameManager.Instance.SetInvulnerable(2);
+            GameManager.Instance.EmitSignal(GameManager.SignalName.StatsChanged);
+            CreateTween().TweenProperty(_fadeRect, "color:a", 0f, 0.4f);
         }
     }
 }

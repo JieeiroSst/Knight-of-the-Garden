@@ -63,7 +63,7 @@ namespace HiepSiVeVuon.Core
         // ==== Ban do sinh canh ====
         // Trong so 8 lop cho tung loai vung (theo ten vung dang ky trong WorldStreamer.Regions).
         //                                   co   coDat  dat  bun  la   da   cat  soi
-        private static readonly float[] Wild =     { .50f, .30f, .10f, 0f, .06f, .02f, 0f, .02f };
+        // Nen ngoai cac vung = sinh canh thu tuc cua the gioi vo han (xem WorldBiomes.GroundLayers).
         private static readonly Dictionary<string, float[]> RegionLayers = new()
         {
             ["Núi"] =        new[] { .05f, .22f, .10f, 0f, 0f, .48f, 0f, .15f },
@@ -82,6 +82,7 @@ namespace HiepSiVeVuon.Core
         private static readonly float[] French = { .50f, .38f, .12f, 0f, 0f, 0f, 0f, 0f };
 
         private static string _biomeSignature;
+        private static ImageTexture _biomeTexA, _biomeTexB;
         private const int BiomeRes = 512;
         private const float Feather = 380f; // do rong vung chuyen tiep mem giua 2 sinh canh
 
@@ -97,8 +98,11 @@ namespace HiepSiVeVuon.Core
             foreach (var r in regions)
                 if (RegionLayers.TryGetValue(r.Name ?? "", out var w)) rects.Add((new Vector2(r.Center.X, r.Center.Z), r.HalfSize, w));
             if (WorldStreamer.FrenchRegionCenter is Vector3 fc) rects.Add((new Vector2(fc.X, fc.Z), WorldStreamer.FrenchRegionHalfSize, French));
+            // Nong trai o goc toa do (offline) nam trong ban do; nong trai o toa do rieng (xa hang chuc km)
+            // ve bang tham so toan cuc farm_c* cua shader (SetFarmCenters) - khong lam ban do bi gian ra.
             var farmC = WorldStreamer.NoEnemyZoneCenter ?? Vector3.Zero;
-            rects.Add((new Vector2(farmC.X, farmC.Z), Mathf.Max(1500f, WorldStreamer.NoEnemyZoneHalfSize), Farm));
+            if (FarmSpace.Origin == Vector3.Zero)
+                rects.Add((new Vector2(farmC.X, farmC.Z), Mathf.Max(1500f, WorldStreamer.NoEnemyZoneHalfSize), Farm));
 
             Vector2 min = new(float.MaxValue, float.MaxValue), max = new(float.MinValue, float.MinValue);
             foreach (var (c, half, _) in rects)
@@ -117,7 +121,7 @@ namespace HiepSiVeVuon.Core
                 for (int x = 0; x < BiomeRes; x++)
                 {
                     var p = min + new Vector2((x + 0.5f) / BiomeRes * size.X, (y + 0.5f) / BiomeRes * size.Y);
-                    System.Array.Copy(Wild, w8, 8);
+                    WorldBiomes.GroundLayers(p, w8);
                     foreach (var (c, half, w) in rects)
                     {
                         // Khoang cach co dau toi canh hinh vuong cua vung (am = ben trong).
@@ -132,9 +136,28 @@ namespace HiepSiVeVuon.Core
                     a.SetPixel(x, y, new Color(w8[0] / sum, w8[1] / sum, w8[2] / sum, w8[3] / sum));
                     b.SetPixel(x, y, new Color(w8[4] / sum, w8[5] / sum, w8[6] / sum, w8[7] / sum));
                 }
-            RenderingServer.GlobalShaderParameterSet("terrain_biome_a", ImageTexture.CreateFromImage(a));
-            RenderingServer.GlobalShaderParameterSet("terrain_biome_b", ImageTexture.CreateFromImage(b));
+            // GIU tham chieu C# toi texture dang dung lam tham so toan cuc: RenderingServer chi giu RID, neu
+            // de GC cua C# thu hoi doi tuong ImageTexture thi Godot crash "FATAL: !rc_owner" (csharp_script.cpp).
+            _biomeTexA = ImageTexture.CreateFromImage(a);
+            _biomeTexB = ImageTexture.CreateFromImage(b);
+            RenderingServer.GlobalShaderParameterSet("terrain_biome_a", _biomeTexA);
+            RenderingServer.GlobalShaderParameterSet("terrain_biome_b", _biomeTexB);
             RenderingServer.GlobalShaderParameterSet("terrain_bounds", new Vector4(min.X, min.Y, size.X, size.Y));
+        }
+
+        // Toi da 4 nong trai (cua minh + 3 nguoi gan nhat) duoc to "dat nong trai" tren shader:
+        // farm_cN = (x, z, nua canh, 1 = bat).
+        public const int MaxFarmCenters = 4;
+        public static void SetFarmCenters(System.Collections.Generic.IList<Vector2> others = null)
+        {
+            float half = Mathf.Max(1500f, WorldStreamer.NoEnemyZoneHalfSize);
+            var list = new List<Vector4>();
+            if (FarmSpace.Origin != Vector3.Zero && WorldStreamer.NoEnemyZoneCenter is Vector3 mine)
+                list.Add(new Vector4(mine.X, mine.Z, half, 1f));
+            if (others != null)
+                foreach (var o in others) { if (list.Count >= MaxFarmCenters) break; list.Add(new Vector4(o.X, o.Y, half, 1f)); }
+            for (int i = 0; i < MaxFarmCenters; i++)
+                RenderingServer.GlobalShaderParameterSet("farm_c" + i, i < list.Count ? list[i] : Vector4.Zero);
         }
 
         // Khoi dat dac (texture dat/da that, ambientCG, CC0) nam ngay duoi mat co - de nhin tu

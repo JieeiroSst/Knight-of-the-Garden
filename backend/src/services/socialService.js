@@ -9,6 +9,11 @@ const { onlineSet } = require("../realtime/presence");
 const { notifyPlayer } = require("../realtime/bus");
 const { AppError } = require("../utils/AppError");
 const time = require("./timeService");
+const cache = require("../cache/cache");
+
+// Bang hoi cua 1 nguoi (gateway hoi lien tuc khi kiem dong doi PvP) - cache, xoa khi doi thanh vien.
+const guildKey = (id) => `guild:${id}`;
+const memberOfCached = (id) => cache.cached(guildKey(id), 120, () => repo.memberOf(id));
 
 const GUILD_COST = 1000;
 const GUILD_MAX = 50;
@@ -83,6 +88,7 @@ async function createGuild(me, name, tag) {
     if (err.code === "23505") throw new AppError(409, "Ten bang hoi da ton tai.");
     throw err;
   }
+  await cache.invalidate(guildKey(me));
   notifyPlayer(me, { type: "guild_changed" });
   return myGuild(me);
 }
@@ -108,6 +114,7 @@ async function acceptGuild(me, guildId) {
   if (await repo.memberOf(me)) throw new AppError(400, "Ban dang o trong 1 bang hoi.");
   const ok = await econ.withTransaction((client) => repo.joinGuild(client, guildId, me));
   if (!ok) throw new AppError(404, "Khong co loi moi vao bang nay.");
+  await cache.invalidate(guildKey(me));
   notifyPlayer(me, { type: "guild_changed" });
   return myGuild(me);
 }
@@ -115,14 +122,16 @@ async function acceptGuild(me, guildId) {
 // Roi bang: bang chu roi thi nhuong cho pho bang/thanh vien lau nhat; het nguoi thi giai tan.
 async function leaveGuild(me) {
   const g = await requireRole(me);
+  let next = null;
   await econ.withTransaction(async (client) => {
     await repo.leaveGuild(client, me);
     if (g.role === "leader") {
-      const next = await repo.nextLeader(client, g.id);
+      next = await repo.nextLeader(client, g.id);
       if (next) await repo.setLeader(client, g.id, next);
       else await repo.deleteGuild(client, g.id);
     }
   });
+  await cache.invalidate(guildKey(me), next && guildKey(next));
   notifyPlayer(me, { type: "guild_changed" });
   return { ok: true };
 }
@@ -133,6 +142,7 @@ async function kick(me, otherId) {
   if (!other || other.id !== g.id) throw new AppError(404, "Khong phai thanh vien bang.");
   if (other.role === "leader" || (other.role === "officer" && g.role !== "leader")) throw new AppError(403, "Khong the moi nguoi nay ra.");
   await econ.withTransaction((client) => repo.leaveGuild(client, otherId));
+  await cache.invalidate(guildKey(otherId));
   notifyPlayer(otherId, { type: "guild_changed" });
   return { ok: true };
 }
@@ -142,6 +152,7 @@ async function promote(me, otherId, role) {
   const other = await repo.memberOf(otherId);
   if (!other || other.id !== g.id || other.role === "leader") throw new AppError(404, "Khong phai thanh vien bang.");
   await repo.setRole(g.id, otherId, role === "officer" ? "officer" : "member");
+  await cache.invalidate(guildKey(otherId));
   return { ok: true };
 }
 
@@ -151,8 +162,9 @@ async function deposit(me, itemId, count) {
   if (!tradable(itemId)) throw new AppError(400, "Vat pham khong the gui.");
   await econ.withTransaction(async (client) => {
     await ensureWallet(client, me);
-    if (!(await econ.adjustItem(client, me, itemId, -count))) throw new AppError(400, "Khong du vat pham.");
-    await repo.adjustStorage(client, g.id, itemId, count);
+    const carry = await econ.adjustItem(client, me, itemId, -count);
+    if (!carry) throw new AppError(400, "Khong du vat pham.");
+    await repo.adjustStorage(client, g.id, itemId, count, carry);
   });
   return myGuild(me);
 }
@@ -161,8 +173,9 @@ async function withdraw(me, itemId, count) {
   const g = await requireRole(me);
   await econ.withTransaction(async (client) => {
     await ensureWallet(client, me);
-    if (!(await repo.adjustStorage(client, g.id, itemId, -count))) throw new AppError(400, "Kho bang khong du vat pham.");
-    await econ.adjustItem(client, me, itemId, count);
+    const carry = await repo.adjustStorage(client, g.id, itemId, -count);
+    if (!carry) throw new AppError(400, "Kho bang khong du vat pham.");
+    await econ.adjustItem(client, me, itemId, count, carry);
   });
   return myGuild(me);
 }
@@ -203,5 +216,5 @@ async function takeHelps(me) {
 module.exports = {
   addFriend, acceptFriend, removeFriend, listFriends,
   myGuild, createGuild, inviteToGuild, acceptGuild, leaveGuild, kick, promote, deposit, withdraw,
-  friendFarm, helpWater, takeHelps, GUILD_COST, areFriends: repo.areFriends, memberOf: repo.memberOf,
+  friendFarm, helpWater, takeHelps, GUILD_COST, areFriends: repo.areFriends, memberOf: memberOfCached, guildKey,
 };

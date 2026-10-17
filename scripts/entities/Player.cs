@@ -45,15 +45,9 @@ namespace HiepSiVeVuon.Entities
         private Vector3 _returnPos;
         private ColorRect _fadeRect;
         private Camera3D _camera;
+        private CameraRig _camRig;
 
-        // Camera ngoai troi dat lui ve sau nhan vat 115 don vi theo truc Z THE GIOI (khong xoay
-        // theo huong nhan vat) - phu hop khong gian mo. Nhung trong phong kin, di lai gan bat ky
-        // buc tuong nao ve phia +Z se day camera vuot QUA tuong do (vi offset cong don vao vi tri
-        // nguoi choi), lam man hinh thay "khong gian bi vo" (nhin xuyen ra ngoai tu phia sau
-        // tuong). Vi vay khi vao nha phai thu nho offset nay lai that nhieu.
-        private static readonly Vector3 OutdoorCameraOffset = new(0, 140, 115);
-        private static readonly Vector3 IndoorCameraOffset = new(0, 60, 15);
-        private static readonly Vector3 MountedCameraOffset = new(0, 160, 125);
+        // Camera: xem CameraRig (goc nhin thu ba xoay bang chuot phai, tu thu gan khi vao nha/cham tuong).
 
         // Cuoi ngua: [R] gan ngua de len, [R] lan nua de xuong. Khi cuoi, CON NGUA moi la thuc
         // the tu doc input va di chuyen that su (xem Horse.DoRiddenMovement) - nguoi choi chi
@@ -68,6 +62,13 @@ namespace HiepSiVeVuon.Entities
         // phuong tien gan nhat" thay vi rieng cho ngua.
         private Boat _mountedBoat;
 
+        // Camera kieu sinh ton: danh/dung cong cu -> quay ve huong dang nhin (tam ngam giua man hinh).
+        private void FaceCameraForAction()
+        {
+            if (CameraRig.Captured && CameraRig.Current != null && _mountedHorse == null && _mountedBoat == null)
+                FaceInstantly(CameraRig.Current.FlatForward);
+        }
+
         public override void _Ready()
         {
             _model = GetNodeOrNull<Node3D>("Model");
@@ -81,6 +82,13 @@ namespace HiepSiVeVuon.Entities
             ModelPath = modelDef.Path;
             ModelScale = modelDef.Scale;
             _camera = GetNodeOrNull<Camera3D>("Camera3D");
+            // Camera goc nhin thu ba xoay bang chuot phai (xem CameraRig) thay cho offset co dinh cu.
+            if (_camera != null)
+            {
+                _camRig = new CameraRig();
+                AddChild(_camRig);
+                _camRig.Setup(this, _camera);
+            }
             if (_model != null)
             {
                 _animPlayer = CharacterCatalog.AttachModel(_model, modelDef);
@@ -231,6 +239,8 @@ namespace HiepSiVeVuon.Entities
                 // nam bet xuong dat thay vi ngoi) - giu than nguoi THANG DUNG, chi dua vi tri len
                 // dung tam LUNG NGUA that (gan vai/withers, khong cao hon dinh dau hay thap qua
                 // xuong duoi bung) - day la vi tri con nguoi that su ngoi khi cuoi ngua.
+                if (Time.GetTicksMsec() > _netActionUntil) NetAnimCode = 0;
+                PollAttack();
                 UpdateVisuals(dt, 0f); // dang "ngoi" - dung tu the Idle, khong chay hoat canh Di/Chay
                 return;
             }
@@ -251,6 +261,7 @@ namespace HiepSiVeVuon.Entities
 
             if (_dying)
             {
+                UpdateRespawnWait(); // dang doi hoi sinh (mat giuong) - dem nguoc
                 // Dang guc: chi chiu trong luc, khong dieu khien duoc.
                 Velocity = new Vector3(0f, IsOnFloor() ? 0f : Mathf.Max(Velocity.Y - Gravity * dt, -SteeringUtil.TerminalFallSpeed), 0f);
                 MoveAndSlide();
@@ -262,7 +273,8 @@ namespace HiepSiVeVuon.Entities
 
             // Dang go chat -> phim WASD la chu, khong phai di chuyen.
             var input2 = ChatUI.IsTyping ? Vector2.Zero : Input.GetVector("move_left", "move_right", "move_up", "move_down");
-            var dir = new Vector3(input2.X, 0f, input2.Y);
+            // W/A/S/D theo HUONG CAMERA (xoay camera bang chuot phai).
+            var dir = CameraRig.RelativeMove(input2);
 
             // Boi qua ho: cham hon di tren dat (khong co animation/trang thai rieng - chi giam
             // toc do di chuyen khi dang o trong pham vi ho, xem WaterEcosystem.IsNearLake).
@@ -286,6 +298,8 @@ namespace HiepSiVeVuon.Entities
             // huong khac voi huong dang chay (giong truot bang) khi doi huong gap.
             // Trong luc ra don: giu nguyen huong (khong bi xoay theo phim di chuyen giua nhat chem).
             if (horizontal.Length() > 5f && !locked) _facing = horizontal.Normalized();
+            // Goc nhin thu nhat: than luon quay theo huong nhin (nhu game sinh ton FPS).
+            if (CameraRig.FacesCamera && !locked) _facing = CameraRig.Current.FlatForward;
             MoveAndSlide();
             GlobalPosition = SteeringUtil.GuardAgainstRunaway(GlobalPosition, "Player");
 
@@ -393,6 +407,7 @@ namespace HiepSiVeVuon.Entities
             {
                 if (body is Horse horse)
                 {
+                    if (horse.IsWild) { Notify.Show(Loc.T("tame.wild_horse")); return; }
                     MountHorse(horse);
                     return;
                 }
@@ -410,7 +425,7 @@ namespace HiepSiVeVuon.Entities
             boat.SetRidden(true);
             CollisionLayer = 0;
             CollisionMask = 0;
-            if (_camera != null) _camera.Position = MountedCameraOffset;
+            _camRig?.SetProfile(CameraRig.Profile.Mounted);
         }
 
         private void DismountBoat()
@@ -420,7 +435,50 @@ namespace HiepSiVeVuon.Entities
             _mountedBoat = null;
             CollisionLayer = 1;
             CollisionMask = 1;
-            if (_camera != null) _camera.Position = _indoors ? IndoorCameraOffset : OutdoorCameraOffset;
+            _camRig?.SetProfile(_indoors ? CameraRig.Profile.Indoor : CameraRig.Profile.Outdoor);
+        }
+
+        public bool IsMounted => _mountedHorse != null;
+        public bool IsIndoors => _indoors;
+
+        // Muc gang suc (sinh ton - doi/khat nhanh hon): 1 = di/dung binh thuong.
+        public float EffortLevel
+        {
+            get
+            {
+                float e = 1f;
+                if (_mountedHorse != null) e = _mountedHorse.IsGalloping ? 1.8f : 1.1f;
+                else if (new Vector2(Velocity.X, Velocity.Z).Length() > Speed * 0.65f) e = 1.5f;
+                if (Time.GetTicksMsec() - _lastAttackTime < 2000) e = Mathf.Max(e, 1.4f);
+                return e;
+            }
+        }
+
+        // [Space] khi cuoi ngua: phi nuoc dai (ton the luc) - lay da de xung phong.
+        private void TryGallop()
+        {
+            if (_mountedHorse == null || _mountedHorse.GallopCooldownLeft > 0f) return;
+            if (!GameManager.Instance.UseStamina(8f)) { Notify.Show(Loc.T("horse.tired")); return; }
+            if (_mountedHorse.TryGallop())
+            {
+                Notify.Show(Loc.T("horse.gallop"));
+                Shake(1.2f, 0.2f);
+            }
+            else GameManager.Instance.RestoreStamina(8f);
+        }
+
+        // Bi xung phong / don ket hat xuong ngua (server quyet dinh, xem PvpClient "knock").
+        public void KnockOffHorse()
+        {
+            if (_mountedHorse == null) return;
+            var back = -_facing;
+            DismountHorse();
+            GlobalPosition += back * 30f + Vector3.Up * 6f;
+            Velocity = back * 180f + Vector3.Up * 120f;
+            Shake(3.5f, 0.35f);
+            LockMovement(0.9f, 0f);
+            if (HasAnim("HitRecieve")) PlayAction("HitRecieve", 1f, 0.05f);
+            Notify.Show(Loc.T("horse.knocked"));
         }
 
         private void MountHorse(Horse horse)
@@ -432,7 +490,7 @@ namespace HiepSiVeVuon.Entities
             // nguoi choi dung yen chong len ngua se can tro chinh MoveAndSlide cua con ngua.
             CollisionLayer = 0;
             CollisionMask = 0;
-            if (_camera != null) _camera.Position = MountedCameraOffset;
+            _camRig?.SetProfile(CameraRig.Profile.Mounted);
             // Thu nho nguoi choi mot chut khi cuoi - phu hop voi dang "ngoi thap" (SeatOffset da
             // ha xuong) hon la dung sung sung cao tren lung ngua.
             if (_model != null) _model.Scale = Vector3.One * 0.88f;
@@ -445,7 +503,7 @@ namespace HiepSiVeVuon.Entities
             _mountedHorse = null;
             CollisionLayer = 1;
             CollisionMask = 1;
-            if (_camera != null) _camera.Position = _indoors ? IndoorCameraOffset : OutdoorCameraOffset;
+            _camRig?.SetProfile(_indoors ? CameraRig.Profile.Indoor : CameraRig.Profile.Outdoor);
             if (_model != null) _model.Scale = Vector3.One;
         }
 
@@ -462,8 +520,21 @@ namespace HiepSiVeVuon.Entities
                 if (body is CookingStation cooking) { cooking.Interact(); return; }
                 if (body is GreenhouseGate gate) { gate.Interact(); return; }
                 if (body is FarmFacility facility) { FaceToward(facility); facility.Interact(); PlayEmote("Interact"); return; }
+                if (body is Horse wildHorse && wildHorse.IsWild) { FaceToward(wildHorse); wildHorse.TryTame(this); PlayEmote("Interact"); return; }
+                if (body is Horse myHorse && myHorse.TamedId != null)
+                    Notify.Show(string.Format(Loc.T("tame.horse_stats_fmt"), new string('*', myHorse.Stars), Mathf.RoundToInt(myHorse.RideSpeed), myHorse.GallopCooldownMsOverride / 1000f));
+                if (body is WildAnimal wolf && wolf.SpeciesId == "wolf" && TamingSystem.TryTameWolf(wolf)) { FaceToward(wolf); PlayEmote("Interact"); return; }
                 if (body is IHungryAnimal && body is Node3D animal) { PetAnimal(animal); return; }
                 if (body is RemotePlayer other) { (GetTree().GetFirstNodeInGroup("player_actions_ui") as PlayerActionsUI)?.Open(other); return; }
+            }
+            // Khong co gi de tuong tac ma dang dung canh ho/song -> uong nuoc (sinh ton).
+            bool otherArea = false;
+            foreach (var a in _interactArea.GetOverlappingAreas()) if (a is DroppedItem || a is BuildingDoor) otherArea = true;
+            if (!otherArea && (WaterEcosystem.Instance.IsNearLake(GlobalPosition, 150f) || PlacementSystem.NearWater(GlobalPosition)))
+            {
+                SurvivalSystem.Instance?.DrinkFromSource();
+                PlayEmote("Interact");
+                return;
             }
             foreach (var area in _interactArea.GetOverlappingAreas())
             {
@@ -483,7 +554,7 @@ namespace HiepSiVeVuon.Entities
             if (_indoors) return;
             _returnPos = GlobalPosition;
             _indoors = true;
-            if (_camera != null) _camera.Position = IndoorCameraOffset;
+            _camRig?.SetProfile(CameraRig.Profile.Indoor);
             // Dat cao hon san mot chut (khong dat dung khit len san) de trong luc tu nhien keo
             // xuong va IsOnFloor() nhan dung san ngay, thay vi mot diem cham khit co the bi
             // xu ly sai thanh "chua cham san" roi roi xuyen qua san mong xuong vuc.
@@ -494,7 +565,7 @@ namespace HiepSiVeVuon.Entities
         {
             if (!_indoors) return;
             _indoors = false;
-            if (_camera != null) _camera.Position = OutdoorCameraOffset;
+            _camRig?.SetProfile(CameraRig.Profile.Outdoor);
             TeleportWithFade(_returnPos);
         }
 
@@ -554,11 +625,23 @@ namespace HiepSiVeVuon.Entities
         {
             if (_dying) return;
             if (_armPose != null && _armPose.Busy) return; // dang vung do - khong spam
+            FaceCameraForAction();
             _lastActionWasAttack = false;
             RefreshHeldItem();
             string tool = Inventory.Instance.EquippedTool;
             if (tool == "can_cau" && (GetTree().GetFirstNodeInGroup("fishing_ui") as FishingUI)?.IsActive == true) return;
-            if (_armPose == null || _mountedHorse != null || _mountedBoat != null) { DoUseTool(); return; }
+            // Nong cu co do ben: duoi 40% thi phai sua (Lo Ren/khu cho) hoac che tao cai moi.
+            if (tool != null && ItemConditions.HasDurability(tool) && _mountedHorse == null)
+            {
+                if (!ItemConditions.IsUsable(tool))
+                {
+                    Notify.Show(string.Format(Loc.T("dur.cannot_use_fmt"), ItemDatabase.Instance.GetDisplayName(tool)));
+                    return;
+                }
+                ItemConditions.Wear(tool);
+            }
+            if (_mountedHorse != null) { TryGallop(); return; }
+            if (_armPose == null || _mountedBoat != null) { DoUseTool(); return; }
             var motion = ToolMotion(tool);
             AimAtFarmTarget();
             float speed = motion == Motions.Pour ? 1.25f : motion == Motions.Bend ? 1.15f : 1f;
@@ -692,6 +775,12 @@ namespace HiepSiVeVuon.Entities
             {
                 TryPlaceScarecrow();
             }
+            else if (PvpClient.IsBaseKit(tool))
+            {
+                // Bo xay dung can cu: dung cong trinh truoc mat, xoay theo huong dang nhin (server tru bo).
+                var pos = GlobalPosition + _facing * 75f;
+                if (PvpClient.Instance?.Place(tool, pos, Mathf.RadToDeg(Yaw)) == true) PlayEmote("Interact");
+            }
             else if (tool != null && PlacementSystem.KindOf(tool) is string kind && kind != "decor")
             {
                 // To ong / cay giong / may lam mut / may ep / bay cua / ho ca canh.
@@ -815,7 +904,7 @@ namespace HiepSiVeVuon.Entities
             if (_mountedHorse != null) DismountHorse();
             if (_mountedBoat != null) DismountBoat();
             _indoors = false;
-            if (_camera != null) _camera.Position = OutdoorCameraOffset;
+            _camRig?.SetProfile(CameraRig.Profile.Outdoor);
             TeleportWithFade(dest + Vector3.Up * 8f);
         }
 

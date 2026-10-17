@@ -1,4 +1,5 @@
 using Godot;
+using System.Threading.Tasks;
 using HiepSiVeVuon.Systems;
 
 namespace HiepSiVeVuon.UI
@@ -342,6 +343,26 @@ namespace HiepSiVeVuon.UI
                     // nang - luc do nguoi choi thay dung 1 man hinh "dang tai" quen thuoc thay vi
                     // 1 khoang trang treo kho hieu.
                     ShowLoadingOverlay();
+                    // Toa do nong trai RIENG (server cap 1 lan, co dinh, cach nguoi khac >= 5 km) - Main
+                    // dung nong trai roi doi toi day (Main.RelocateFarm). Loi mang -> nong trai o goc nhu cu.
+                    var farmDone = new TaskCompletionSource<bool>();
+                    Core.FarmSpace.Origin = Vector3.Zero;
+                    BackendClient.Instance.GetJson("/api/farm", (fok, fstatus, ftext) =>
+                    {
+                        if (fok && fstatus == 200)
+                        {
+                            try
+                            {
+                                using var doc = System.Text.Json.JsonDocument.Parse(ftext);
+                                var root = doc.RootElement;
+                                if (root.ValueKind == System.Text.Json.JsonValueKind.Object)
+                                    Core.FarmSpace.Origin = new Vector3((float)root.GetProperty("x").GetDouble(), 0, (float)root.GetProperty("z").GetDouble());
+                            }
+                            catch (System.Exception e) { GD.PushWarning($"Toa do nong trai loi: {e.Message}"); }
+                        }
+                        farmDone.TrySetResult(true);
+                    });
+                    await Task.WhenAny(farmDone.Task, Task.Delay(6000));
                     await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
                     await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
                     if (!IsInstanceValid(this)) return;

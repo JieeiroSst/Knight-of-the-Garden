@@ -5,6 +5,9 @@ const economyService = require("../services/economyService");
 const tradeService = require("../services/tradeService");
 const marketService = require("../services/marketService");
 const { asyncHandler } = require("../utils/asyncHandler");
+const farmService = require("../services/farmService");
+const bountyService = require("../services/bountyService");
+const { pool } = require("../db/pool");
 const { AppError } = require("../utils/AppError");
 
 const id = (req) => {
@@ -14,6 +17,27 @@ const id = (req) => {
 };
 
 module.exports = {
+  bounties: asyncHandler(async (req, res) => res.json({ top: await bountyService.top(30), me: await bountyService.of(req.playerId) })),
+  placeBounty: asyncHandler(async (req, res) => {
+    let targetId = req.body.targetId;
+    if (!targetId) {
+      const r = await pool.query("SELECT player_id FROM characters WHERE lower(display_name) = lower($1) LIMIT 1", [req.body.targetName]);
+      if (!r.rows.length) throw new AppError(404, "Khong tim thay nguoi choi.");
+      targetId = r.rows[0].player_id;
+    }
+    res.json(await bountyService.place(req.playerId, targetId, req.body.amount));
+  }),
+  myFarm: asyncHandler(async (req, res) => res.json(await farmService.ensureFarm(req.playerId))),
+  farmsNear: asyncHandler(async (req, res) => {
+    const x = Number(req.query.x), z = Number(req.query.z), r = Number(req.query.r) || 200000;
+    if (!Number.isFinite(x) || !Number.isFinite(z)) return res.status(400).json({ error: "Thieu toa do." });
+    res.json(await farmService.farmsNear(x, z, r));
+  }),
+  farmView: asyncHandler(async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) return res.status(400).json({ error: "id khong hop le." });
+    res.json(await farmService.publicView(id));
+  }),
   time: (_req, res) => res.json(time.now()),
 
   getCharacter: asyncHandler(async (req, res) => {

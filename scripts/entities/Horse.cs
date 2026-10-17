@@ -75,9 +75,97 @@ namespace HiepSiVeVuon.Entities
 
         private readonly HiepSiVeVuon.Core.SteeringUtil.StuckDetector _stuckDetector = new();
 
+        // ==== Ngua hoang / thuan hoa ====
+        // Ngua hoang (sinh o dong co/dong hoa ngoai hoang da, xem WorldStreamer): khong cuoi duoc, thay nguoi
+        // lai GAN ma di NHANH / vua danh nhau thi bo chay. Di cham lai gan + bam [E] cho an (Co Kho tot nhat)
+        // de tang % thuan hoa; du 100% -> thanh ngua cua minh (luu qua save, xem HorseRegistry). Moi con co
+        // chi so rieng: toc do cuoi (RideSpeed) va hoi chieu phi nuoc dai. Ngua hoang co the bi san lay thit/da.
+        [Export] public bool IsWild;
+        public string TamedId;
+        public string SpawnKey; // ngua hoang: "cx,cz,i" cho sinh trong chunk (xem WorldStreamer)
+        public float Taming;
+        public ulong GallopCooldownMsOverride;
+        private Label3D _tameLabel;
+        private ulong _fleeUntil;
+
+        public int Stars => Mathf.Clamp(1 + Mathf.FloorToInt((RideSpeed - 200f) / 30f), 1, 5);
+
+        public override void _ExitTree()
+        {
+            if (GameManager.Instance == null) return;
+            GameManager.Instance.HourChanged -= OnHourChanged;
+            GameManager.Instance.DayChanged -= OnDayChanged;
+        }
+
+        private static readonly (string item, float value)[] TameFoods = { ("co_kho", 30f), ("carrot", 20f), ("apple", 20f), ("wheat", 12f) };
+
+        // Player bam [E] vao ngua hoang. Tra ve true neu da xu ly (cho an / bao thieu do an).
+        public bool TryTame(Player p)
+        {
+            if (!IsWild) return false;
+            foreach (var (item, value) in TameFoods)
+            {
+                if (Inventory.Instance.CountOf(item) <= 0) continue;
+                Inventory.Instance.RemoveItem(item, 1);
+                var rng = new RandomNumberGenerator();
+                rng.Randomize();
+                Taming = Mathf.Min(100f, Taming + value * rng.RandfRange(0.7f, 1.3f));
+                _fleeUntil = 0;
+                ShowTameLabel();
+                if (Taming >= 100f) Tame();
+                return true;
+            }
+            UI.Notify.Show(Loc.T("tame.need_food_horse"));
+            return true;
+        }
+
+        private void ShowTameLabel()
+        {
+            if (_tameLabel == null)
+            {
+                _tameLabel = new Label3D { Billboard = BaseMaterial3D.BillboardModeEnum.Enabled, PixelSize = 0.22f, FontSize = 32, OutlineSize = 8, NoDepthTest = true, Position = Vector3.Up * 70f };
+                AddChild(_tameLabel);
+            }
+            _tameLabel.Text = string.Format(Loc.T("tame.progress_fmt"), Mathf.RoundToInt(Taming), new string('*', Stars));
+            _tameLabel.Modulate = new Color(0.6f, 1f, 0.6f);
+        }
+
+        private void Tame()
+        {
+            IsWild = false;
+            TamedId = System.Guid.NewGuid().ToString("N")[..10];
+            // Ra khoi chunk hoang da (chunk bi xoa khi di xa) -> thanh ngua rieng trong the gioi.
+            var scene = GetTree().CurrentScene;
+            if (GetParent() != scene) Reparent(scene, true);
+            if (Huntable.Of(this) is Huntable h) h.QueueFree();
+            RemoveFromGroup("huntables");
+            HomeCenter = GlobalPosition;
+            _homeCenter = GlobalPosition;
+            HorseRegistry.OnTamed(this);
+            if (_tameLabel != null) { _tameLabel.QueueFree(); _tameLabel = null; }
+            UI.Notify.Show(string.Format(Loc.T("tame.horse_done_fmt"), new string('*', Stars), Mathf.RoundToInt(RideSpeed)));
+        }
+
+        // Ngua hoang: nguoi choi lai gan ma di nhanh / vua danh nhau -> bo chay.
+        private bool FleeDir(out Vector3 dir)
+        {
+            dir = Vector3.Zero;
+            var p = GetTree().GetFirstNodeInGroup("player") as Player;
+            if (p == null) return false;
+            var away = GlobalPosition - p.GlobalPosition;
+            away.Y = 0;
+            float d = away.Length();
+            ulong now = Time.GetTicksMsec();
+            if (d < 200f && p.EffortLevel > 1.2f) _fleeUntil = now + 4000;
+            if (now >= _fleeUntil || d > 600f || d < 1f) return false;
+            dir = away / d;
+            return true;
+        }
+
         public override void _Ready()
         {
             AddToGroup("horses");
+            if (IsWild && !Huntable.Attach(this, "horse", 90, farm: false)) return;
             _model = GetNodeOrNull<Node3D>("Model");
             _collision = GetNodeOrNull<CollisionShape3D>("Collision");
             if (_model != null)
@@ -124,6 +212,7 @@ namespace HiepSiVeVuon.Entities
 
         private void OnHourChanged(int hour)
         {
+            if (IsWild) return; // ngua hoang khong ve mang an cua trang trai
             if ((hour == 12 || hour == 16) && _state != State.Eating)
                 _state = State.GoToTrough;
         }
@@ -151,13 +240,22 @@ namespace HiepSiVeVuon.Entities
 
         public void SetRidden(bool ridden) => _ridden = ridden;
 
+        private bool _simAsleep;
+
         public override void _PhysicsProcess(double delta)
         {
+            if (!_ridden && HiepSiVeVuon.Core.SimLod.Sleep(this, ref _simAsleep)) return; // xa nguoi choi -> ngu mo phong
             float dt = (float)delta;
 
             if (_ridden)
             {
                 DoRiddenMovement(dt);
+                return;
+            }
+
+            if (IsWild && FleeDir(out var fleeDir))
+            {
+                MoveWithFacing(fleeDir, Speed * 2.6f, dt);
                 return;
             }
 
@@ -179,9 +277,30 @@ namespace HiepSiVeVuon.Entities
         private void DoRiddenMovement(float dt)
         {
             var input = Input.GetVector("move_left", "move_right", "move_up", "move_down");
-            var desiredDir = new Vector3(input.X, 0f, input.Y);
-            MoveWithFacing(desiredDir != Vector3.Zero ? desiredDir.Normalized() : Vector3.Zero, RideSpeed, dt);
+            var desiredDir = CameraRig.RelativeMove(input);
+            float speed = RideSpeed * (IsGalloping ? GallopMult : 1f);
+            MoveWithFacing(desiredDir != Vector3.Zero ? desiredDir.Normalized() : Vector3.Zero, speed, dt);
         }
+
+        // ==== Phi nuoc dai ([Space] khi dang cuoi) - lao nhanh de xung phong (xem Player.TryMountedSlash) ====
+        public const float GallopMult = 1.55f;
+        private const ulong GallopMs = 2600, DefaultGallopCooldownMs = 6500;
+        private ulong GallopCooldownMs => GallopCooldownMsOverride > 0 ? GallopCooldownMsOverride : DefaultGallopCooldownMs;
+        private ulong _gallopUntil, _gallopReadyAt;
+        public bool IsGalloping => Time.GetTicksMsec() < _gallopUntil;
+        public float GallopCooldownLeft => Mathf.Max(0f, (_gallopReadyAt - Time.GetTicksMsec()) / 1000f);
+
+        public bool TryGallop()
+        {
+            ulong now = Time.GetTicksMsec();
+            if (now < _gallopReadyAt) return false;
+            _gallopUntil = now + GallopMs;
+            _gallopReadyAt = now + GallopCooldownMs;
+            return true;
+        }
+
+        // Toc do ngang hien tai / toc do cuoi thuong (1 = chay het toc binh thuong, >1 = dang phi).
+        public float SpeedRatio => new Vector2(Velocity.X, Velocity.Z).Length() / Mathf.Max(1f, RideSpeed);
 
         // Logic di chuyen dung chung cho ca AI tu di LAN luc duoc cuoi: xoay dan than ve huong
         // muon den (KHONG gan tuc thi), roi moi buoc toi THEO DUNG huong than dang huong toi -

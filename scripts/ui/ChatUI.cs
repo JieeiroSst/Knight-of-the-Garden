@@ -106,6 +106,40 @@ namespace HiepSiVeVuon.UI
             {
                 net.GuildChat(text.Substring(3).Trim());
             }
+            else if (text is "/toado" or "/pos" or "/toado g" or "/pos g")
+            {
+                // Chia se toa do (met) de hen gap nhau - nguoi nhan go /den de dat diem den.
+                var me = GetTree().GetFirstNodeInGroup("player") as Node3D;
+                if (me == null) return;
+                string msg = string.Format(Loc.T("coords.share_fmt"), MapCoords.Format(me.GlobalPosition.X, me.GlobalPosition.Z));
+                if (text.EndsWith(" g")) net.GuildChat(msg);
+                else if (net.Zone == null) AddLine("system", "", Loc.T("chat.no_zone"));
+                else net.SendChat(msg);
+            }
+            else if (text == "/den" || text.StartsWith("/den ") || text == "/goto" || text.StartsWith("/goto "))
+            {
+                var args = text.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
+                Vector3? dest = LastSharedCoords;
+                if (args.Length >= 3 && float.TryParse(args[1], out float mx) && float.TryParse(args[2], out float mz)) dest = MapCoords.FromMeters(mx, mz);
+                if (dest is Vector3 d && GetTree().GetFirstNodeInGroup("map_ui") is MapUI map)
+                {
+                    map.SetWaypoint(d);
+                    AddLine("system", "", string.Format(Loc.T("coords.waypoint_set_fmt"), MapCoords.Format(d.X, d.Z)));
+                }
+                else AddLine("system", "", Loc.T("coords.goto_usage"));
+            }
+            else if (text is "/cho" or "/market")
+            {
+                // Danh sach khu cho + toa do, dat diem den toi cho gan nhat.
+                var me = GetTree().GetFirstNodeInGroup("player") as Node3D;
+                foreach (var m in ItemDatabase.Instance.Markets)
+                    AddLine("system", "", $"{(Loc.Current == Loc.Lang.VI ? m.Name : m.NameEn)} {MapCoords.Format(m.X, m.Z)}");
+                if (me != null && PvpClient.NearestMarket(me.GlobalPosition) is Data.MarketDef near && GetTree().GetFirstNodeInGroup("map_ui") is MapUI map)
+                {
+                    map.SetWaypoint(new Vector3(near.X, 0, near.Z));
+                    AddLine("system", "", string.Format(Loc.T("market.nearest_fmt"), Loc.Current == Loc.Lang.VI ? near.Name : near.NameEn, MapCoords.Format(near.X, near.Z)));
+                }
+            }
             else if (text.StartsWith("/kenh ") || text.StartsWith("/ch "))
             {
                 if (int.TryParse(text.Split(' ', 2)[1], out int ch) && ch > 0) net.SwitchChannel(ch);
@@ -114,8 +148,16 @@ namespace HiepSiVeVuon.UI
             else net.SendChat(text);
         }
 
+        // Toa do gan nhat ai do gui trong chat ("[x, z]") - /den khong tham so se dat diem den toi day.
+        public static Vector3? LastSharedCoords;
+
         public void AddLine(string channel, string from, string text)
         {
+            if (!string.IsNullOrEmpty(from) && MapCoords.TryParse(text, out var shared))
+            {
+                LastSharedCoords = shared;
+                text += "  " + Loc.T("coords.goto_hint");
+            }
             var color = channel switch
             {
                 "whisper" => new Color(1f, 0.6f, 0.9f),

@@ -101,6 +101,14 @@ async function setEnhancement(client, playerId, itemId, level) {
     `INSERT INTO item_enhancements (player_id, item_id, level) VALUES ($1, $2, $3)
      ON CONFLICT (player_id, item_id) DO UPDATE SET level = EXCLUDED.level`, [playerId, itemId, level]);
 }
+async function ownedItemCounts(playerId) {
+  const r = await pool.query("SELECT item_id, count FROM inventory_items WHERE player_id = $1", [playerId]);
+  return new Map(r.rows.map((x) => [x.item_id, x.count]));
+}
+async function itemStates(playerId) {
+  const r = await pool.query("SELECT item_id, state FROM item_states WHERE player_id = $1", [playerId]);
+  return new Map(r.rows.map((x) => [x.item_id, x.state]));
+}
 async function ownedItems(playerId) {
   const r = await pool.query("SELECT item_id FROM inventory_items WHERE player_id = $1", [playerId]);
   return r.rows.map((x) => x.item_id);
@@ -108,5 +116,5 @@ async function ownedItems(playerId) {
 
 module.exports = {
   getLogin, setLogin, peekLogin, countersBetween, claims, insertClaim, reportStat, topStat, myStat, topGold, myGold, topPvp, myPvp,
-  lockRatings, setRating, enhancements, setEnhancement, ownedItems,
+  lockRatings, setRating, enhancements, setEnhancement, ownedItems, ownedItemCounts, itemStates,
 };

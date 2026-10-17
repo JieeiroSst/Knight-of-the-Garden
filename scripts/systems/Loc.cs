@@ -48,6 +48,7 @@ namespace HiepSiVeVuon.Systems
                 || LocAdventure.Strings.TryGetValue(key, out pair)
                 || LocOnline.Strings.TryGetValue(key, out pair)
                 || LocMore.Strings.TryGetValue(key, out pair)
+                || LocGuide.Strings.TryGetValue(key, out pair)
                 ? (Current == Lang.VI ? pair.vi : pair.en) : key;
 
         private static void LoadSaved()
@@ -134,7 +135,19 @@ namespace HiepSiVeVuon.Systems
 
             // ---- Map ----
             ["map.title"] = ("B Ả N   Đ Ồ   T H Ế   G I Ớ I", "W O R L D   M A P"),
-            ["map.hint"] = ("[M] đóng  -  bấm để đánh dấu điểm đến  -  vòng đỏ = khu có quái", "[M] close - click to mark a destination - red ring = monster zone"),
+            ["map.hint"] = ("[M] đóng - chuột trái: đánh dấu - lăn: phóng to - chuột phải kéo: di chuyển - [C]: về vị trí bạn", "[M] close - LMB: mark - wheel: zoom - RMB drag: pan - [C]: center on you"),
+            ["map.coords_fmt"] = ("Vị trí: {0}, {1}  -  {2}  -  Nguy hiểm x{3}", "Position: {0}, {1}  -  {2}  -  Danger x{3}"),
+            ["map.scale_fmt"] = ("{0} m", "{0} m"),
+            ["map.landmark.camp"] = ("Trại hoang", "Abandoned camp"),
+            ["map.landmark.french"] = ("Vùng quê Pháp", "French countryside"),
+            ["biome.plains"] = ("Đồng Cỏ", "Plains"),
+            ["biome.forest"] = ("Rừng Rậm", "Deep Forest"),
+            ["biome.highlands"] = ("Cao Nguyên Đá", "Stone Highlands"),
+            ["biome.marsh"] = ("Đầm Lầy", "Marshland"),
+            ["biome.barrens"] = ("Hoang Mạc", "Barrens"),
+            ["biome.meadow"] = ("Đồng Hoa", "Flower Meadow"),
+            ["biome.core"] = ("Vùng đất quen thuộc", "Home lands"),
+            ["biome.enter_fmt"] = ("Bạn đã đến: {0} (nguy hiểm x{1})", "Entering: {0} (danger x{1})"),
             ["map.player_label"] = ("Bạn", "You"),
             ["map.france_hint"] = ("Vùng quê Pháp (~10km)", "French countryside (~10km)"),
             ["map.compass_n"] = ("B", "N"),

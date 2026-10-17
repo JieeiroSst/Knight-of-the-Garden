@@ -18,16 +18,32 @@ const MAX_ENHANCE = ENHANCE.length;
 // Moi cap +10% chi so goc.
 const enhanceMult = (level) => 1 + 0.1 * (level || 0);
 
+// Mui ten dung cho cung (xem items.json "Ammo").
+const ARROW_ID = "mui_ten";
+
 // Suc manh dau truong tu do NGUOI CHOI SO HUU THAT (vi tren server) - lay vu khi/giap manh nhat.
-function duelPower(ownedIds, enh, catalog) {
-  let attack = 5, defense = 0;
+// Cung (Ranged) tinh RIENG: rangedAttack/rangedRange (tam ban), khong cong vao don can chien; arrows =
+// so mui ten dang co (counts: Map item -> so luong, tuy chon).
+// usable(id): vu khi/giap con du do ben (>= 40%, xem itemState) - do hong khong tinh vao PvP.
+function duelPower(ownedIds, enh, catalog, counts = null, usable = () => true) {
+  let attack = 5, defense = 0, rangedAttack = 0, rangedRange = 0, armorId = null, weaponId = null;
   for (const id of ownedIds) {
     const d = catalog.items.get(id);
-    if (!d) continue;
-    if (d.Type === "Weapon") attack = Math.max(attack, Math.round((d.Damage || 0) * enhanceMult(enh.get(id))));
-    if (d.Type === "Armor") defense = Math.max(defense, Math.round((d.Defense || 0) * enhanceMult(enh.get(id))));
+    if (!d || !usable(id)) continue;
+    const mult = enhanceMult(enh.get(id));
+    if (d.Type === "Weapon" && d.Ranged) {
+      const a = Math.round((d.Damage || 0) * mult);
+      if (a > rangedAttack) { rangedAttack = a; rangedRange = d.Range || 900; }
+    } else if (d.Type === "Weapon") {
+      const a = Math.round((d.Damage || 0) * mult);
+      if (a > attack) { attack = a; weaponId = id; }
+    }
+    if (d.Type === "Armor") {
+      const df = Math.round((d.Defense || 0) * mult);
+      if (df > defense) { defense = df; armorId = id; }
+    }
   }
-  return { attack, defense };
+  return { attack, defense, rangedAttack, rangedRange, arrows: counts ? counts.get(ARROW_ID) || 0 : 0, armorId, weaponId };
 }
 
 function duelDamage(attacker, defender, rand = Math.random) {
@@ -42,4 +58,4 @@ function elo(winner, loser, k = 32) {
   return { winner: winner + delta, loser: Math.max(100, loser - delta), delta };
 }
 
-module.exports = { ENHANCE, MAX_ENHANCE, enhanceMult, duelPower, duelDamage, elo };
+module.exports = { ARROW_ID, ENHANCE, MAX_ENHANCE, enhanceMult, duelPower, duelDamage, elo };

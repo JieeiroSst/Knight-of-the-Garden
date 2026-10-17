@@ -40,7 +40,7 @@ namespace HiepSiVeVuon.Entities
             float dt = (float)delta;
 
             var input = Input.GetVector("move_left", "move_right", "move_up", "move_down");
-            var desiredDir = new Vector3(input.X, 0f, input.Y);
+            var desiredDir = CameraRig.RelativeMove(input);
             if (desiredDir == Vector3.Zero) return;
 
             desiredDir = desiredDir.Normalized();

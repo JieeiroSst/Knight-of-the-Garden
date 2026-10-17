@@ -121,6 +121,7 @@ namespace HiepSiVeVuon.Core
             {
                 if (!WantPart(mi.Name, armor)) continue;
                 mi.GetParent().RemoveChild(mi);
+                mi.Owner = null; // bo owner cua scene goc (tranh canh bao "owner inconsistent")
                 skeleton.AddChild(mi);
                 mi.Transform = reference;
                 mi.Skeleton = new NodePath("..");

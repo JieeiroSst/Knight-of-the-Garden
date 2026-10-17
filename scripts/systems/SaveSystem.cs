@@ -103,6 +103,13 @@ namespace HiepSiVeVuon.Systems
 
             // ==== Phieu luu / nha / le hoi ====
             public List<string> RegionsDiscovered { get; set; } = new();
+            // Chunk the gioi vo han da kham pha (suong mu ban do) - "cx,cz", xem WorldStreamer.Explored.
+            public List<string> ExploredChunks { get; set; } = new();
+            // Vat nuoi da giet thit theo loai (xem Huntable/AnimalLedger) - khong hien lai khi vao game.
+            public Dictionary<string, int> SlaughteredAnimals { get; set; } = new();
+            public float? Hunger { get; set; }
+            public float? Thirst { get; set; }
+            public List<HorseRegistry.TamedHorse> TamedHorses { get; set; } = new();
             public List<string> ChestsOpened { get; set; } = new();
             public List<string> WaystonesActive { get; set; } = new();
             public Dictionary<string, int> BossDefeatDay { get; set; } = new();
@@ -244,6 +251,12 @@ namespace HiepSiVeVuon.Systems
 
             var adv = AdventureSystem.Instance;
             data.RegionsDiscovered = new List<string>(adv.Discovered);
+            data.SlaughteredAnimals = new Dictionary<string, int>(HiepSiVeVuon.Entities.AnimalLedger.Slaughtered);
+            data.Hunger = SurvivalSystem.Instance?.Hunger;
+            data.Thirst = SurvivalSystem.Instance?.Thirst;
+            data.TamedHorses = new List<HorseRegistry.TamedHorse>(HorseRegistry.Horses);
+            data.ExploredChunks = new List<string>(WorldStreamer.Explored.Count);
+            foreach (var c in WorldStreamer.Explored) data.ExploredChunks.Add($"{c.X},{c.Y}");
             data.ChestsOpened = new List<string>(adv.OpenedChests);
             data.WaystonesActive = new List<string>(adv.Waystones);
             data.BossDefeatDay = new Dictionary<string, int>(adv.BossDefeatDay);
@@ -403,6 +416,21 @@ namespace HiepSiVeVuon.Systems
             var adv = AdventureSystem.Instance;
             adv.Reset();
             if (data.RegionsDiscovered != null) adv.Discovered.UnionWith(data.RegionsDiscovered);
+            HiepSiVeVuon.Entities.AnimalLedger.Load(data.SlaughteredAnimals, Engine.GetMainLoop() as SceneTree);
+            HorseRegistry.Load(data.TamedHorses);
+            if (SurvivalSystem.Instance != null)
+            {
+                SurvivalSystem.Instance.Hunger = data.Hunger ?? SurvivalSystem.Max;
+                SurvivalSystem.Instance.Thirst = data.Thirst ?? SurvivalSystem.Max;
+            }
+            WorldStreamer.Explored.Clear();
+            if (data.ExploredChunks != null)
+                foreach (var key in data.ExploredChunks)
+                {
+                    var parts = key.Split(',');
+                    if (parts.Length == 2 && int.TryParse(parts[0], out int cx) && int.TryParse(parts[1], out int cz))
+                        WorldStreamer.Explored.Add(new Vector2I(cx, cz));
+                }
             if (data.ChestsOpened != null) adv.OpenedChests.UnionWith(data.ChestsOpened);
             if (data.WaystonesActive != null) adv.Waystones.UnionWith(data.WaystonesActive);
             adv.Waystones.Add("ws_farm"); // cot o nong trai luon kich hoat san

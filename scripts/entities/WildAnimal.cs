@@ -62,8 +62,12 @@ namespace HiepSiVeVuon.Entities
         private static readonly string[] WalkCandidates =
             { "Armature|Walk", "Armature|WalkSlow", "AnimalArmature|Walk", "AnimalArmature|AnimalArmature|AnimalArmature|Walk", "Walk" };
 
+        private static int WildHp(string species) => species switch { "deer" => 40, "wolf" => 50, "fox" => 25, "rabbit" => 10, "duck" => 8, _ => 20 };
+
         public override void _Ready()
         {
+            // Giet thit / san ban (xem Huntable.cs) - con da bi giet o phien truoc thi khong hien lai.
+            if (!Huntable.Attach(this, SpeciesId, WildHp(SpeciesId), farm: false)) return;
             AddToGroup("wild_animals");
             AddToGroup("wild_" + SpeciesId);
 
@@ -260,15 +264,60 @@ namespace HiepSiVeVuon.Entities
 
         public void Despawn() => QueueFree();
 
+        private bool _simAsleep;
+
+        // ==== Tan cong nguoi choi ====
+        // Soi: hung du ve dem / Dem Trang Mau / khi bi danh -> lao vao can nguoi choi o gan (kem tieng gam).
+        // Cao: chi can lai khi bi danh. Nguoi choi chay xa (> 2.5 lan tam phat hien) thi bo cuoc.
+        private ulong _provokedUntil, _nextBite;
+        private bool _aggro;
+
+        public void Provoke() => _provokedUntil = Time.GetTicksMsec() + 30000;
+
+        private bool AggroTick(float dt, out Vector3 dir, out float speed)
+        {
+            dir = Vector3.Zero; speed = 0f;
+            if (SpeciesId != "wolf" && SpeciesId != "fox") return false;
+            var p = GetTree().GetFirstNodeInGroup("player") as Player;
+            if (p == null || p.IsDowned) { _aggro = false; return false; }
+            bool provoked = Time.GetTicksMsec() < _provokedUntil;
+            bool hostile = provoked || (SpeciesId == "wolf" && (GameManager.Instance.IsNight || HiepSiVeVuon.Systems.WorldEventsClient.BloodMoon));
+            var to = p.GlobalPosition - GlobalPosition;
+            to.Y = 0;
+            float d = to.Length();
+            float detect = SpeciesId == "wolf" ? 220f : 120f;
+            if (!hostile || d > (_aggro ? detect * 2.5f : detect)) { _aggro = false; return false; }
+            if (!_aggro) { _aggro = true; AnimalSounds.Play(this, "wolf_growl", SpeciesId == "fox" ? 1.5f : 1f); }
+            ulong now = Time.GetTicksMsec();
+            if (d < 38f)
+            {
+                if (now >= _nextBite)
+                {
+                    _nextBite = now + 1300;
+                    int dmg = Mathf.RoundToInt((SpeciesId == "wolf" ? 7f : 3f) * Enemy.SeasonalMultiplier());
+                    GameManager.Instance.TakeDamage(Mathf.Max(1, dmg - Inventory.Instance.GetArmorDefense() / 2));
+                    AnimalSounds.Play(this, "wolf_bite", SpeciesId == "fox" ? 1.4f : 1f);
+                }
+                dir = to / Mathf.Max(d, 0.01f);
+                return true; // dung sat can, xoay mat vao nguoi choi
+            }
+            dir = to / d;
+            speed = Speed * FleeSpeedMult * 1.1f;
+            return true;
+        }
+
         public override void _PhysicsProcess(double delta)
         {
+            if (HiepSiVeVuon.Core.SimLod.Sleep(this, ref _simAsleep)) return; // xa nguoi choi -> ngu mo phong
             float dt = (float)delta;
 
             _hunger = Mathf.Min(1f, _hunger + dt / 600f);  // ~10 phut THAT toi da doi
             _thirst = Mathf.Min(1f, _thirst + dt / 480f);  // ~8 phut THAT toi da khat
 
             float speed = _brain.CurrentActionId == "Flee" ? Speed * FleeSpeedMult : Speed;
-            var (desiredDir, targetSpeed) = _brain.Tick(dt, this, ArriveDist, speed, null, null);
+            var (desiredDir, targetSpeed) = AggroTick(dt, out var aggroDir, out var aggroSpeed)
+                ? (aggroDir, aggroSpeed)
+                : _brain.Tick(dt, this, ArriveDist, speed, null, null);
 
             bool wantsToMove = desiredDir != Vector3.Zero;
             desiredDir = _stuckDetector.ApplyEscape(desiredDir, GlobalPosition, wantsToMove, dt);

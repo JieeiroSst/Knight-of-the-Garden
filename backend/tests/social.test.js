@@ -130,7 +130,7 @@ test("bang hoi: lap (ton vang), moi, vao, kho chung, chat bang, roi bang nhuong 
   wl.close(); wm.close();
 });
 
-test("tham nong trai: chi ban be, xem ruong, tuoi ho, chu nhan duoc 1 lan; vao zone farm_", async () => {
+test("tham nong trai: chi ban be tuoi ho, chu nhan duoc 1 lan; ai cung vao duoc zone farm_", async () => {
   const host = await player();
   const guest = await player();
   const stranger = await player();
@@ -144,9 +144,10 @@ test("tham nong trai: chi ban be, xem ruong, tuoi ho, chu nhan duoc 1 lan; vao z
   assert.equal(helps[0].plotKey, "g1_2");
   assert.equal((await api(host.token, "POST", "/api/visits/helps/take")).body.length, 0);
 
+  // Nong trai nam o toa do rieng tren ban do chung -> nguoi la di toi cung vao duoc vung nong trai.
   const ws = await connect(stranger.token);
   ws.sendJson({ t: "join", zone: `farm_${host.id}` });
-  assert.match((await ws.waitFor((m) => m.t === "error")).msg, /ban be/);
+  assert.equal((await ws.waitFor((m) => m.t === "joined")).zone, `farm_${host.id}`);
   const wg = await connect(guest.token);
   wg.sendJson({ t: "join", zone: `farm_${host.id}` });
   assert.equal((await wg.waitFor((m) => m.t === "joined")).zone, `farm_${host.id}`);

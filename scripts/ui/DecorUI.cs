@@ -6,7 +6,7 @@ using HiepSiVeVuon.Systems;
 
 namespace HiepSiVeVuon.UI
 {
-    // Trang tri [V]: danh sach do trang tri dang co trong tui -> chon huong (0/90/180/270 do) -> "Dat"
+    // Trang tri [L] (V = doi goc nhin camera): danh sach do trang tri dang co trong tui -> chon huong (0/90/180/270 do) -> "Dat"
     // ngay truoc mat (trong nha hay ngoai vuon deu duoc). Bam [E] vao do da dat de nhat lai.
     public partial class DecorUI : CanvasLayer
     {

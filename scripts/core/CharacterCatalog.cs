@@ -134,6 +134,7 @@ namespace HiepSiVeVuon.Core
                 {
                     if (mi.Skin == null || (names != null && !names.Contains(mi.Name.ToString())) || StripMeshes.Contains(mi.Name)) continue;
                     mi.GetParent().RemoveChild(mi);
+                    mi.Owner = null; // bo owner cua scene goc (tranh canh bao "owner inconsistent")
                     skel.AddChild(mi);
                     mi.Transform = reference;
                     mi.Skeleton = new NodePath("..");

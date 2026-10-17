@@ -23,6 +23,19 @@ namespace HiepSiVeVuon.Data
         // Chi so cho vu khi / giap
         public int Damage = 0;
         public int Defense = 0;
+        // Vu khi tam xa (cung): ban mui ten "mui_ten", tam ban theo don vi the gioi (nguoi cao ~40).
+        public bool Ranged = false;
+        public float Range = 0f;
+        // Han su dung (gio THAT) - 0 = khong hong. Qua han -> "do_thoi" (server quyet dinh, xem ItemConditions).
+        public float ShelfHours = 0f;
+        // Do ben toi da (vu khi/giap/nong cu) - 0 = khong mon. Duoi 40% khong dung duoc toi khi sua.
+        public int MaxDurability = 0;
+        public int RepairGold = 0;
+        // Sinh ton (xem SurvivalSystem): an/uong hoi thanh no (Food) / nuoc (Water); giap/trang phuc giu am (Warmth, do C).
+        public int Food = 0;
+        public int Water = 0;
+        public int Warmth = 0;
+        public List<IngredientEntry> RepairCost = new();
         public int HealAmount = 0;      // cho consumable
         public int StaminaAmount = 0;   // cho consumable - hoi the luc (xem GameManager.Stamina)
         // Trang phuc nong trai (Type = Outfit): giam the luc cho 1 ky nang (ten SkillType) va/hoac
@@ -138,6 +151,17 @@ namespace HiepSiVeVuon.Data
     }
 
     // Cong thuc che tao tai Ban Lam Viec (data/recipes.json, xem CraftingUI.cs).
+    // Khu cho (data/markets.json - dung chung voi server: vung an toan khong danh/pha/xay).
+    public class MarketDef
+    {
+        public string Id;
+        public string Name;
+        public string NameEn;
+        public float X, Z;
+        public float SafeRadius = 350f;
+        public bool Built = true; // false = dung cho co san (vd cho thi tran), khong dung them sap hang
+    }
+
     public class RecipeDef
     {
         public string Id;

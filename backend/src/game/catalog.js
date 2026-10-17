@@ -17,6 +17,8 @@ function build() {
   const starter = read("starter.json");
   const fish = new Set(read("fish.json").map((f) => f.ItemId));
   const forage = new Set(read("forage.json").map((f) => f.ItemId));
+  // Khu cho (vung an toan: khong danh nguoi/pha/xay) - toa do the gioi, dung chung voi Godot.
+  const markets = read("markets.json");
 
   // Moi item co the roi tu quai nao + so vang toi da 1 con quai cho (kiem tra nguon "loot"/"kill").
   const lootItems = new Set();
@@ -27,7 +29,7 @@ function build() {
   }
   const recipeOutputs = new Set([...recipes.values(), ...cooking.values()].map((r) => r.OutputId));
 
-  return { items, recipes, cooking, enemies, achievements, house, starter, fish, forage, lootItems, maxEnemyGold, recipeOutputs };
+  return { items, recipes, cooking, enemies, achievements, house, starter, fish, forage, lootItems, maxEnemyGold, recipeOutputs, markets };
 }
 
 const catalog = build();

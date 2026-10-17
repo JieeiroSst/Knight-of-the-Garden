@@ -22,8 +22,12 @@ namespace HiepSiVeVuon.Systems
         private AudioStreamPlayer _player;
         private int _trackIndex = 0;
 
+        // TAT nhac nen (theo yeu cau) - chi con am thanh moi truong/dong vat. Doi thanh true de bat lai.
+        public static bool Enabled = false;
+
         public override void _Ready()
         {
+            if (!Enabled) return;
             _player = new AudioStreamPlayer { VolumeDb = -8f };
             AddChild(_player);
             _player.Finished += PlayNextTrack;

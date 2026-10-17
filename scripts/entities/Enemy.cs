@@ -22,6 +22,12 @@ namespace HiepSiVeVuon.Entities
 		// cung EnemyId (singleton tra ve tu ItemDatabase) - sua thang vao do se lam sai ca nhung
 		// con da spawn tu truoc/sau do, khong rieng gi con nay.
 		[Export] public float StatMultiplier = 1f;
+		// He so nhan EXP/vang khi ha (quai o vung xa nong trai manh hon nen thuong nhieu hon - xem
+		// WorldBiomes.Danger/WorldStreamer).
+		[Export] public float RewardMultiplier = 1f;
+
+		private const float SleepDistance = 1400f;
+		private bool _asleep;
 
 		// Model 3D rieng cho tung loai quai nam trong enemies.json (EnemyDef.ModelPath/ModelScale) -
 		// truoc day 9 loai quai dung chung 2 model slime/blob chi khac mau. Cac goi model Quaternius
@@ -55,11 +61,43 @@ namespace HiepSiVeVuon.Entities
 
 		[Signal] public delegate void DiedEventHandler(string enemyId);
 
+		// ==== Trum MANG (Trum The Gioi / Rong Co Dai cua to doi - xem WorldEventsClient, DungeonFloor) ====
+		// Mau CHUNG do server giu: don danh cua nguoi choi gui len (NetHit), mau that ve qua SetNetHp; chi
+		// guc khi server bao het mau, phan thuong do server chia (khong roi vang/do tai cho).
+		public System.Action<int> NetHit;
+		public bool NetMode => NetHit != null;
+		public Vector3? NetHome;       // trum khong bi du ra xa diem server (server chi nhan don quanh day)
+		public float NetLeash = 320f;
+
+		public void SetNetHp(int hp, int maxHp)
+		{
+			if (_state == State.Dead) return;
+			_maxHp = Mathf.Max(1, maxHp);
+			_hp = Mathf.Clamp(hp, 0, _maxHp);
+			_hpBar ??= EnemyVisuals.HpBar.Create(this, 145f + (_def?.HoverHeight ?? 0f), true);
+			_hpBar.SetRatio(_hp / (float)_maxHp);
+			if (_bossHudShown) UpdateBossHud();
+			if (_hp <= 0) Die();
+		}
+
+		// Trum het gio / bi ha o noi khac -> bien mat (khong thuong).
+		public void NetVanish()
+		{
+			if (_state == State.Dead) return;
+			_state = State.Dead;
+			if (_bossHudShown) (GetTree().GetFirstNodeInGroup("hud") as HiepSiVeVuon.UI.HUD)?.HideBossBar();
+			var tw = CreateTween();
+			if (_model != null) tw.TweenProperty(_model, "scale", Vector3.One * 0.01f, 0.6f);
+			tw.TweenCallback(Callable.From(QueueFree));
+		}
+
 		// Mua Dong quai manh hon (theo yeu cau) - goi truoc AddChild tai MOI diem spawn quai
 		// trong game (xem Main.SpawnEnemy va WorldStreamer.GenerateWildernessDecor - CA HAI duong
 		// spawn doc lap deu can goi ham nay, thieu 1 cho se co quai khong theo mua).
+		// Mua Dong x1.6; Dem Trang Mau (su kien the gioi) x1.6 nua.
 		public static float SeasonalMultiplier() =>
-			GameManager.Instance.CurrentSeason == GameManager.Season.Winter ? 1.6f : 1f;
+			(GameManager.Instance.CurrentSeason == GameManager.Season.Winter ? 1.6f : 1f)
+			* (WorldEventsClient.BloodMoon ? 1.6f : 1f);
 
 		public override void _Ready()
 		{
@@ -87,6 +125,8 @@ namespace HiepSiVeVuon.Entities
 					_animPlayer.AnimationFinished += OnAnimationFinished;
 					PlayLoop(AnimIdle);
 				}
+				// Khong ve quai qua xa (suong mu da che) - re hon nhieu voi model co xuong.
+				Core.GraphicsSettings.SetVisibilityRange(_model, 2000f);
 				// Nhuom mau (xem EnemyDef.TintColor) - game chi co 2 model quai goc, nhieu EnemyId
 				// "khac nhau" (theo khu vuc, xem WorldStreamer.RegionProfile) can nhin KHAC MAU du
 				// dung chung 1 file .glb.
@@ -161,13 +201,24 @@ namespace HiepSiVeVuon.Entities
 				? GlobalPosition.DistanceTo(_player.GlobalPosition)
 				: 99999f;
 
+			// Ngu khi o xa nguoi choi (khong ai thay, khong the danh nhau): bo qua AI/vat ly/hoat
+			// canh - voi 25 chunk tai quanh nguoi choi, phan lon quai nam o day. Chi ngu khi da cham
+			// dat (khong bi treo lo lung giua khong trung).
+			bool sleep = distToPlayer > SleepDistance && _state != State.Chase && _state != State.Attack && IsOnFloor() && !_def.IsBoss;
+			if (sleep != _asleep)
+			{
+				_asleep = sleep;
+				if (_animPlayer != null) _animPlayer.SpeedScale = sleep ? 0f : 1f;
+			}
+			if (sleep) return;
+
 			// Chuyen trang thai theo cam nhan (perception)
 			Vector3 horizontal = Vector3.Zero;
 			switch (_state)
 			{
 				case State.Idle:
 				case State.Patrol:
-					if (distToPlayer <= _def.DetectRange) _state = State.Chase;
+					if (distToPlayer <= _def.DetectRange) { _state = State.Chase; AnimalSounds.Play(this, "monster_roar", _def.IsBoss ? 0.75f : (float)GD.RandRange(0.95, 1.3), _def.IsBoss ? 4f : -2f); }
 					else horizontal = DoPatrol();
 					break;
 				case State.Chase:
@@ -181,6 +232,12 @@ namespace HiepSiVeVuon.Entities
 					break;
 			}
 
+			// Trum mang: bi "xich" quanh diem server - ra xa qua thi quay ve.
+			if (NetHome is Vector3 home)
+			{
+				var back = home - GlobalPosition; back.Y = 0f;
+				if (back.Length() > NetLeash) horizontal = back.Normalized() * Mathf.Max(90f, horizontal.Length());
+			}
 			float vy = IsOnFloor() ? 0f : Mathf.Max(Velocity.Y - Gravity * dt, -SteeringUtil.TerminalFallSpeed);
 			Velocity = new Vector3(horizontal.X, vy, horizontal.Z);
 			MoveAndSlide();
@@ -277,6 +334,20 @@ namespace HiepSiVeVuon.Entities
 		public void TakeDamage(int dmg)
 		{
 			if (_state == State.Dead) return;
+			if (NetMode)
+			{
+				// Du doan tai cho (khong guc) - server tra mau that ngay sau.
+				NetHit(dmg);
+				_hp = Mathf.Max(1, _hp - dmg);
+				ShowDamageNumber(dmg);
+				EnemyVisuals.HitFlash(_model);
+				_hpBar ??= EnemyVisuals.HpBar.Create(this, 145f + (_def?.HoverHeight ?? 0f), true);
+				_hpBar.SetRatio(_hp / (float)Mathf.Max(1, _maxHp));
+				if (_def != null && _def.IsBoss) UpdateBossHud();
+				PlayAction(AnimHit);
+				_state = State.Chase;
+				return;
+			}
 			_hp -= dmg;
 			ShowDamageNumber(dmg);
 			EnemyVisuals.HitFlash(_model);
@@ -390,27 +461,31 @@ namespace HiepSiVeVuon.Entities
 			SetCollisionLayerValue(2, false);
 			SetCollisionMaskValue(1, false);
 
-			// Trao thuong
-			GameManager.Instance.AddExp(_def.ExpReward);
-			GameManager.Instance.AddGold(_def.GoldReward, "kill");
-			QuestSystem.Instance.OnEnemyKilled(EnemyId);
-
-			// Roi loot
-			var rng = new RandomNumberGenerator();
-			rng.Randomize();
-			foreach (var loot in _def.Loot)
+			// Trao thuong (trum mang: server chia thuong theo dong gop - khong trao tai cho)
+			if (!NetMode)
 			{
-				if (rng.Randf() <= loot.Chance)
+				GameManager.Instance.AddExp(Mathf.RoundToInt(_def.ExpReward * RewardMultiplier));
+				GameManager.Instance.AddGold(Mathf.RoundToInt(_def.GoldReward * RewardMultiplier), "kill");
+				QuestSystem.Instance.OnEnemyKilled(EnemyId);
+
+				// Roi loot
+				var rng = new RandomNumberGenerator();
+				rng.Randomize();
+				foreach (var loot in _def.Loot)
 				{
-					int amount = rng.RandiRange(loot.Min, loot.Max);
-					DroppedItem.Spawn(GetTree().CurrentScene, GlobalPosition, loot.ItemId, amount, "loot");
+					if (rng.Randf() <= loot.Chance)
+					{
+						int amount = rng.RandiRange(loot.Min, loot.Max);
+						DroppedItem.Spawn(GetTree().CurrentScene, GlobalPosition, loot.ItemId, amount, "loot");
+					}
 				}
 			}
+			else GameManager.Instance.AddExp(Mathf.RoundToInt(_def.ExpReward * 2f));
 			EmitSignal(SignalName.Died, EnemyId);
 			AchievementSystem.Instance?.Add("monsters_killed");
 			if (_def.IsBoss)
 			{
-				AdventureSystem.Instance?.OnBossDefeated(EnemyId);
+				if (!NetMode) AdventureSystem.Instance?.OnBossDefeated(EnemyId);
 				(GetTree().GetFirstNodeInGroup("hud") as HiepSiVeVuon.UI.HUD)?.HideBossBar();
 				_bossAura?.QueueFree();
 			}

@@ -10,6 +10,8 @@ namespace HiepSiVeVuon.UI
         private ProgressBar _hpBar;
         private ProgressBar _staminaBar;
         private Label _staminaLabel;
+        private ProgressBar _hungerBar, _thirstBar;
+        private Label _survivalLabel;
         private Label _seasonLabel;
         private Label _mailLabel;
         private VBoxContainer _toastBox;
@@ -26,6 +28,7 @@ namespace HiepSiVeVuon.UI
         private Label _questLabel;
         private Label _questHeaderLabel;
         private Control _compass;
+        private Label _coordLabel;
         private static readonly Vector2 CompassCenter = new(900, 40);
 
         // Bang ten cong trinh: hien khi nguoi choi lai gan (xem BuildingLabelZone.cs) - dung 1
@@ -117,6 +120,24 @@ namespace HiepSiVeVuon.UI
             _timeLabel.Text = $"{now:HH:mm:ss} ({dayNight})";
 
             _compass.QueueRedraw();
+            if (SurvivalSystem.Instance is SurvivalSystem sv)
+            {
+                _hungerBar.Value = sv.Hunger;
+                _thirstBar.Value = sv.Thirst;
+                string temp = sv.Freezing ? Loc.T("surv.t_freezing") : sv.Cold ? Loc.T("surv.t_cold") : sv.Heatstroke ? Loc.T("surv.t_scorching") : sv.Hot ? Loc.T("surv.t_hot") : Loc.T("surv.t_ok");
+                _survivalLabel.Text = string.Format(Loc.T("surv.hud_fmt"), Mathf.RoundToInt(sv.Hunger), Mathf.RoundToInt(sv.Thirst), Mathf.RoundToInt(sv.BodyTemp), temp);
+            }
+            if (GetTree().GetFirstNodeInGroup("player") is Node3D me)
+            {
+                string text = string.Format(Loc.T("coords.hud_fmt"), MapCoords.M(me.GlobalPosition.X), MapCoords.M(me.GlobalPosition.Z));
+                // Trang thai sinh ton: dang an trong bui/leu (nguoi xa khong thay) / dang o vung an toan cua cho.
+                if (PvpClient.Instance is PvpClient pvp)
+                {
+                    if (pvp.HiddenLocal) text += "\n" + Loc.T("hide.status");
+                    if (pvp.CurrentMarket != null) text += "\n" + Loc.T("market.safe_status");
+                }
+                _coordLabel.Text = text;
+            }
             UpdateAbilityBar();
         }
 
@@ -154,6 +175,14 @@ namespace HiepSiVeVuon.UI
             _staminaBar.AddThemeStyleboxOverride("fill", new StyleBoxFlat { BgColor = new Color(0.95f, 0.75f, 0.2f) });
             vb.AddChild(_staminaBar);
             _staminaLabel = new Label(); vb.AddChild(_staminaLabel);
+            // Sinh ton: no / nuoc / nhiet do (xem SurvivalSystem).
+            _hungerBar = new ProgressBar { CustomMinimumSize = new Vector2(200, 12), ShowPercentage = false, MaxValue = SurvivalSystem.Max };
+            _hungerBar.AddThemeStyleboxOverride("fill", new StyleBoxFlat { BgColor = new Color(0.9f, 0.55f, 0.2f) });
+            vb.AddChild(_hungerBar);
+            _thirstBar = new ProgressBar { CustomMinimumSize = new Vector2(200, 12), ShowPercentage = false, MaxValue = SurvivalSystem.Max };
+            _thirstBar.AddThemeStyleboxOverride("fill", new StyleBoxFlat { BgColor = new Color(0.3f, 0.6f, 1f) });
+            vb.AddChild(_thirstBar);
+            _survivalLabel = new Label(); vb.AddChild(_survivalLabel);
             _levelLabel = new Label(); vb.AddChild(_levelLabel);
             _goldLabel = new Label(); vb.AddChild(_goldLabel);
             _dayLabel = new Label(); vb.AddChild(_dayLabel);
@@ -220,28 +249,55 @@ namespace HiepSiVeVuon.UI
             _toastBox.Alignment = BoxContainer.AlignmentMode.End;
             AddChild(_toastBox);
 
+            // Toa do hien tai (met) duoi la ban - de hen diem gap nhau (/toado gui vao chat).
+            _coordLabel = new Label { Position = new Vector2(CompassCenter.X - 60, CompassCenter.Y + 34), CustomMinimumSize = new Vector2(120, 0), HorizontalAlignment = HorizontalAlignment.Center };
+            _coordLabel.AddThemeFontSizeOverride("font_size", 11);
+            _coordLabel.AddThemeColorOverride("font_outline_color", Colors.Black);
+            _coordLabel.AddThemeConstantOverride("outline_size", 4);
+            _coordLabel.MouseFilter = Control.MouseFilterEnum.Ignore;
+            AddChild(_coordLabel);
+
             _compass = new Control { Position = Vector2.Zero, CustomMinimumSize = Vector2.Zero };
             _compass.Draw += DrawCompass;
             AddChild(_compass);
         }
 
-        // Quy uoc goc xoay: dung TRUC TIEP (worldDir.X, worldDir.Z) lam vector man hinh (khop
-        // dung quy uoc cua MapUI.WorldToMap: X the gioi -> X ban do/man hinh, Z the gioi tang ->
-        // Y ban do/man hinh tang xuong duoi) - camera cua Player la OFFSET CO DINH (0,140,115)
-        // khong xoay theo huong nhan vat va khong lech truc X, nen huong the gioi anh xa gan
-        // dung sang huong man hinh theo cach nay.
+        // La ban xoay theo camera (CameraRig.Yaw): huong the gioi (x, z) -> huong man hinh = Rotated(yaw)
+        // (nguoc voi CameraRig.RelativeMove). Vong la ban + chu "B" (Bac = -Z, khop MapUI), cham xanh =
+        // huong dong doi to doi, mui ten vang = diem den da danh dau tren ban do / qua lenh /den.
         private void DrawCompass()
         {
-            var mapUi = GetTree().GetFirstNodeInGroup("map_ui") as MapUI;
             var player = GetTree().GetFirstNodeInGroup("player") as Node3D;
-            if (mapUi == null || !mapUi.HasWaypoint || player == null) return;
+            if (player == null) return;
+            float yaw = HiepSiVeVuon.Entities.CameraRig.Current?.Yaw ?? 0f;
+            var font = ThemeDB.FallbackFont;
+            const float ring = 26f;
+            _compass.DrawCircle(CompassCenter, ring, new Color(0f, 0f, 0f, 0.35f));
+            _compass.DrawArc(CompassCenter, ring, 0f, Mathf.Tau, 32, new Color(0.75f, 0.62f, 0.35f, 0.9f), 1.5f, true);
+            var north = new Vector2(0, -1).Rotated(yaw);
+            _compass.DrawString(font, CompassCenter + north * (ring + 9f) + new Vector2(-4, 5), Loc.T("map.compass_n"), HorizontalAlignment.Left, -1, 13, new Color(1f, 0.4f, 0.35f));
+            _compass.DrawLine(CompassCenter + north * (ring - 6f), CompassCenter + north * ring, new Color(1f, 0.4f, 0.35f), 2f);
 
+            var flatMe = new Vector2(player.GlobalPosition.X, player.GlobalPosition.Z);
+            if (PvpClient.Instance is PvpClient pvp)
+                foreach (var mem in pvp.PartyPositions.Values)
+                {
+                    if (Time.GetTicksMsec() - mem.SeenMs > 5000) continue;
+                    var d = new Vector2(mem.Pos.X, mem.Pos.Z) - flatMe;
+                    if (d.Length() < 30f) continue;
+                    var pip = CompassCenter + d.Normalized().Rotated(yaw) * ring;
+                    _compass.DrawCircle(pip, 4.5f, new Color(0.35f, 0.9f, 1f));
+                    _compass.DrawCircle(pip, 4.5f, Colors.Black, false, 1f);
+                }
+
+            var mapUi = GetTree().GetFirstNodeInGroup("map_ui") as MapUI;
+            if (mapUi == null || !mapUi.HasWaypoint) return;
             Vector3 diff = mapUi.Waypoint - player.GlobalPosition;
             var dir2 = new Vector2(diff.X, diff.Z);
             float dist = dir2.Length();
-            if (dist < 40f) return; // da toi noi (~2m) - an mui ten, khong con can chi huong nua
+            if (dist < 40f) return; // da toi noi (~2m)
 
-            float angle = dir2.Angle();
+            float angle = dir2.Rotated(yaw).Angle();
             Vector2[] shape =
             {
                 new(18, 0), new(-9, -11), new(-3, 0), new(-9, 11)
@@ -253,9 +309,9 @@ namespace HiepSiVeVuon.UI
             _compass.DrawColoredPolygon(pts, new Color(1f, 0.82f, 0.15f));
             _compass.DrawPolyline(new[] { pts[0], pts[1], pts[2], pts[3], pts[0] }, Colors.Black, 1.5f);
 
-            float distMeters = dist / 20f; // quy doi 20 don vi/met (dung chung ca game)
-            _compass.DrawString(ThemeDB.FallbackFont, CompassCenter + new Vector2(-16, 30),
-                $"{distMeters:0}m", HorizontalAlignment.Left, -1, 14, Colors.White);
+            float distMeters = dist / MapCoords.UnitsPerMeter;
+            _compass.DrawString(font, CompassCenter + new Vector2(-16, ring + 34),
+                $"{distMeters:0}m", HorizontalAlignment.Left, -1, 13, Colors.White);
         }
 
         private void Refresh()

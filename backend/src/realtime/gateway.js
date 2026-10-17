@@ -11,6 +11,7 @@
 //    {t:"whisper", to, text}              nhan rieng theo ten nhan vat
 //    {t:"channels"}                       danh sach kenh cua vung hien tai
 //    {t:"ping"}
+//    <nhi phan> [0x56][seq][adpcm...]     giong noi (voice chat theo khoang cach, ~25 goi/giay khi noi)
 //  server -> client:
 //    {t:"welcome", id, name}
 //    {t:"joined", zone, channel, players:[...]}, {t:"spawn", p}, {t:"despawn", id}
@@ -18,6 +19,13 @@
 //    {t:"chat", ch:"channel"|"whisper"|"system", from, id, text}
 //    {t:"event", e}   (trade_invite/trade_update/trade_done/market_sold... tu REST API)
 //    {t:"channels", zone, list:[{channel,count}]}, {t:"error", msg}, {t:"pong"}
+//    <nhi phan> [0x56][u32 speakerId LE][seq][adpcm...]  giong noi cua nguoi o gan (<= VOICE_RANGE)
+//
+// PvP the gioi mo / can cu / to doi / ho tro (hp, bag, pvp_hit, struct_*, chest_*, party_*, heal_ally...):
+// xem pvp.js - gateway chuyen moi loai tin khong co o day sang pvp.handle().
+//
+// Vung quan tam (AOI): nguoi trong AOI_NEAR nhan vi tri cua nhau moi nhip; xa hon chi 1/AOI_FAR_EVERY
+// nhip (client cung an model nguoi o xa) - kenh 80 nguoi khong con nhan 80x80 hang vi tri/nhip.
 //
 // Mo rong ngang: chay NHIEU gateway sau load balancer (WebSocket sticky theo ket noi). Moi kenh la 1
 // topic pub/sub (Redis) - gateway nao co nguoi trong kenh thi dang ky topic do va chuyen tiep cho
@@ -35,6 +43,9 @@ const progressService = require("../services/progressService");
 const { duelDamage } = require("../game/combatRules");
 const presence = require("./presence");
 const { memoryDuels, redisDuels } = require("./duels");
+const { attachPvp } = require("./pvp");
+const { attachWorldEvents } = require("./worldEvents");
+const pvpRules = require("../game/pvpRules");
 const { catalog } = require("../game/catalog");
 const progressRepo = require("../repositories/progressRepository");
 
@@ -47,6 +58,13 @@ const DUEL_HIT_COOLDOWN_MS = 450;
 const DUEL_MAX_MS = 120000;
 
 const ZONE_RE = /^[a-z0-9_]{1,24}$/;
+
+// Giong noi: PHAI khop VoiceChat.VoiceRange ben Godot. Goi toi da ~ 2+3+320 byte (40ms ADPCM 16kHz).
+const VOICE_TAG = 0x56;
+const VOICE_RANGE = 900;
+const VOICE_MAX_BYTES = 1200;
+const AOI_NEAR = 2500;
+const AOI_FAR_EVERY = 5;
 const COORD_LIMIT = 200000;
 const BAD_WORDS = ["dm", "dcm", "vcl", "vkl", "clm", "fuck", "shit", "dit"];
 
@@ -81,11 +99,15 @@ function attachGateway(server, opts = {}) {
   const duels = bus.redis ? redisDuels(bus.redis) : memoryDuels();
   // Vi tri gan nhat cua nguoi choi trong cac kenh gateway nay dang nghe (de kiem tra tam danh dau truong).
   const posCache = new Map();
+  // Hang vi tri moi nhat theo nguoi choi (gui bu cho nguoi xem o xa, xem AOI).
+  const latestRow = new Map();
   const gwId = crypto.randomBytes(4).toString("hex");
   const tickMs = opts.tickMs || env.WS_TICK_MS;
   const maxConnections = opts.maxConnections || env.WS_MAX_CONNECTIONS;
 
   const wss = new WebSocketServer({ server, path: "/ws", maxPayload: 4096 });
+  let pvp = null;
+  let world = null;
   const localByPlayer = new Map();          // playerId -> conn
   const localByChannel = new Map();         // "zone:n" -> Set<conn>
   const channelHandlers = new Map();        // "zone:n" -> handler (dang ky topic)
@@ -100,19 +122,62 @@ function attachGateway(server, opts = {}) {
     const members = localByChannel.get(key);
     if (!members) return;
     if (msg.k === "moves") {
-      for (const row of msg.m) posCache.set(row[0], [row[1], row[3]]);
+      // posCache ghi kem kenh -> PvP/ho tro chi nhan muc tieu CUNG kenh (xem pvp.js).
+      for (const row of msg.m) { posCache.set(row[0], [row[1], row[3], key]); latestRow.set(row[0], row); }
       for (const c of members) {
-        const m = msg.m.filter((row) => row[0] !== c.playerId);
+        const [cx, , cz] = c.pos;
+        const m = [];
+        for (const row of msg.m) {
+          if (row[0] === c.playerId) continue;
+          if (hiddenFrom(c, row)) continue;
+          if (Math.hypot(row[1] - cx, row[3] - cz) <= AOI_NEAR) { m.push(row); c.farPending?.delete(row[0]); }
+          else (c.farPending ??= new Set()).add(row[0]);
+        }
         if (m.length) send(c, { t: "moves", m });
+      }
+    } else if (msg.k === "voice") {
+      // Chi chuyen cho nguoi ban kinh VOICE_RANGE (theo vi tri server biet, khong tin client) -
+      // o xa khong the nghe len.
+      let out = null;
+      for (const c of members) {
+        if (c.playerId === msg.id) continue;
+        if (Math.hypot(c.pos[0] - msg.x, c.pos[2] - msg.z) > VOICE_RANGE) continue;
+        if (!out) {
+          const body = Buffer.from(msg.d, "base64");
+          out = Buffer.allocUnsafe(5 + body.length);
+          out[0] = VOICE_TAG;
+          out.writeUInt32LE(msg.id >>> 0, 1);
+          body.copy(out, 5);
+        }
+        if (c.ws.readyState === c.ws.OPEN && c.ws.bufferedAmount < 256 * 1024) c.ws.send(out, { binary: true });
       }
     } else if (msg.k === "spawn") {
       for (const c of members) if (c.playerId !== msg.p.id) send(c, { t: "spawn", p: msg.p });
     } else if (msg.k === "despawn") {
+      for (const c of members) c.vanished?.delete(msg.id);
+      latestRow.delete(msg.id);
+      for (const c of members) c.farPending?.delete(msg.id);
       for (const c of members) if (c.playerId !== msg.id) send(c, { t: "despawn", id: msg.id });
     } else if (msg.k === "chat") {
       const raw = JSON.stringify({ t: "chat", ch: "channel", from: msg.from, id: msg.id, text: msg.text });
       for (const c of members) send(c, raw);
+    } else {
+      pvp.onChannelMessage(members, msg);
     }
+  }
+
+  // An nap (row[6] = 1, xem pvp.updateHidden): nguoi KHONG phai dong doi o xa hon REVEAL_DIST khong
+  // nhan vi tri (chong hack nhin xuyen) - chi nhan 1 tin "vanish" luc bat dau an, "appear" luc lo dien.
+  function hiddenFrom(c, row) {
+    const id = row[0];
+    const hide = row[6] === 1 && !(c.party && c.party.members.includes(id))
+      && Math.hypot(row[1] - c.pos[0], row[3] - c.pos[2]) > pvpRules.REVEAL_DIST;
+    if (hide) {
+      if (!(c.vanished ??= new Set()).has(id)) { c.vanished.add(id); c.farPending?.delete(id); send(c, { t: "vanish", id }); }
+      return true;
+    }
+    if (c.vanished?.delete(id)) send(c, { t: "appear", id });
+    return false;
   }
 
   async function addToChannel(conn, zone, n) {
@@ -134,6 +199,7 @@ function attachGateway(server, opts = {}) {
     const key = `${zone}:${channel}`;
     conn.zone = null;
     conn.channel = null;
+    await pvp.onLeft(conn, zone);
     const set = localByChannel.get(key);
     if (set) {
       set.delete(conn);
@@ -148,15 +214,23 @@ function attachGateway(server, opts = {}) {
     await bus.publish(topicOf(zone, channel), { k: "despawn", id: conn.playerId });
   }
 
-  const publicState = (conn) => ({ id: conn.playerId, name: conn.profile.displayName, app: conn.app, x: conn.pos[0], y: conn.pos[1], z: conn.pos[2], r: conn.pos[3], a: conn.pos[4] });
+  // gid/pid: bang hoi/to doi - client biet ai la dong doi (khong tu dong nham danh, khong hien thanh do).
+  const publicState = (conn) => ({ id: conn.playerId, name: conn.profile.displayName, app: conn.app, x: conn.pos[0], y: conn.pos[1], z: conn.pos[2], r: conn.pos[3], a: conn.pos[4], ...pvp.publicExtra(conn) });
+
+  // Phat lai "spawn" (doi trang phuc/to doi...) de nguoi cung kenh cap nhat.
+  async function republish(conn) {
+    if (!conn.zone) return;
+    await channels.put(conn.zone, conn.channel, conn.playerId, publicState(conn));
+    await bus.publish(topicOf(conn.zone, conn.channel), { k: "spawn", p: publicState(conn) });
+  }
 
   async function join(conn, zone, wanted) {
     if (!ZONE_RE.test(zone || "")) return send(conn, { t: "error", msg: "zone khong hop le" });
-    // Nong trai cua 1 nguoi (farm_<id>): chi chu nong trai va BAN BE moi vao duoc.
+    // Nong trai cua 1 nguoi (farm_<id>): nong trai gio nam o toa do RIENG tren ban do chung (xem
+    // farmService) -> ai di toi cung vao duoc vung do (gap chu nha, thay nhau).
     if (zone.startsWith("farm_")) {
       const owner = Number(zone.slice(5));
-      if (!Number.isInteger(owner) || (owner !== conn.playerId && !(await socialService.areFriends(conn.playerId, owner))))
-        return send(conn, { t: "error", msg: "Chi ban be moi tham nong trai nay." });
+      if (!Number.isInteger(owner) || owner <= 0) return send(conn, { t: "error", msg: "zone khong hop le" });
     }
     await removeFromChannel(conn);
     const n = await channels.assign(zone, Number.isInteger(wanted) && wanted > 0 ? wanted : null);
@@ -167,6 +241,7 @@ function attachGateway(server, opts = {}) {
     await channels.put(zone, n, conn.playerId, publicState(conn));
     send(conn, { t: "joined", zone, channel: n, players: others });
     await bus.publish(topicOf(zone, n), { k: "spawn", p: publicState(conn) });
+    await pvp.onJoined(conn);
   }
 
   async function handle(conn, msg) {
@@ -175,8 +250,15 @@ function attachGateway(server, opts = {}) {
       case "leave": return removeFromChannel(conn);
       case "pos": {
         if (!conn.limits.pos()) return;
-        conn.pos = [num(msg.x), num(msg.y), num(msg.z), num(msg.r), Number.isInteger(msg.a) ? Math.max(0, Math.min(31, msg.a)) : 0];
+        const prevPos = conn.pos;
+        // a: ma hoat canh (bit 32 = dang cuoi ngua, xem PlayerCombat.NetAnimRoles / RemotePlayer).
+        conn.pos = [num(msg.x), num(msg.y), num(msg.z), num(msg.r), Number.isInteger(msg.a) ? Math.max(0, Math.min(63, msg.a)) : 0];
         conn.moved = true;
+        conn.mounted = (conn.pos[4] & 32) !== 0;
+        const t = Date.now();
+        conn.speed = pvpRules.smoothSpeed(conn.speed, Math.hypot(conn.pos[0] - prevPos[0], conn.pos[2] - prevPos[2]), t - (conn.posAt || 0));
+        conn.posAt = t;
+        pvp.updateHidden(conn, msg.h === 1 || msg.h === true);
         return;
       }
       case "chat": {
@@ -213,6 +295,8 @@ function attachGateway(server, opts = {}) {
       case "ping":
         return send(conn, { t: "pong" });
       default:
+        if (await pvp.handle(conn, msg)) return;
+        if (await world.handle(conn, msg)) return;
         return send(conn, { t: "error", msg: "loai tin khong ho tro" });
     }
   }
@@ -229,9 +313,7 @@ function attachGateway(server, opts = {}) {
       if (!owned.includes(id)) return send(conn, { t: "error", msg: "Ban chua co trang phuc nay." });
     }
     conn.app = { ...conn.app, f: id };
-    if (!conn.zone) return;
-    await channels.put(conn.zone, conn.channel, conn.playerId, publicState(conn));
-    await bus.publish(topicOf(conn.zone, conn.channel), { k: "spawn", p: publicState(conn) });
+    await republish(conn);
   }
 
   async function authenticate(conn, token) {
@@ -246,18 +328,21 @@ function attachGateway(server, opts = {}) {
     conn.profile = profile;
     conn.app = { g: profile.gender, m: profile.modelId, s: profile.skinColor, h: profile.hairColor, o: profile.outfitColor };
     localByPlayer.set(conn.playerId, conn);
-    conn.userHandler = (e) => {
+    conn.userHandler = (e) => pvp.onUserEvent(conn, e).then((handled) => {
+      if (handled) return;
       if (e.type === "whisper") send(conn, { t: "chat", ch: "whisper", from: e.from, id: e.id, text: e.text });
       else {
         if (e.type === "guild_changed") refreshGuild(conn).catch(() => {});
         if (e.type === "duel_start" || e.type === "duel_end") conn.duelId = e.type === "duel_start" ? e.duelId : null;
         send(conn, { t: "event", e });
       }
-    };
+    }).catch((err) => logger.warn({ err }, "Loi xu ly su kien ca nhan"));
     await bus.subscribe(`user:${conn.playerId}`, conn.userHandler);
     await presence.setOnline(conn.playerId);
     await refreshGuild(conn);
     send(conn, { t: "welcome", id: conn.playerId, name: profile.displayName, gateway: gwId, guildId: conn.guildId || 0 });
+    await pvp.onWelcome(conn);
+    await world.onWelcome(conn);
   }
 
   // ==== Bang hoi: dang ky chat bang theo bang hien tai (doi khi vao/roi bang) ====
@@ -275,6 +360,11 @@ function attachGateway(server, opts = {}) {
   const lastHit = new Map(); // playerId -> ms
   const notify = (id, e) => bus.publish(`user:${id}`, e);
   const posOf = (id) => localByPlayer.get(id)?.pos ? [localByPlayer.get(id).pos[0], localByPlayer.get(id).pos[2]] : posCache.get(id);
+
+  // PvP the gioi mo / can cu / to doi (xem pvp.js) - khai bao sau notify/republish ma no dung.
+  pvp = attachPvp({ bus, send, localByPlayer, posCache, notify, topicOf, republish });
+  // Su kien the gioi: ruong tiep te, doan thuong nhan, Dem Trang Mau (xem worldEvents.js).
+  world = attachWorldEvents({ bus, send, localByPlayer, gwId, notify }, opts.world || {});
 
   async function duelInvite(conn, msg) {
     if (!conn.zone) return send(conn, { t: "error", msg: "Hay ra khu vuc chung (thi tran) de thach dau." });
@@ -338,11 +428,13 @@ function attachGateway(server, opts = {}) {
     if (wss.clients.size > maxConnections) return ws.close(1013, "gateway day");
     const conn = {
       ws, queue: Promise.resolve(), playerId: null, profile: null, zone: null, channel: null, pos: [0, 0, 0, 0, 0], moved: false, alive: true,
-      limits: { pos: bucket(12, 20), chat: bucket(1, 3), outfit: bucket(1, 4), any: bucket(30, 60) },
+      limits: { pos: bucket(12, 20), chat: bucket(1, 3), outfit: bucket(1, 4), any: bucket(30, 60), voice: bucket(30, 40),
+        hp: bucket(4, 8), bag: bucket(1, 4), build: bucket(3, 6), shot: bucket(3, 5) },
     };
     const authTimer = setTimeout(() => { if (!conn.playerId) ws.close(4000, "chua xac thuc"); }, 5000);
     ws.on("pong", () => { conn.alive = true; });
-    ws.on("message", async (raw) => {
+    ws.on("message", async (raw, isBinary) => {
+      if (isBinary) return onVoice(conn, raw);
       if (!conn.limits.any()) return;
       let msg;
       try { msg = JSON.parse(raw); } catch { return; }
@@ -362,6 +454,7 @@ function attachGateway(server, opts = {}) {
       if (localByPlayer.get(conn.playerId) === conn) localByPlayer.delete(conn.playerId);
       try {
         if (conn.duelId) await duelEnd(conn.duelId, null, conn.playerId); // roi mang giua tran = thua
+        await pvp.onDisconnect(conn);
         await removeFromChannel(conn);
         if (conn.userHandler) await bus.unsubscribe(`user:${conn.playerId}`, conn.userHandler);
         if (conn.guildId && conn.guildHandler) await bus.unsubscribe(`guild:${conn.guildId}`, conn.guildHandler);
@@ -372,15 +465,34 @@ function attachGateway(server, opts = {}) {
     });
   });
 
+  // Goi giong noi tu client: [0x56][seq][adpcm...] -> phat qua topic kenh kem vi tri nguoi noi (moi
+  // gateway tu loc nguoi nghe gan). Gioi han ~30 goi/giay, chi khi da xac thuc va dang o 1 vung chung.
+  function onVoice(conn, raw) {
+    if (!conn.playerId || !conn.zone || !conn.limits.voice()) return;
+    const buf = Buffer.isBuffer(raw) ? raw : Buffer.concat(Array.isArray(raw) ? raw : [Buffer.from(raw)]);
+    if (buf.length < 5 || buf.length > VOICE_MAX_BYTES || buf[0] !== VOICE_TAG) return;
+    bus.publish(topicOf(conn.zone, conn.channel), { k: "voice", id: conn.playerId, x: conn.pos[0], z: conn.pos[2], d: buf.subarray(1).toString("base64") }).catch(() => {});
+  }
+
   // Nhip gui vi tri: gom vi tri da doi cua nguoi trong gateway nay theo kenh -> 1 tin / kenh / nhip.
   let tickCount = 0;
   const tick = setInterval(async () => {
     tickCount++;
     for (const [key, members] of localByChannel) {
       const rows = [];
-      for (const c of members) if (c.moved) { c.moved = false; rows.push([c.playerId, ...c.pos]); }
+      for (const c of members) if (c.moved) { c.moved = false; const row = [c.playerId, ...c.pos]; if (c.hidden) row.push(1); rows.push(row); }
       const [zone, n] = key.split(":");
       if (rows.length) bus.publish(topicOf(zone, Number(n)), { k: "moves", m: rows }).catch(() => {});
+      // Nguoi o xa (ngoai AOI_NEAR): gui vi tri MOI NHAT da hoan moi AOI_FAR_EVERY nhip - chay o
+      // day (khong doi tin "moves" moi) de ca nguoi vua DUNG LAI cung duoc cap nhat vi tri cuoi.
+      if (tickCount % AOI_FAR_EVERY === 0)
+        for (const c of members) {
+          if (!c.farPending?.size) continue;
+          const m = [];
+          for (const id of c.farPending) { const r = latestRow.get(id); if (r && !hiddenFrom(c, r)) m.push(r); }
+          c.farPending.clear();
+          if (m.length) send(c, { t: "moves", m });
+        }
       // Moi ~2 giay cap nhat roster (de nguoi moi vao kenh thay dung vi tri hien tai).
       if (tickCount % Math.max(1, Math.round(2000 / tickMs)) === 0)
         for (const c of members) channels.put(zone, Number(n), c.playerId, publicState(c)).catch(() => {});
@@ -398,6 +510,8 @@ function attachGateway(server, opts = {}) {
   }, 25000);
 
   function close() {
+    pvp.close();
+    world.close();
     clearInterval(tick);
     clearInterval(heartbeat);
     for (const c of wss.clients) c.close(1001, "server tat");
@@ -405,7 +519,7 @@ function attachGateway(server, opts = {}) {
   }
 
   logger.info({ gwId, bus: bus.kind, capacity, tickMs }, "Gateway WebSocket san sang tai /ws");
-  return { wss, close, gwId, stats: () => ({ connections: wss.clients.size, channels: localByChannel.size }) };
+  return { wss, close, gwId, world: () => world, stats: () => ({ connections: wss.clients.size, channels: localByChannel.size }) };
 }
 
 module.exports = { attachGateway, cleanText };

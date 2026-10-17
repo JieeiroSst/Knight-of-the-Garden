@@ -1,6 +1,8 @@
 // SQL cho kinh te phia server. Cac ham nhan "client" (ket noi dang trong 1 transaction) de
 // economyService/tradeService/marketService ghep nhieu buoc thanh 1 giao dich nguyen tu.
 const { pool } = require("../db/pool");
+const itemState = require("../game/itemState");
+const { catalog } = require("../game/catalog");
 
 async function withTransaction(fn) {
   const client = await pool.connect();
@@ -90,6 +92,16 @@ async function writeCounters(client, playerId, bucket, before, after) {
   );
 }
 
+// Cong don 1 bo dem (gio hien tai) ngoai lo op kinh te - vd ha trum, lanh truy na (nhiem vu ngay/tuan dem tu day).
+async function bumpCounter(client, playerId, source, n = 1) {
+  const bucket = Math.floor(Date.now() / 3600000);
+  await client.query(
+    `INSERT INTO economy_counters (player_id, bucket, source, amount) VALUES ($1, $2, $3, $4)
+     ON CONFLICT (player_id, bucket, source) DO UPDATE SET amount = economy_counters.amount + EXCLUDED.amount`,
+    [playerId, bucket, source, n]
+  );
+}
+
 async function readClaims(client, playerId, keys) {
   if (!keys.length) return new Set();
   const r = await client.query("SELECT claim_key FROM reward_claims WHERE player_id = $1 AND claim_key = ANY($2)", [playerId, keys]);
@@ -125,8 +137,53 @@ async function readSaveData(client, playerId) {
   return r.rows[0]?.data || null;
 }
 
-// Them/bot 1 vat pham (dung cho giao dich/cho) - tra false neu khong du de bot.
-async function adjustItem(client, playerId, itemId, delta) {
+// ==== Trang thai vat pham (han dung / do ben) ====
+async function readStates(client, playerId) {
+  const r = await client.query("SELECT item_id, state FROM item_states WHERE player_id = $1", [playerId]);
+  return new Map(r.rows.map((row) => [row.item_id, row.state]));
+}
+
+async function writeStates(client, playerId, before, after) {
+  for (const [id, st] of after) {
+    if (JSON.stringify(before.get(id) ?? null) === JSON.stringify(st)) continue;
+    await writeState(client, playerId, id, st);
+  }
+  for (const id of before.keys()) if (!after.has(id)) await writeState(client, playerId, id, null);
+}
+
+async function writeState(client, playerId, itemId, st) {
+  if (!st || (!st.fresh?.length && !st.dur?.length)) {
+    await client.query("DELETE FROM item_states WHERE player_id = $1 AND item_id = $2", [playerId, itemId]);
+    return;
+  }
+  await client.query(
+    `INSERT INTO item_states (player_id, item_id, state) VALUES ($1, $2, $3)
+     ON CONFLICT (player_id, item_id) DO UPDATE SET state = EXCLUDED.state`, [playerId, itemId, JSON.stringify(st)]);
+}
+
+// Them/bot 1 vat pham (dung cho giao dich/cho/ruong/tui roi) - tra false neu khong du de bot.
+// Vat pham co han dung/do ben: bot -> tra ve trang thai phan bi lay ra (de mang sang noi khac),
+// them -> nhan `carry` (trang thai mang theo, null = do moi tinh).
+async function adjustItem(client, playerId, itemId, delta, carry = null) {
+  const def = catalog.items.get(itemId);
+  if (!itemState.tracked(def)) return adjustCount(client, playerId, itemId, delta);
+  const now = Date.now();
+  const cr = await client.query("SELECT count FROM inventory_items WHERE player_id = $1 AND item_id = $2 FOR UPDATE", [playerId, itemId]);
+  const before = cr.rows[0]?.count || 0;
+  if (delta < 0 && before < -delta) return false;
+  if (!(await adjustCount(client, playerId, itemId, delta))) return false;
+  const sr = await client.query("SELECT state FROM item_states WHERE player_id = $1 AND item_id = $2 FOR UPDATE", [playerId, itemId]);
+  const st = sr.rows[0]?.state || null;
+  if (delta > 0) {
+    await writeState(client, playerId, itemId, itemState.give(st, before, delta, carry, def, now));
+    return true;
+  }
+  const r = itemState.take(st, before, -delta, def, now);
+  await writeState(client, playerId, itemId, r.state);
+  return r.removed || {};
+}
+
+async function adjustCount(client, playerId, itemId, delta) {
   if (delta > 0) {
     await client.query(
       `INSERT INTO inventory_items (player_id, item_id, count) VALUES ($1, $2, $3)
@@ -149,5 +206,6 @@ async function adjustItem(client, playerId, itemId, delta) {
 
 module.exports = {
   withTransaction, lockWallet, lockWallets, createWallet, readItems, writeItems, updateWallet, addGold,
-  readCounters, writeCounters, readClaims, insertClaims, readBin, writeBin, readSaveData, adjustItem,
+  readCounters, writeCounters, bumpCounter, readClaims, insertClaims, readBin, writeBin, readSaveData, adjustItem,
+  readStates, writeStates, writeState,
 };

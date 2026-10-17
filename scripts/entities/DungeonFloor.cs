@@ -1,5 +1,7 @@
 using Godot;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
 using HiepSiVeVuon.Core;
 using HiepSiVeVuon.Systems;
 using HiepSiVeVuon.UI;
@@ -57,13 +59,70 @@ namespace HiepSiVeVuon.Entities
 
         private bool _hadSpawn = false;
 
+        // Online: Rong Co Dai la TRUM MANG cua to doi (mau chung tren server, tang theo so thanh vien,
+        // ca doi nhan thuong 1 lan/ngay - xem backend worldEvents dungeonJoin). Offline: trum tai cho nhu cu.
+        private static bool Online => NetworkClient.Instance is NetworkClient n && n.Connected && n.Zone != null;
+        private static DungeonFloor _netFloor;
+        private string _netBossId;
+
         private void OnEnter()
         {
             Notify.Show(string.Format(Loc.T("dungeon.floor_fmt"), FloorIndex, FloorCount));
             AdventureSystem.Instance.OnDungeonFloorReached(FloorIndex);
             bool cooledDown = !_hadSpawn || (_clearedAt > 0 && Time.GetTicksMsec() - _clearedAt > RespawnSeconds * 1000);
             if (_alive.Count == 0 && cooledDown) SpawnWave();
+            if (IsBossFloor && Online)
+            {
+                _netFloor = this;
+                // Doi vi tri moi toi server (server kiem tra dang o trong ham).
+                GetTree().CreateTimer(1.0).Timeout += () => { if (IsInstanceValid(this) && _playerInside) NetworkClient.Instance?.SendMsg(new { t = "dboss_join" }); };
+                return;
+            }
             if (IsBossFloor && !AdventureSystem.Instance.IsBossAvailable("boss_dungeon")) SpawnChestIfNeeded();
+        }
+
+        // Tin tu server: "dboss" (tra loi dboss_join) + su kien dboss_hp / dboss_end.
+        public static void OnNet(string type, JsonElement m)
+        {
+            var f = _netFloor;
+            if (f == null || !IsInstanceValid(f)) return;
+            switch (type)
+            {
+                case "dboss":
+                    if (m.GetProperty("state").GetString() == "done") { Notify.Show(Loc.T("dungeon.party_done_today")); f.SpawnChestIfNeeded(); return; }
+                    f.SpawnNetBoss(m.GetProperty("id").GetString(), m.GetProperty("hp").GetInt32(), m.GetProperty("maxHp").GetInt32(), m.GetProperty("size").GetInt32());
+                    break;
+                case "dboss_hp":
+                    if (f._boss != null && IsInstanceValid(f._boss) && f._netBossId == m.GetProperty("id").GetString())
+                        f._boss.SetNetHp(m.GetProperty("hp").GetInt32(), f._boss.MaxHp);
+                    break;
+                case "dboss_end":
+                    if (f._boss != null && IsInstanceValid(f._boss)) f._boss.SetNetHp(0, f._boss.MaxHp);
+                    Notify.Show(m.GetProperty("rewarded").GetBoolean()
+                        ? string.Format(Loc.T("dungeon.party_reward_fmt"), m.GetProperty("party").GetInt32(), m.GetProperty("gold").GetInt32(), WorldEventsClient.ItemsText(m.GetProperty("items")))
+                        : Loc.T("dungeon.party_done_today"));
+                    f.SpawnChestIfNeeded();
+                    break;
+            }
+        }
+
+        private void SpawnNetBoss(string id, int hp, int maxHp, int size)
+        {
+            if (hp <= 0) { SpawnChestIfNeeded(); return; }
+            if (_boss != null && IsInstanceValid(_boss) && !_boss.IsDead && _netBossId == id) { _boss.SetNetHp(hp, maxHp); return; }
+            _enemyScene ??= GD.Load<PackedScene>("res://scenes/Enemy.tscn");
+            _netBossId = id;
+            _boss = _enemyScene.Instantiate<Enemy>();
+            _boss.EnemyId = "boss_dungeon";
+            _boss.StatMultiplier = Enemy.SeasonalMultiplier();
+            _boss.NetHit = dmg => NetworkClient.Instance?.SendMsg(new { t = "dboss_hit", id, dmg });
+            GetParent().AddChild(_boss);
+            _boss.GlobalPosition = GlobalPosition + new Vector3(0, 8f, -RoomHalf * 0.5f);
+            _boss.NetHome = _boss.GlobalPosition;
+            _boss.NetLeash = RoomHalf * 0.8f;
+            _boss.SetNetHp(hp, maxHp);
+            _alive.Add(_boss);
+            Notify.Show(string.Format(Loc.T("dungeon.party_boss_fmt"), size));
         }
 
         private void SpawnWave()
@@ -86,7 +145,7 @@ namespace HiepSiVeVuon.Entities
                 e.GlobalPosition = GlobalPosition + new Vector3(rng.RandfRange(-RoomHalf * 0.7f, RoomHalf * 0.7f), 8f, rng.RandfRange(-RoomHalf * 0.7f, RoomHalf * 0.2f));
                 _alive.Add(e);
             }
-            if (IsBossFloor && AdventureSystem.Instance.IsBossAvailable("boss_dungeon") && (_boss == null || !IsInstanceValid(_boss)))
+            if (IsBossFloor && !Online && AdventureSystem.Instance.IsBossAvailable("boss_dungeon") && (_boss == null || !IsInstanceValid(_boss)))
             {
                 _boss = _enemyScene.Instantiate<Enemy>();
                 _boss.EnemyId = "boss_dungeon";

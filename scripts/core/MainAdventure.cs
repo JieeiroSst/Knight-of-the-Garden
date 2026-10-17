@@ -50,6 +50,10 @@ namespace HiepSiVeVuon.Core
 			AddChild(new ForgeUI());
 			AddChild(new SocialUI());
 			AddChild(new DuelUI());
+			AddChild(new BaseUI());
+			AddChild(new CaravanUI());
+			BuildMarkets();
+			HorseRegistry.SpawnAll(); // ngua da thuan hoa (neu save da nap truoc khi the gioi dung xong)
 			AddChild(new DecorUI());
 			AddChild(new PetUI());
 			var forge = new ForgeStation { Position = ProcessingAnchor + new Vector3(-90, 0, -150) };
@@ -60,6 +64,7 @@ namespace HiepSiVeVuon.Core
 			AddBuildingLabelZone(townForge.Position, 35f, "label.forge");
 			// Tu Do (phim C) + Ban May: o thi tran (canh Trai Thu Cung) va o khu che bien nong trai.
 			AddChild(new WardrobeUI());
+			AddChild(new GuideUI()); // [F1] huong dan choi + bang viec cho nguoi moi
 			var tailor = new TailorStation { Position = VillageAnchor + new Vector3(-80, 0, -600) };
 			_world.AddChild(tailor);
 			AddBuildingLabelZone(tailor.Position, 38f, "label.tailor");

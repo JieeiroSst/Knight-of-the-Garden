@@ -10,6 +10,13 @@ const router = express.Router();
 router.get("/time", c.time);
 
 router.use(requireAuth);
+
+// Nong trai rieng tai toa do co dinh (xem farmService).
+router.get("/farm", c.myFarm);
+router.get("/bounties", c.bounties);
+router.post("/bounties", validateBody(s.bountySchema), c.placeBounty);
+router.get("/farms/near", c.farmsNear);
+router.get("/farms/:id/view", c.farmView);
 router.get("/character", c.getCharacter);
 router.put("/character", validateBody(s.characterSchema), c.putCharacter);
 router.get("/players/:id/profile", c.getProfile);

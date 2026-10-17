@@ -10,7 +10,7 @@ namespace HiepSiVeVuon.UI
     // chung) / Hang ngay (diem danh + nhiem vu ngay/tuan - server kiem tra tien do) / Xep hang.
     public partial class SocialUI : CanvasLayer
     {
-        public enum Tab { Friends, Guild, Daily, Ranking }
+        public enum Tab { Friends, Guild, Daily, Bounty, Ranking }
         private Tab _tab = Tab.Friends;
         private VBoxContainer _content;
         private HBoxContainer _tabs;
@@ -71,6 +71,7 @@ namespace HiepSiVeVuon.UI
                 case Tab.Guild: LoadGuild(); break;
                 case Tab.Daily: LoadDaily(); break;
                 case Tab.Ranking: LoadRanking(); break;
+                case Tab.Bounty: LoadBounty(); break;
             }
         }
 
@@ -276,17 +277,56 @@ namespace HiepSiVeVuon.UI
                 bool done = q.GetProperty("claimed").GetBoolean();
                 var row = new HBoxContainer();
                 _content.AddChild(row);
-                row.AddChild(Line($"{string.Format(Loc.T("quest_d." + q.GetProperty("id").GetString()), target)}  {prog}/{target}  (+{q.GetProperty("gold").GetInt32()}g)",
+                string itemReward = q.TryGetProperty("item", out var qi) && qi.ValueKind == JsonValueKind.String
+                    ? $" + {ItemDatabase.Instance.GetDisplayName(qi.GetString())} x{q.GetProperty("n").GetInt32()}" : "";
+                row.AddChild(Line($"{string.Format(Loc.T("quest_d." + q.GetProperty("id").GetString()), target)}  {prog}/{target}  (+{q.GetProperty("gold").GetInt32()}g{itemReward})",
                     done ? UiStyle.Dim : prog >= target ? UiStyle.Gold : UiStyle.Text));
                 if (!done && prog >= target)
                 {
                     var b = new Button { Text = Loc.T("social.claim") };
-                    b.Pressed += () => Post("/api/daily/claim", new { period, idx }, e => { Notify.Show($"+{e.GetProperty("gold").GetInt32()}g"); EconomyClient.Instance.RequestSync(); });
+                    b.Pressed += () => Post("/api/daily/claim", new { period, idx }, e =>
+                    {
+                        string extra = e.TryGetProperty("item", out var ri) && ri.ValueKind == JsonValueKind.String ? $" + {ItemDatabase.Instance.GetDisplayName(ri.GetString())} x{e.GetProperty("n").GetInt32()}" : "";
+                        Notify.Show($"+{e.GetProperty("gold").GetInt32()}g{extra}");
+                        EconomyClient.Instance.RequestSync();
+                    });
                     row.AddChild(b);
                 }
                 else if (done) row.AddChild(UiStyle.Small(Loc.T("social.claimed")));
             }
         }
+
+        // ==== Truy na ====
+        private void LoadBounty() => Get("/api/bounties", d =>
+        {
+            UiStyle.Clear(_content);
+            _content.AddChild(UiStyle.Title(Loc.T("bounty.title")));
+            _content.AddChild(UiStyle.Small(Loc.T("bounty.rules")));
+            long mine = d.GetProperty("me").GetProperty("amount").GetInt64();
+            _content.AddChild(Line(mine > 0 ? string.Format(Loc.T("bounty.me_fmt"), mine) : Loc.T("bounty.me_clean"), mine > 0 ? new Color(1f, 0.4f, 0.3f) : UiStyle.Text));
+            _content.AddChild(new HSeparator());
+            int rank = 0;
+            foreach (var b in d.GetProperty("top").EnumerateArray())
+            {
+                rank++;
+                int id = b.GetProperty("playerId").GetInt32();
+                string name = b.GetProperty("name").GetString();
+                var row = new HBoxContainer();
+                _content.AddChild(row);
+                row.AddChild(Line(string.Format(Loc.T("bounty.row_fmt"), rank, name, b.GetProperty("amount").GetInt64(), b.GetProperty("kills").GetInt32()), UiStyle.Gold));
+                var add = new Button { Text = Loc.T("bounty.add_100") };
+                add.Pressed += () => Post("/api/bounties", new { targetId = id, amount = 100 }, e => { Notify.Show(string.Format(Loc.T("bounty.placed_fmt"), name, e.GetProperty("amount").GetInt64())); EconomyClient.Instance.RequestSync(); BountyBoard.Instance?.Refresh(); });
+                row.AddChild(add);
+            }
+            if (rank == 0) _content.AddChild(Line(Loc.T("bounty.none"), UiStyle.Dim));
+            _content.AddChild(new HSeparator());
+            _content.AddChild(UiStyle.Small(Loc.T("bounty.place_hint")));
+            var amount = new SpinBox { MinValue = 100, MaxValue = 100000, Step = 50, Value = 200, CustomMinimumSize = new Vector2(120, 0) };
+            var row2 = InputRow(Loc.T("bounty.target_name"), Loc.T("bounty.place_btn"), name =>
+                Post("/api/bounties", new { targetName = name, amount = (int)amount.Value }, e => { Notify.Show(string.Format(Loc.T("bounty.placed_fmt"), name, e.GetProperty("amount").GetInt64())); EconomyClient.Instance.RequestSync(); BountyBoard.Instance?.Refresh(); }));
+            row2.AddChild(amount);
+            _content.AddChild(row2);
+        });
 
         // ==== Xep hang ====
         private static readonly string[] Boards = { "gold", "level", "pvp", "fish_caught", "crops_harvested", "bosses_defeated", "monsters_killed", "ores_mined" };

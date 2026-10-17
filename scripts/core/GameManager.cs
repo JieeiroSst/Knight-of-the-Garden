@@ -147,6 +147,7 @@ namespace HiepSiVeVuon.Core
         public override void _EnterTree()
         {
             Instance = this;
+            if (GetNodeOrNull("SurvivalSystem") == null) AddChild(new HiepSiVeVuon.Systems.SurvivalSystem { Name = "SurvivalSystem" }); // doi/khat/nhiet do
             RollWeather();
             _lastSeason = CurrentSeason;
         }
@@ -235,6 +236,28 @@ namespace HiepSiVeVuon.Core
                 Hp = 0;
                 EmitSignal(SignalName.PlayerDied);
             }
+            EmitSignal(SignalName.StatsChanged);
+        }
+
+        // PvP: SERVER quyet dinh mau (xem backend realtime/pvp.js) - dat thang mau theo server, hieu ung
+        // trung don van chay; cai chet PvP do server bao rieng (ForceDeath) sau khi chot do roi.
+        public void ApplyServerDamage(int dmg, int serverHp)
+        {
+            Hp = Mathf.Clamp(serverHp, 0, MaxHp);
+            EmitSignal(SignalName.PlayerHurt, dmg);
+            EmitSignal(SignalName.StatsChanged);
+        }
+
+        public void ForceDeath()
+        {
+            if (Hp > 0) Hp = 0;
+            EmitSignal(SignalName.PlayerDied);
+            EmitSignal(SignalName.StatsChanged);
+        }
+
+        public void SetHpFromServer(int hp)
+        {
+            Hp = Mathf.Clamp(hp, 0, MaxHp);
             EmitSignal(SignalName.StatsChanged);
         }
 

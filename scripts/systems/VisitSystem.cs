@@ -7,9 +7,10 @@ using HiepSiVeVuon.UI;
 
 namespace HiepSiVeVuon.Systems
 {
-    // Tham nong trai BAN BE: tai ruong cua ban (GET /api/visits/<id>/farm), HIEN ruong do thay cho ruong
-    // minh (chi xem + tuoi ho), vao zone gateway farm_<id> de gap chu nha. Tuoi ho gui len server
-    // (POST /water) - chu nong trai nhan o lan dong bo sau (TakeHelps). Ve nha -> khoi phuc ruong minh.
+    // Tham nong trai NGUOI KHAC: moi nguoi co nong trai o toa do rieng (FarmSpace/FarmReplicas). Tai ruong
+    // cong khai cua chu nha (GET /api/farms/<id>/view) -> dung o dat TAM dung vi tri tren nong trai cua ho
+    // (chi xem + tuoi ho - server chi nhan tuoi ho cua ban be), vao zone gateway farm_<id> de gap chu nha.
+    // Tuoi ho gui len server (POST /water) - chu nong trai nhan o lan dong bo sau (TakeHelps).
     public static class VisitSystem
     {
         public class Plot
@@ -19,6 +20,7 @@ namespace HiepSiVeVuon.Systems
             public int GrowStage, GrowDays;
             public bool Watered, IsGiant, Pest;
             public bool Freeform;
+            public int GridX = -1, GridY = -1;
             public Vector3 Pos;
         }
 
@@ -29,17 +31,28 @@ namespace HiepSiVeVuon.Systems
         private static readonly List<string> _pendingWater = new();
         private static readonly List<Node> _tempPlots = new();
         public static Vector3 FarmCenter;
+        // Goc nong trai cua chu nha dang tham (toa do the gioi).
+        public static Vector3 HostOrigin { get; private set; }
 
         public static string KeyOf(FarmPlot p) => p.GridX >= 0 ? $"g{p.GridX}_{p.GridY}" : $"f{Mathf.RoundToInt(p.FreeformPos.X)}_{Mathf.RoundToInt(p.FreeformPos.Z)}";
 
-        public static void Start(int hostId, string hostName, SceneTree tree)
+        // travel = dich chuyen toi nong trai cua chu nha (tu menu ban be); false = da dung san trong do
+        // (FarmReplicas tu tham khi buoc vao tuong nong trai nguoi khac).
+        public static void Start(int hostId, string hostName, SceneTree tree, bool travel = true, System.Action onDone = null)
         {
-            BackendClient.Instance.GetJson($"/api/visits/{hostId}/farm", (ok, status, text) =>
+            BackendClient.Instance.GetJson($"/api/farms/{hostId}/view", (ok, status, text) =>
             {
+                onDone?.Invoke();
                 if (!ok || status != 200) { Notify.Show(BackendClient.ErrorOf(text, Loc.T("net.server_error"))); return; }
-                if (Active) End(tree);
+                if (Active) End(tree, quiet: true);
                 Plots.Clear();
                 using var doc = JsonDocument.Parse(text);
+                var hostOrigin = new Vector3((float)doc.RootElement.GetProperty("x").GetDouble(), 0, (float)doc.RootElement.GetProperty("z").GetDouble());
+                if (hostOrigin == Vector3.Zero || hostOrigin == FarmSpace.Origin) { Notify.Show(Loc.T("visit.no_farm")); return; }
+                // Vi tri o luoi co dinh = cung vi tri tren nong trai cua minh (moi nong trai dung giong nhau).
+                var gridLocal = new Dictionary<string, Vector3>();
+                foreach (Node n in tree.GetNodesInGroup("farm_plots"))
+                    if (n is FarmPlot mine && mine.GridX >= 0 && !mine.IsVisitTemp) gridLocal[KeyOf(mine)] = mine.GlobalPosition - FarmSpace.Origin;
                 foreach (var t in doc.RootElement.GetProperty("farm").EnumerateArray())
                 {
                     bool ff = t.GetProperty("freeform").GetBoolean();
@@ -56,31 +69,47 @@ namespace HiepSiVeVuon.Systems
                     if (ff)
                     {
                         float x = t.GetProperty("posX").GetSingle(), z = t.GetProperty("posZ").GetSingle();
-                        p.Pos = new Vector3(x, 0, z);
+                        var saved = new Vector3(x, 0, z);
+                        // Save cu luu toa do nong trai cu (quanh goc) -> doi ra nong trai cua chu nha.
+                        p.Pos = FarmSpace.InLocalFarmArea(saved) ? hostOrigin + saved : saved;
                         p.Key = $"f{Mathf.RoundToInt(x)}_{Mathf.RoundToInt(z)}";
                     }
-                    else p.Key = $"g{t.GetProperty("x").GetInt32()}_{t.GetProperty("y").GetInt32()}";
+                    else
+                    {
+                        int gx = t.GetProperty("x").GetInt32(), gy = t.GetProperty("y").GetInt32();
+                        p.Key = $"g{gx}_{gy}";
+                        p.GridX = gx; p.GridY = gy;
+                        if (!gridLocal.TryGetValue(p.Key, out var local)) continue;
+                        p.Pos = hostOrigin + local;
+                    }
                     Plots[p.Key] = p;
                 }
                 HostId = hostId;
                 HostName = hostName;
+                HostOrigin = hostOrigin;
                 Active = true;
-                // O tu do: an o cua minh, tao o tam cho o cua chu nha.
-                foreach (Node n in tree.GetNodesInGroup("farm_plots"))
-                    if (n is FarmPlot fp && fp.GridX < 0) fp.Visible = false;
+                // O dat TAM dung vi tri tren nong trai cua chu nha (ruong cua minh o xa, khong dung toi).
                 foreach (var p in Plots.Values)
-                    if (p.Freeform)
-                    {
-                        var plot = FarmPlot.CreateVisitPlot(p.Pos, tree.CurrentScene);
-                        _tempPlots.Add(plot);
-                    }
+                {
+                    var plot = FarmPlot.CreateVisitPlot(p.Pos, tree.CurrentScene);
+                    if (!p.Freeform) { plot.GridX = p.GridX; plot.GridY = p.GridY; }
+                    else plot.FreeformPos = KeyPos(p.Key);
+                    _tempPlots.Add(plot);
+                }
                 RefreshPlots(tree);
-                (tree.GetFirstNodeInGroup("player") as Player)?.FastTravel(FarmCenter + new Vector3(0, 0, 140));
+                if (travel) (tree.GetFirstNodeInGroup("player") as Player)?.FastTravel(hostOrigin + FarmSpace.LocalSpawn);
                 Notify.Show(string.Format(Loc.T("visit.start_fmt"), hostName));
             });
         }
 
-        public static void End(SceneTree tree)
+        // Khoa "f<x>_<z>" -> FreeformPos (de KeyOf cua o tam khop khoa cua chu nha).
+        private static Vector3 KeyPos(string key)
+        {
+            var parts = key[1..].Split('_');
+            return new Vector3(int.Parse(parts[0]), 0, int.Parse(parts[1]));
+        }
+
+        public static void End(SceneTree tree, bool quiet = false)
         {
             if (!Active) return;
             FlushWater();
@@ -88,9 +117,9 @@ namespace HiepSiVeVuon.Systems
             foreach (var n in _tempPlots) if (GodotObject.IsInstanceValid(n)) n.QueueFree();
             _tempPlots.Clear();
             foreach (Node n in tree.GetNodesInGroup("farm_plots"))
-                if (n is FarmPlot fp) { if (fp.GridX < 0) fp.Visible = true; fp.RefreshVisual(); }
+                if (n is FarmPlot fp && !fp.IsVisitTemp) fp.RefreshVisual();
             Plots.Clear();
-            Notify.Show(Loc.T("visit.end"));
+            if (!quiet) Notify.Show(Loc.T("visit.end"));
         }
 
         public static void RefreshPlots(SceneTree tree)

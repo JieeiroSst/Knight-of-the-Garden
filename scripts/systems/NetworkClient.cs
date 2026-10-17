@@ -22,11 +22,14 @@ namespace HiepSiVeVuon.Systems
         {
             var flat = new Vector2(p.X, p.Z);
             // Nong trai: zone rieng farm_<chu> - chi chu + ban be vao duoc (gateway kiem tra).
+            // Nong trai: moi nguoi 1 toa do rieng -> zone farm_<chu> (ai di toi cung vao, gap chu nha).
             if (flat.DistanceTo(new Vector2(FarmCenter.X, FarmCenter.Z)) < FarmRadius)
             {
-                int owner = VisitSystem.Active ? VisitSystem.HostId : NetworkClient.Instance?.MyId ?? 0;
-                return owner > 0 ? $"farm_{owner}" : null;
+                int me = NetworkClient.Instance?.MyId ?? 0;
+                return me > 0 ? $"farm_{me}" : null;
             }
+            foreach (var f in Core.FarmReplicas.Known.Values)
+                if (flat.DistanceTo(new Vector2(f.House.X, f.House.Z)) < FarmRadius) return $"farm_{f.Id}";
             if (flat.DistanceTo(new Vector2(TownCenter.X, TownCenter.Z)) < TownRadius) return "town";
             var regions = WorldStreamer.Regions;
             for (int i = 0; i < regions.Count; i++)
@@ -64,6 +67,7 @@ namespace HiepSiVeVuon.Systems
         private Vector3 _lastSentPos;
         private int _lastSentAnim = -1;
         private float _lastSentYaw;
+        private bool _lastSentHide;
 
         public int MyId { get; private set; }
         public string Zone { get; private set; }
@@ -81,6 +85,23 @@ namespace HiepSiVeVuon.Systems
 
         public override void _EnterTree() => Instance = this;
 
+        public override void _Ready()
+        {
+            AddChild(new VoiceChat());
+            AddChild(new PvpClient());
+            AddChild(new WorldEventsClient());
+            AddChild(new BountyBoard());
+        }
+
+        public int MyGuildId { get; private set; }
+        internal void SendMsg(object msg) => Send(msg);
+
+        // Nguoi choi cho tao model (xem ProcessSpawnQueue) - vao kenh dong nguoi nhan 80 "spawn" 1 luc,
+        // tao het trong 1 khung hinh (model co xuong + hoat canh) se khung ca giay.
+        private const int SpawnsPerFrame = 2;
+        private readonly Dictionary<int, PendingSpawn> _spawnQueue = new();
+        private readonly List<int> _spawnOrder = new();
+        private class PendingSpawn { public JsonElement P; public Vector3? Pos; public float Yaw; public int Anim; public bool? Hidden; }
         public void Start()
         {
             _wantConnected = true;
@@ -118,8 +139,13 @@ namespace HiepSiVeVuon.Systems
                     _authSent = true;
                 }
                 while (_ws.GetAvailablePacketCount() > 0)
-                    Handle(_ws.GetPacket().GetStringFromUtf8());
+                {
+                    var pkt = _ws.GetPacket();
+                    if (_ws.WasStringPacket()) Handle(pkt.GetStringFromUtf8());
+                    else HandleBinary(pkt);
+                }
                 if (_authed) Tick(delta);
+                ProcessSpawnQueue();
             }
             else if (state == WebSocketPeer.State.Closed)
             {
@@ -170,6 +196,7 @@ namespace HiepSiVeVuon.Systems
                 {
                     _joinedZone = zone;
                     ClearRemotes();
+                    PvpClient.Instance?.OnZoneLeft();
                     if (zone == null) { Send(new { t = "leave" }); Zone = null; Channel = 0; EmitSignal(SignalName.StatusChanged); }
                     else Send(new { t = "join", zone });
                 }
@@ -180,13 +207,46 @@ namespace HiepSiVeVuon.Systems
             if (_sendTimer > 0 || _joinedZone == null) return;
             _sendTimer = 0.2;
             var p = player.GlobalPosition;
-            int anim = (player as Player)?.NetAnimCode ?? 0;
+            // Bit 32 = dang cuoi ngua (nguoi khac thay con ngua duoi nguoi minh, server tinh xung phong).
+            int anim = ((player as Player)?.NetAnimCode ?? 0) | ((player as Player)?.IsMounted == true ? 32 : 0);
             float yaw = (player as Player)?.Yaw ?? 0f;
-            if (p.DistanceTo(_lastSentPos) < 0.5f && anim == _lastSentAnim && Mathf.Abs(yaw - _lastSentYaw) < 0.05f) return;
+            // h: dang dung trong bui co cao/leu (server tu kiem lai bang cung ham HideSpots).
+            bool hide = PvpClient.Instance?.WantsHide(p) ?? false;
+            if (p.DistanceTo(_lastSentPos) < 0.5f && anim == _lastSentAnim && Mathf.Abs(yaw - _lastSentYaw) < 0.05f && hide == _lastSentHide) return;
             _lastSentPos = p;
             _lastSentAnim = anim;
             _lastSentYaw = yaw;
-            Send(new { t = "pos", x = p.X, y = p.Y, z = p.Z, r = yaw, a = anim });
+            _lastSentHide = hide;
+            Send(new { t = "pos", x = p.X, y = p.Y, z = p.Z, r = yaw, a = anim, h = hide ? 1 : 0 });
+        }
+
+        // ==== Voice chat (goi nhi phan, xem VoiceChat/gateway.js) ====
+        // Chi gui khi dang o vung chung VA co nguoi o gan - khong ai nghe thi khong ton bang thong.
+        public bool CanSendVoice(float range)
+        {
+            if (!_authed || _joinedZone == null || _ws?.GetReadyState() != WebSocketPeer.State.Open) return false;
+            var me = LocalPlayer;
+            if (me == null) return false;
+            foreach (var r in _remotes.Values)
+                if (IsInstanceValid(r) && r.GlobalPosition.DistanceTo(me.GlobalPosition) <= range) return true;
+            return false;
+        }
+
+        public void SendVoice(byte[] buffer, int length)
+        {
+            if (_ws?.GetReadyState() != WebSocketPeer.State.Open) return;
+            var data = new byte[length];
+            System.Array.Copy(buffer, data, length);
+            _ws.Send(data, WebSocketPeer.WriteMode.Binary);
+        }
+
+        // Server -> client: [0x56][u32 speakerId LE][seq][adpcm...]
+        private void HandleBinary(byte[] data)
+        {
+            if (data.Length < 6 || data[0] != VoiceChat.PacketTag) return;
+            int speakerId = data[1] | (data[2] << 8) | (data[3] << 16) | (data[4] << 24);
+            if (speakerId == MyId) return;
+            VoiceChat.Instance?.OnVoicePacket(data, FindRemote(speakerId));
         }
 
         public void SendChat(string text) => Send(new { t = "chat", text });
@@ -222,6 +282,8 @@ namespace HiepSiVeVuon.Systems
                         _authed = true;
                         _backoff = 1;
                         MyId = m.GetProperty("id").GetInt32();
+                        MyGuildId = m.TryGetProperty("guildId", out var gid) && gid.ValueKind == JsonValueKind.Number ? gid.GetInt32() : 0;
+                        PvpClient.Instance?.OnConnected();
                         _joinedZone = "\0"; // ep gui join lai o nhip ke tiep
                         _zoneTimer = 0;
                         EmitSignal(SignalName.StatusChanged);
@@ -236,16 +298,26 @@ namespace HiepSiVeVuon.Systems
                         EmitSignal(SignalName.ChatReceived, "system", "", string.Format(Loc.T("net.joined_fmt"), ZoneMap.DisplayName(Zone), Channel));
                         break;
                     case "spawn": Spawn(m.GetProperty("p")); break;
+                    case "vanish":
+                    case "appear":
+                        int hid = m.GetProperty("id").GetInt32();
+                        bool vanish = m.GetProperty("t").GetString() == "vanish";
+                        if (_remotes.TryGetValue(hid, out var hr) && IsInstanceValid(hr)) hr.SetHidden(vanish);
+                        else if (_spawnQueue.TryGetValue(hid, out var hq)) hq.Hidden = vanish;
+                        break;
                     case "despawn":
                         int gone = m.GetProperty("id").GetInt32();
+                        _spawnQueue.Remove(gone);
                         if (_remotes.Remove(gone, out var rp) && IsInstanceValid(rp)) rp.QueueFree();
                         break;
                     case "moves":
                         foreach (var row in m.GetProperty("m").EnumerateArray())
                         {
                             int id = row[0].GetInt32();
+                            var pos = new Vector3(row[1].GetSingle(), row[2].GetSingle(), row[3].GetSingle());
+                            if (_spawnQueue.TryGetValue(id, out var ps)) { ps.Pos = pos; ps.Yaw = row[4].GetSingle(); ps.Anim = row[5].GetInt32(); continue; }
                             if (!_remotes.TryGetValue(id, out var r) || !IsInstanceValid(r)) continue;
-                            r.SetState(new Vector3(row[1].GetSingle(), row[2].GetSingle(), row[3].GetSingle()), row[4].GetSingle(), row[5].GetInt32());
+                            r.SetState(pos, row[4].GetSingle(), row[5].GetInt32());
                         }
                         break;
                     case "chat":
@@ -260,6 +332,17 @@ namespace HiepSiVeVuon.Systems
                         break;
                     case "error":
                         EmitSignal(SignalName.ChatReceived, "system", "", m.GetProperty("msg").GetString());
+                        Notify.Show(m.GetProperty("msg").GetString());
+                        break;
+                    case "bags": case "bag": case "bag_gone": case "structs": case "struct": case "struct_gone":
+                    case "structs_mine": case "hpbar": case "chest": case "shot":
+                        PvpClient.Instance?.OnMessage(m.GetProperty("t").GetString(), m);
+                        break;
+                    case "dboss":
+                        Entities.DungeonFloor.OnNet("dboss", m);
+                        break;
+                    case "world": case "drop_looted": case "caravan_stock": case "boss_hp": case "boss_end":
+                        WorldEventsClient.Instance?.OnMessage(m.GetProperty("t").GetString(), m);
                         break;
                 }
             }
@@ -294,6 +377,17 @@ namespace HiepSiVeVuon.Systems
                     EmitSignal(SignalName.SocialEvent, type, e.GetRawText());
                     VisitSystem.TakeHelps(GetTree());
                     break;
+                case "pvp_hurt": case "pvp_dead_pending": case "pvp_dead": case "pvp_kill": case "bag_looted":
+                case "healed": case "heal_done": case "econ_sync": case "party_invite": case "party_invited":
+                case "party_changed": case "party_pos": case "base_attacked": case "base_destroyed": case "respawn":
+                    PvpClient.Instance?.OnEvent(type, e);
+                    break;
+                case "dboss_hp": case "dboss_end":
+                    Entities.DungeonFloor.OnNet(type, e);
+                    break;
+                case "drop_opened": case "caravan_bought": case "boss_reward":
+                    WorldEventsClient.Instance?.OnEvent(type, e);
+                    break;
                 case "market_sold":
                     Notify.Show(string.Format(Loc.T("market.sold_fmt"), ItemDatabase.Instance.GetDisplayName(e.GetProperty("itemId").GetString()),
                         e.GetProperty("count").GetInt32(), e.GetProperty("gold").GetInt32()));
@@ -302,15 +396,40 @@ namespace HiepSiVeVuon.Systems
             }
         }
 
+        // Xep hang tao (JsonElement phai Clone vi JsonDocument bi huy ngay sau Handle).
         private void Spawn(JsonElement p)
         {
             int id = p.GetProperty("id").GetInt32();
             if (id == MyId) return;
+            if (!_spawnQueue.ContainsKey(id)) _spawnOrder.Add(id);
+            _spawnQueue[id] = new PendingSpawn { P = p.Clone() };
+        }
+
+        private void ProcessSpawnQueue()
+        {
+            int budget = SpawnsPerFrame;
+            while (budget > 0 && _spawnOrder.Count > 0)
+            {
+                int id = _spawnOrder[0];
+                _spawnOrder.RemoveAt(0);
+                if (!_spawnQueue.Remove(id, out var ps)) continue;
+                SpawnNow(ps.P);
+                if (ps.Pos is Vector3 pos && _remotes.TryGetValue(id, out var r)) r.SetState(pos, ps.Yaw, ps.Anim, snap: true);
+                if (ps.Hidden is bool hidden && _remotes.TryGetValue(id, out var r2)) r2.SetHidden(hidden);
+                budget--;
+            }
+        }
+
+        private void SpawnNow(JsonElement p)
+        {
+            int id = p.GetProperty("id").GetInt32();
             var app = p.GetProperty("app");
             if (_remotes.TryGetValue(id, out var old) && IsInstanceValid(old)) old.QueueFree();
             var rp = new RemotePlayer
             {
                 PlayerId = id,
+                GuildId = p.TryGetProperty("gid", out var g) && g.ValueKind == JsonValueKind.Number ? g.GetInt32() : 0,
+                PartyId = p.TryGetProperty("pid", out var pt) && pt.ValueKind == JsonValueKind.String ? pt.GetString() : "",
                 DisplayName = p.GetProperty("name").GetString(),
                 Look = new Appearance
                 {
@@ -327,11 +446,14 @@ namespace HiepSiVeVuon.Systems
             scene.AddChild(rp);
             rp.SetState(new Vector3(p.GetProperty("x").GetSingle(), p.GetProperty("y").GetSingle(), p.GetProperty("z").GetSingle()),
                 p.GetProperty("r").GetSingle(), p.GetProperty("a").GetInt32(), snap: true);
+            if (p.TryGetProperty("hd", out var hd) && hd.ValueKind == JsonValueKind.Number && hd.GetInt32() == 1) rp.SetHidden(true);
             _remotes[id] = rp;
         }
 
         private void ClearRemotes()
         {
+            _spawnQueue.Clear();
+            _spawnOrder.Clear();
             foreach (var r in _remotes.Values) if (IsInstanceValid(r)) r.QueueFree();
             _remotes.Clear();
         }

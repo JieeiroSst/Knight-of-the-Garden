@@ -224,8 +224,9 @@ namespace HiepSiVeVuon.Core
 			DrawTownGround();
 			// Duong bat dau cach cong ruong 50m (1000 don vi, quy doi 20 don vi/met) chu khong
 			// sat ngay ruong - doan tu cong ra diem nay chi la co, chua trai duong.
+			// Nong trai o toa do rieng (FarmSpace) thi khong con duong noi thang toi thi tran.
 			var roadStart = FarmGatePos + (VillageAnchor - FarmGatePos).Normalized() * 1000f;
-			AddRoad(roadStart, VillageAnchor);
+			if (FarmSpace.Origin == Vector3.Zero) AddRoad(roadStart, VillageAnchor);
 			SpawnPlayer();
 
 			// Chu ky ngay-dem 24h (anh sang mat troi + mau bau troi) + vung hoang da vo han:
@@ -238,6 +239,10 @@ namespace HiepSiVeVuon.Core
 			dayNight.Setup(GetNode<DirectionalLight3D>("Sun"), GetNode<WorldEnvironment>("WorldEnvironment"));
 			_world.AddChild(dayNight);
 			_world.AddChild(new WorldStreamer());
+			// Muc chat luong do hoa nguoi choi da chon (xem GraphicsSettings) - deferred de
+			// CurrentScene da tro toi Main.tscn.
+			GraphicsSettings.Load();
+			Callable.From(() => GraphicsSettings.Apply(GetTree())).CallDeferred();
 
 			// Moi buoc dung san chay trong try/catch RIENG (xem SafeBuildStep) - TRUOC DAY ca 30
 			// buoc nay dung CHUNG 1 try/catch duy nhat: neu 1 buoc BAT KY loi (vd 1 PackedScene
@@ -316,7 +321,7 @@ namespace HiepSiVeVuon.Core
 			SafeBuildStep(BuildWorkerDormsAndStaff, nameof(BuildWorkerDormsAndStaff));
 			SafeBuildStep(BuildFarmStaff, nameof(BuildFarmStaff));
 			SafeBuildStep(BuildPalaceGuardBarracks, nameof(BuildPalaceGuardBarracks));
-			SafeBuildStep(BuildBigVineyard, nameof(BuildBigVineyard));
+			// Vuon nho lon (rong ~1650) bo khi thu gon nong trai - van con vuon nho nho o Khu Trong Trot.
 			SafeBuildStep(BuildEstateLandscaping, nameof(BuildEstateLandscaping));
 			SafeBuildStep(BuildFarmOutbuildings, nameof(BuildFarmOutbuildings));
 			SafeBuildStep(BuildWindmills, nameof(BuildWindmills));
@@ -327,6 +332,8 @@ namespace HiepSiVeVuon.Core
 			// (StaticBody3D) da co trong canh luc bake, nen can moi thu (hang rao/nha/thap canh/
 			// coi xay gio/chuong trai/duong mon) da dat xong het truoc do.
 			SafeBuildStep(BuildFarmNavigation, nameof(BuildFarmNavigation));
+			// Dua ca khu nong trai toi toa do rieng server cap (sau khi da dung + nuong navmesh xong).
+			SafeBuildStep(RelocateFarm, nameof(RelocateFarm));
 
 			// Sang ngay thuc moi (GameManager tu phat hien qua dong ho may tinh) -> sinh them quai
 			GameManager.Instance.DayChanged += _ => { if (!GameManager.Instance.IsCatchingUp) RespawnSomeEnemies(); };
@@ -394,12 +401,13 @@ namespace HiepSiVeVuon.Core
 			foreach (var t in SaveSystem.Instance.FarmState)
 			{
 				if (!t.Freeform) continue;
+				// FreeformPos = khoa trong save (giu nguyen); save cu luu toa do nong trai cu -> doi ra the gioi.
 				var pos = new Vector3(t.PosX, 0, t.PosZ);
 				var plot = _farmScene.Instantiate<FarmPlot>();
 				plot.GridX = -1;
 				plot.GridY = -1;
 				plot.FreeformPos = pos;
-				plot.Position = pos;
+				plot.Position = FarmSpace.Display(pos);
 				AddChild(plot);
 				plot.ApplyState(t);
 			}
@@ -409,7 +417,7 @@ namespace HiepSiVeVuon.Core
 				foreach (var xz in SaveSystem.Instance.SprinklerPositions)
 				{
 					var sprinkler = _autoSprinklerScene.Instantiate<AutoSprinkler>();
-					sprinkler.Position = new Vector3(xz.X, 0, xz.Y);
+					sprinkler.Position = FarmSpace.Display(new Vector3(xz.X, 0, xz.Y));
 					AddChild(sprinkler);
 				}
 			}
@@ -417,7 +425,7 @@ namespace HiepSiVeVuon.Core
 			foreach (var (id, pos) in SaveSystem.Instance.PlacedBuildings)
 			{
 				var def = BuildingCatalog.Get(id);
-				if (def != null) PlacedBuilding.Spawn(def, new Vector3(pos.X, 0, pos.Y), this);
+				if (def != null) PlacedBuilding.Spawn(def, FarmSpace.Display(new Vector3(pos.X, 0, pos.Y)), this);
 			}
 		}
 
@@ -1973,7 +1981,9 @@ namespace HiepSiVeVuon.Core
 		// FindOpenSpot(searchCenter: LivestockZoneOrigin) de chuong nay nam GAN Khu Chan Nuoi
 		// thay vi 1 toa do rai rac rieng (xem quy hoach 5 khu vuc).
 		private Vector3 CowPastureCenter;
-		private const float CowPastureHalf = 192f; // tang 20% (160 -> 192)
+		private const float CowPastureHalf = 110f; // thu gon (192 -> 110) - chi 2 con
+		// So vat nuoi MOI LOAI trong nong trai (bo, cuu, heo, ngua, ga, de) - sinh san chi bu lai toi muc nay.
+		private const int AnimalsPerSpecies = 2;
 
 		private void BuildCowPasture()
 		{
@@ -2006,10 +2016,10 @@ namespace HiepSiVeVuon.Core
 			// 12 con (tang tu 4 theo yeu cau) - rai deu theo vong tron trong hang rao, ban kinh
 			// nho hon PastureHalfExtent de khong dung sat hang rao.
 			var cowRng = new RandomNumberGenerator { Seed = 9700 };
-			for (int i = 0; i < 12; i++)
+			for (int i = 0; i < AnimalsPerSpecies; i++)
 			{
-				float angle = Mathf.Tau * i / 12f;
-				float radius = cowRng.RandfRange(50f, CowPastureHalf - 40f);
+				float angle = Mathf.Tau * i / AnimalsPerSpecies;
+				float radius = cowRng.RandfRange(30f, CowPastureHalf - 40f);
 				var pos = CowPastureCenter + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
 				SpawnCow(pos, isAdult: true);
 			}
@@ -2068,7 +2078,7 @@ namespace HiepSiVeVuon.Core
 		// Z = -724 (lui them 74 so voi -650) - sau khi CowPastureHalf/HorseStableHalf tang 20%
 		// (160->192), khoang cach toi chuong bo bi thu hep. Lui de khoi phuc ~90 don vi.
 		private Vector3 HorseStableCenter; // xem ghi chu tren CowPastureCenter
-		private const float HorseStableHalf = 192f; // tang 20% (160 -> 192)
+		private const float HorseStableHalf = 110f; // thu gon (192 -> 110)
 
 		private void BuildHorseStable()
 		{
@@ -2099,10 +2109,8 @@ namespace HiepSiVeVuon.Core
 
 			Vector3[] horseStarts =
 			{
-				HorseStableCenter + new Vector3(-70, 0, -60),
-				HorseStableCenter + new Vector3(70, 0, -50),
-				HorseStableCenter + new Vector3(-50, 0, 70),
-				HorseStableCenter + new Vector3(60, 0, 60),
+				HorseStableCenter + new Vector3(-40, 0, -30),
+				HorseStableCenter + new Vector3(40, 0, 30),
 			};
 			foreach (var pos in horseStarts)
 			{
@@ -2153,7 +2161,7 @@ namespace HiepSiVeVuon.Core
 		// Z = -1186 (lui them tu -1050) - khoang cach toi chuong ngua (moi lui ve -724, ban kinh
 		// moi 192) can duy tri ~90 don vi sau khi ChickenCoopHalf tang 20% (150->180).
 		private Vector3 ChickenCoopCenter; // xem ghi chu tren CowPastureCenter
-		private const float ChickenCoopHalf = 180f; // tang 50% (100->150) roi tang tiep 20% (150 -> 180)
+		private const float ChickenCoopHalf = 95f; // thu gon (180 -> 95)
 
 		private void BuildChickenCoop()
 		{
@@ -2188,7 +2196,7 @@ namespace HiepSiVeVuon.Core
 			// 30 con (tang tu 10 theo yeu cau).
 			var rng = new RandomNumberGenerator();
 			rng.Randomize();
-			for (int i = 0; i < 30; i++)
+			for (int i = 0; i < AnimalsPerSpecies; i++)
 			{
 				float angle = rng.RandfRange(0f, Mathf.Tau);
 				float radius = rng.RandfRange(20f, ChickenCoopHalf - 25f);
@@ -2274,9 +2282,10 @@ namespace HiepSiVeVuon.Core
 		// cay/da/quai ngau nhien cua vung hoang da khong moc xuyen qua chan cao nguyen.
 		private void BuildPlateaus()
 		{
-			AddPlateau(new Vector3(1600, 0, -350), 240f, 200f, 4, 5101);
+			// Ngoai tuong nong trai thu gon (canh Ham Mo).
+			AddPlateau(new Vector3(2350, 0, -1350), 240f, 200f, 4, 5101);
 			AddPlateau(new Vector3(2650, 0, 750), 210f, 170f, 3, 5102);
-			AddPlateau(new Vector3(1750, 0, 1950), 260f, 220f, 5, 5103);
+			AddPlateau(new Vector3(2450, 0, 2250), 260f, 220f, 5, 5103);
 		}
 
 		// Ham mo (khai thac khoang san, quan trong mua Dong - xem GameManager.Season) - 1 cong
@@ -3150,7 +3159,7 @@ namespace HiepSiVeVuon.Core
 		// do, toi da +-1500) nen roi vao vung hoang da cua WorldStreamer - phai dang ky vung
 		// loai tru (giong Main.BuildPlateaus) de cay/da/quai ngau nhien khong moc xuyen qua canh
 		// dong (nen dat/co van sinh binh thuong qua tung chunk, chi decor bi chan).
-		private static readonly Vector3 SunflowerFieldCenter = new(-2552, 0, 390);
+		private static readonly Vector3 SunflowerFieldCenter = new(-1150, 0, 1000); // trong tuong thu gon
 		private const float SunflowerFieldHalfX = 250f;
 		private const float SunflowerFieldHalfZ = 250f;
 
@@ -3447,13 +3456,17 @@ namespace HiepSiVeVuon.Core
 		// dung OutbuildingsAnchor cu (gia tri khong doi). Cac ham dat vi tri qua FindOpenSpot gio
 		// dung tham so searchCenter/searchRadius de LUON tim cho GAN diem neo cua khu minh thuoc
 		// ve, thay vi tim ngau nhien khap tuong da (xem FindOpenSpot).
-		private static readonly Vector3 LivestockZoneOrigin = new(-1100, 0, -1000);
-		private static readonly Vector3 HousingZoneAnchor = new(900, 0, -1900);
+		// NONG TRAI THU GON (moi nguoi choi 1 nong trai rieng): tuong ~165m x 165m (half 1650) thay vi
+		// 10 hecta; Khu Chan Nuoi chi con 5 chuong nho (moi loai 2 con), Khu Nha O dua vao trong tuong.
+		private static readonly Vector3 LivestockZoneOrigin = new(-1000, 0, -950);
+		private const float LivestockZoneRadius = 600f;
+		private static readonly Vector3 HousingZoneAnchor = new(900, 0, -850);
+		private const float HousingZoneRadius = 650f;
 		private static readonly Vector3 CropsExtensionAnchor = new(780, 0, 1220);
 		private static readonly Vector3 StorageZoneAnchor = new(-880, 0, 120);
 
-		private static readonly Vector3 FarmWallCenter = new(202, 0, 390);
-		private const float FarmWallHalfSize = 3162.5f;
+		private static readonly Vector3 FarmWallCenter = new(0, 0, 250);   // = FarmSpace.LocalWallCenter
+		private const float FarmWallHalfSize = 1650f;                        // = FarmSpace.WallHalfSize
 
 		private void BuildFarmStoneWall()
 		{
@@ -4010,7 +4023,7 @@ namespace HiepSiVeVuon.Core
 		// Z = -1636 (lui them tu -1440) - khoang cach toi chuong ga (moi lui ve -1186, ban kinh
 		// moi 180) can duy tri ~90 don vi sau khi SheepPigPastureHalf tang 20% (150->180).
 		private Vector3 SheepPigPastureCenter; // xem ghi chu tren CowPastureCenter
-		private const float SheepPigPastureHalf = 180f; // tang 20% (150 -> 180)
+		private const float SheepPigPastureHalf = 110f; // thu gon (180 -> 110)
 
 		private void BuildSheepPigPasture()
 		{
@@ -4038,10 +4051,10 @@ namespace HiepSiVeVuon.Core
 
 			// 20 cuu + 10 heo (tang tu 2+2 theo yeu cau) - rai deu vong tron trong hang rao.
 			var spRng = new RandomNumberGenerator { Seed = 9701 };
-			for (int i = 0; i < 20; i++)
+			for (int i = 0; i < AnimalsPerSpecies; i++)
 			{
-				float angle = Mathf.Tau * i / 20f;
-				float radius = spRng.RandfRange(40f, SheepPigPastureHalf - 35f);
+				float angle = Mathf.Tau * i / AnimalsPerSpecies;
+				float radius = spRng.RandfRange(30f, SheepPigPastureHalf - 35f);
 				var sheep = _sheepScene.Instantiate<Sheep>();
 				sheep.Position = SheepPigPastureCenter + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
 				sheep.TroughPosition = SheepPigPastureCenter;
@@ -4049,10 +4062,10 @@ namespace HiepSiVeVuon.Core
 				sheep.PastureHalfExtent = SheepPigPastureHalf - 35f;
 				_world.AddChild(sheep);
 			}
-			for (int i = 0; i < 10; i++)
+			for (int i = 0; i < AnimalsPerSpecies; i++)
 			{
-				float angle = Mathf.Tau * i / 10f + 0.3f;
-				float radius = spRng.RandfRange(30f, SheepPigPastureHalf - 45f);
+				float angle = Mathf.Tau * i / AnimalsPerSpecies + 0.3f;
+				float radius = spRng.RandfRange(25f, SheepPigPastureHalf - 45f);
 				var pig = _pigScene.Instantiate<Pig>();
 				pig.Position = SheepPigPastureCenter + new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
 				pig.TroughPosition = SheepPigPastureCenter;
@@ -4616,7 +4629,7 @@ namespace HiepSiVeVuon.Core
 			// HousingZoneAnchor thay vi ngau nhien khap tuong da.
 			Vector3 NextHousePos()
 			{
-				var pos = FindOpenSpot(avoid, 90f, rng, searchCenter: HousingZoneAnchor, searchRadius: 900f);
+				var pos = FindOpenSpot(avoid, 90f, rng, searchCenter: HousingZoneAnchor, searchRadius: HousingZoneRadius);
 				avoid.Add((pos, 90f));
 				_extraPenZones.Add((pos, 90f));
 				return pos;
@@ -4789,7 +4802,7 @@ namespace HiepSiVeVuon.Core
 			var rng = new RandomNumberGenerator { Seed = 10700 };
 			// Quy hoach lai: doanh trai Cam Ve gio thuoc Khu Nha O NPC (gom TAT CA NPC, ke ca linh
 			// gac) - tim gan HousingZoneAnchor thay vi ngau nhien khap tuong da.
-			var barracksPos = FindOpenSpot(avoid, 130f, rng, searchCenter: HousingZoneAnchor, searchRadius: 900f);
+			var barracksPos = FindOpenSpot(avoid, 130f, rng, searchCenter: HousingZoneAnchor, searchRadius: HousingZoneRadius);
 			_extraPenZones.Add((barracksPos, 130f));
 
 			AddDecor(_farmhouseScene, barracksPos, 60f, 90f, FarmhouseFootprint);
@@ -4927,13 +4940,12 @@ namespace HiepSiVeVuon.Core
 			(Vector3 center, float radius)[] avoidZones =
 			{
 				(new Vector3(202, 0, 390), 750f),      // nong trai + ruong + nha kho + gieng/ao
-				(LivestockZoneOrigin, 2100f),          // Khu Chan Nuoi
-				(HousingZoneAnchor, 900f),             // Khu Nha O NPC
+				(LivestockZoneOrigin, LivestockZoneRadius), // Khu Chan Nuoi
+				(HousingZoneAnchor, HousingZoneRadius),     // Khu Nha O NPC
 				(StorageZoneAnchor, 300f),              // Khu Nha Kho
 				(CropsExtensionAnchor, 350f),           // Khu Trong Trot
 				(OutbuildingsAnchor, 450f),             // Khu San Xuat
-				(new Vector3(-2552, 0, 390), 420f),    // canh dong huong duong
-				(BigVineyardCenter, 1650f),            // vuon nho lon moi
+				(SunflowerFieldCenter, 340f),          // canh dong huong duong
 			};
 			bool IsAvoided(Vector3 p)
 			{
@@ -5055,7 +5067,7 @@ namespace HiepSiVeVuon.Core
 			// Choi nghi x3 - 4 cot + mai, dung primitive don gian.
 			AddRestHutPrimitive(a + new Vector3(300, 0, -40));
 			AddRestHutPrimitive(a + new Vector3(-320, 0, -20));
-			AddRestHutPrimitive(BigVineyardCenter + new Vector3(0, 0, -300));
+			AddRestHutPrimitive(CropsExtensionAnchor + new Vector3(-300, 0, 250));
 
 			// Nha ve sinh x2 - khoi hop nho don gian.
 			AddOuthousePrimitive(a + new Vector3(300, 0, 80));
@@ -5313,7 +5325,7 @@ namespace HiepSiVeVuon.Core
 		{
 			var avoid = KnownOccupiedZonesExcluding(HousingZoneAnchor);
 			var rng = new RandomNumberGenerator { Seed = (ulong)seed };
-			var pos = FindOpenSpot(avoid, 90f, rng, searchCenter: HousingZoneAnchor, searchRadius: 900f);
+			var pos = FindOpenSpot(avoid, 90f, rng, searchCenter: HousingZoneAnchor, searchRadius: HousingZoneRadius);
 			_extraPenZones.Add((pos, 90f));
 			return pos;
 		}
@@ -5340,16 +5352,12 @@ namespace HiepSiVeVuon.Core
 			var zones = new List<(Vector3 c, float r)>
 			{
 				(new Vector3(202, 0, 390), 780f),          // nong trai + ruong + nha kho + gieng/ao
-				(LivestockZoneOrigin, 2100f),              // Khu Chan Nuoi (28 chuong + 4 chuong cu + De)
-				(HousingZoneAnchor, 900f),                 // Khu Nha O NPC (gom tat ca NPC)
+				(LivestockZoneOrigin, LivestockZoneRadius), // Khu Chan Nuoi (5 chuong nho)
+				(HousingZoneAnchor, HousingZoneRadius),    // Khu Nha O NPC (gom tat ca NPC)
 				(StorageZoneAnchor, 300f),                 // Khu Nha Kho
 				(CropsExtensionAnchor, 350f),              // Khu Trong Trot (vuon cay + vuon nho nho)
-				(new Vector3(-2552, 0, 390), 460f),        // canh dong huong duong
-				(BigVineyardCenter, 1650f),                // vuon nho lon
+				(SunflowerFieldCenter, 360f),              // canh dong huong duong
 				(OutbuildingsAnchor, 450f),                // Khu San Xuat (tang tu 320f de bao ca coi xay gio)
-				(new Vector3(1600, 0, -350), 720f),        // cao nguyen 1
-				(new Vector3(2650, 0, 750), 660f),         // cao nguyen 2
-				(new Vector3(1750, 0, 1950), 780f),        // cao nguyen 3
 			};
 			zones.AddRange(_extraPenZones);
 			return zones;
@@ -5401,7 +5409,6 @@ namespace HiepSiVeVuon.Core
 
 			// Ruong <-> Khu Trong Trot mo rong <-> vuon nho lon (day Nam).
 			AddPath(fieldCenter, CropsExtensionAnchor, pathWidth);
-			AddPath(CropsExtensionAnchor, BigVineyardCenter, pathWidth);
 			AddPath(OutbuildingsAnchor, CropsExtensionAnchor, pathWidth); // noi xuong ruou/nha kinh gan do
 
 			// Barn <-> Khu Chan Nuoi (28 chuong + 4 chuong cu + De, day Tay) <-> doanh trai nguoi
@@ -5488,18 +5495,9 @@ namespace HiepSiVeVuon.Core
 
 			// (tag, half, cow, sheep, pig, horse, chicken) - gop CHINH XAC so luong/loai vat nuoi
 			// tu 6 ham cu (khong doi tong dan so vat nuoi, chi doi CACH SAP XEP vi tri).
-			var specs = new (string tag, float half, int cow, int sheep, int pig, int horse, int chicken)[]
-			{
-				("bo_1", 168f, 16,0,0,0,0), ("bo_2", 168f, 16,0,0,0,0), ("bo_3", 168f, 16,0,0,0,0),
-				("ngua_1", 168f, 0,0,0,14,0), ("ngua_2", 168f, 0,0,0,14,0), ("ngua_3", 168f, 0,0,0,14,0),
-				("ga_1", 144f, 0,0,0,0,20), ("ga_2", 144f, 0,0,0,0,20), ("ga_3", 144f, 0,0,0,0,20),
-				("cuuheo_1", 156f, 0,12,8,0,0), ("cuuheo_2", 156f, 0,12,8,0,0), ("cuuheo_3", 156f, 0,12,8,0,0),
-				("cuurieng_1", 140f, 0,20,0,0,0), ("cuurieng_2", 140f, 0,20,0,0,0),
-				("bo2_1", 150f, 16,0,0,0,0), ("bo2_2", 150f, 16,0,0,0,0), ("bo2_3", 150f, 16,0,0,0,0),
-				("bosua_1", 150f, 16,0,0,0,0), ("bosua_2", 150f, 16,0,0,0,0), ("bosua_3", 150f, 16,0,0,0,0), ("bosua_4", 150f, 16,0,0,0,0),
-				("cuumoi_1", 140f, 0,8,0,0,0), ("cuumoi_2", 140f, 0,8,0,0,0), ("cuumoi_3", 140f, 0,8,0,0,0),
-				("vanhbo", 150f, 16,0,0,0,0), ("vanhcuu", 140f, 0,18,0,0,0), ("vanhngua", 150f, 0,0,0,14,0), ("vanhga", 140f, 0,0,0,0,22),
-			};
+			// Nong trai thu gon: KHONG con 28 chuong phu - moi loai vat nuoi chi giu 1 chuong (chuong
+			// bo/ngua/ga/cuu-heo ben duoi + chuong De), moi loai 2 con.
+			var specs = System.Array.Empty<(string tag, float half, int cow, int sheep, int pig, int horse, int chicken)>();
 
 			const int cols = 7;
 			// 450 TRUOC DAY qua nho: hang 0 co 6 chuong LIEN TIEP ban kinh 252 (bo_1..3/ngua_1..3,
@@ -5521,7 +5519,7 @@ namespace HiepSiVeVuon.Core
 			// cuc bo o day: avoid[] con duoc dung de dat CHINH cac chuong BEN TRONG vung nay, neu
 			// them ca vao day se tai lap dung y het loi tu-tham-chieu vua sua o KnownOccupiedZonesExcluding
 			// (moi chuong lai tu coi minh la "cham" chinh vung dat rieng cua minh).
-			_extraPenZones.Add((districtOrigin, 2100f));
+			_extraPenZones.Add((districtOrigin, LivestockZoneRadius));
 
 			// Chan cay/da hoang da (WorldStreamer) khoi moc chen vao chuong trong CA khu chan
 			// nuoi - vung nay nam GAN RIA vung loai tru chung quanh tuong da (FarmWallHalfSize*1.45),
@@ -5530,7 +5528,7 @@ namespace HiepSiVeVuon.Core
 			// 1 vung loai tru DU LON cho CA khu (2100 = ban kinh tim cho + du phong cho chuong lon
 			// nhat + bien do vuong cua FindOpenSpot) de dam bao KHONG chuong nao con bi cay/da moc
 			// chen vao, du no nam o goc/ria nao cua khu.
-			WorldStreamer.ExclusionZones.Add((districtOrigin, 2900f));
+			WorldStreamer.ExclusionZones.Add((districtOrigin, LivestockZoneRadius + 300f));
 
 			var built = new List<(Vector3 pos, (string tag, float half, int cow, int sheep, int pig, int horse, int chicken) spec)>();
 
@@ -5554,7 +5552,7 @@ namespace HiepSiVeVuon.Core
 					if (gridSlotFree)
 						foreach (var (c, r) in avoid)
 							if (new Vector2(gridPos.X - c.X, gridPos.Z - c.Z).Length() < r + zoneR) { gridSlotFree = false; break; }
-					var pos = gridSlotFree ? gridPos : FindOpenSpot(avoid, zoneR, rng, searchCenter: districtOrigin, searchRadius: 2100f);
+					var pos = gridSlotFree ? gridPos : FindOpenSpot(avoid, zoneR, rng, searchCenter: districtOrigin, searchRadius: LivestockZoneRadius);
 
 					avoid.Add((pos, zoneR));
 					_extraPenZones.Add((pos, zoneR));
@@ -5612,7 +5610,7 @@ namespace HiepSiVeVuon.Core
 			// tri MOI duoc gan o day thay vi hang so cu).
 			SafeBuildStep(() =>
 			{
-				CowPastureCenter = FindOpenSpot(avoid, CowPastureHalf * 1.5f, rng, searchCenter: districtOrigin, searchRadius: 2100f);
+				CowPastureCenter = FindOpenSpot(avoid, CowPastureHalf * 1.5f, rng, searchCenter: districtOrigin, searchRadius: LivestockZoneRadius);
 				avoid.Add((CowPastureCenter, CowPastureHalf * 1.5f));
 				_extraPenZones.Add((CowPastureCenter, CowPastureHalf * 1.5f));
 				BuildCowPasture();
@@ -5620,7 +5618,7 @@ namespace HiepSiVeVuon.Core
 
 			SafeBuildStep(() =>
 			{
-				HorseStableCenter = FindOpenSpot(avoid, HorseStableHalf * 1.5f, rng, searchCenter: districtOrigin, searchRadius: 2100f);
+				HorseStableCenter = FindOpenSpot(avoid, HorseStableHalf * 1.5f, rng, searchCenter: districtOrigin, searchRadius: LivestockZoneRadius);
 				avoid.Add((HorseStableCenter, HorseStableHalf * 1.5f));
 				_extraPenZones.Add((HorseStableCenter, HorseStableHalf * 1.5f));
 				BuildHorseStable();
@@ -5628,7 +5626,7 @@ namespace HiepSiVeVuon.Core
 
 			SafeBuildStep(() =>
 			{
-				ChickenCoopCenter = FindOpenSpot(avoid, ChickenCoopHalf * 1.5f, rng, searchCenter: districtOrigin, searchRadius: 2100f);
+				ChickenCoopCenter = FindOpenSpot(avoid, ChickenCoopHalf * 1.5f, rng, searchCenter: districtOrigin, searchRadius: LivestockZoneRadius);
 				avoid.Add((ChickenCoopCenter, ChickenCoopHalf * 1.5f));
 				_extraPenZones.Add((ChickenCoopCenter, ChickenCoopHalf * 1.5f));
 				BuildChickenCoop();
@@ -5639,11 +5637,11 @@ namespace HiepSiVeVuon.Core
 			// chuong khac, thay vi bi bo trong.
 			SafeBuildStep(() =>
 			{
-				SheepPigPastureCenter = FindOpenSpot(avoid, SheepPigPastureHalf * 1.5f, rng, searchCenter: districtOrigin, searchRadius: 2100f);
+				SheepPigPastureCenter = FindOpenSpot(avoid, SheepPigPastureHalf * 1.5f, rng, searchCenter: districtOrigin, searchRadius: LivestockZoneRadius);
 				avoid.Add((SheepPigPastureCenter, SheepPigPastureHalf * 1.5f));
 				_extraPenZones.Add((SheepPigPastureCenter, SheepPigPastureHalf * 1.5f));
 				BuildSheepPigPasture();
-				built.Add((SheepPigPastureCenter, ("cuuheo_cu", SheepPigPastureHalf, 0, 20, 10, 0, 0)));
+				built.Add((SheepPigPastureCenter, ("cuuheo_cu", SheepPigPastureHalf, 0, AnimalsPerSpecies, AnimalsPerSpecies, 0, 0)));
 			}, "BuildAnimalPenDistrict[cuuheo_cu]");
 
 			BuildPenCaretakerDorm(avoid, rng, built);
@@ -5664,7 +5662,7 @@ namespace HiepSiVeVuon.Core
 			// chu khong tu goi KnownOccupiedZones().
 			var dormAvoid = new List<(Vector3 c, float r)>();
 			foreach (var z in avoid) if (z.c != HousingZoneAnchor) dormAvoid.Add(z);
-			var dormPos = FindOpenSpot(dormAvoid, 200f, rng, searchCenter: HousingZoneAnchor, searchRadius: 900f);
+			var dormPos = FindOpenSpot(dormAvoid, 200f, rng, searchCenter: HousingZoneAnchor, searchRadius: HousingZoneRadius);
 			_caretakerDormPos = dormPos;
 			AddDecor(_farmhouseScene, dormPos, 60f, 90f, FarmhouseFootprint);
 			var interior = AddBuildingEntrance(dormPos, 90f, 110f, 80f, RoomKind.Village);
@@ -5758,13 +5756,13 @@ namespace HiepSiVeVuon.Core
 		{
 			var avoid = KnownOccupiedZonesExcluding(LivestockZoneOrigin);
 			var rng = new RandomNumberGenerator { Seed = 11500 };
-			const float half = 140f;
-			var pos = FindOpenSpot(avoid, half * 1.5f, rng, searchCenter: LivestockZoneOrigin, searchRadius: 2100f);
+			const float half = 100f;
+			var pos = FindOpenSpot(avoid, half * 1.5f, rng, searchCenter: LivestockZoneOrigin, searchRadius: LivestockZoneRadius);
 			_extraPenZones.Add((pos, half * 1.5f));
 
 			BuildSimplePasture(pos, half, "de_1", (c, h) =>
 			{
-				const int count = 10;
+				const int count = AnimalsPerSpecies;
 				for (int k = 0; k < count; k++)
 				{
 					float angle = Mathf.Tau * k / count;
@@ -5791,7 +5789,7 @@ namespace HiepSiVeVuon.Core
 			// moi ngay toi chuong (WorkPos/TroughPos van tai vi tri chuong nhu cu).
 			var goatHomeAvoid = KnownOccupiedZonesExcluding(HousingZoneAnchor);
 			var goatHomeRng = new RandomNumberGenerator { Seed = 11600 };
-			var goatHomePos = FindOpenSpot(goatHomeAvoid, 60f, goatHomeRng, searchCenter: HousingZoneAnchor, searchRadius: 900f);
+			var goatHomePos = FindOpenSpot(goatHomeAvoid, 60f, goatHomeRng, searchCenter: HousingZoneAnchor, searchRadius: HousingZoneRadius);
 			_extraPenZones.Add((goatHomePos, 60f));
 			caretaker.HomePos = goatHomePos;
 			caretaker.InteriorHomePos = goatHomePos;
@@ -6067,7 +6065,7 @@ namespace HiepSiVeVuon.Core
 		}
 
 		// Gioi han so con MOI CHUONG (khong phai toan nong trai) - xem ghi chu tren TryBreedCows.
-		private const int MaxAnimalsPerPen = 20;
+		private const int MaxAnimalsPerPen = AnimalsPerSpecies;
 
 		// Moi ngay THAT: neu 1 CHUONG (nhom theo HomeCenter - vi tri tam that cua hang rao, KHONG
 		// phai vi tri spawn rieng tung con) co it nhat 2 con TRUONG THANH va CHUONG DO chua vuot
@@ -6099,7 +6097,7 @@ namespace HiepSiVeVuon.Core
 				float half = 150f;
 				foreach (var c in list)
 					if (c.IsAdult) { adultCount++; lastAdultPos = c.GlobalPosition; half = c.PastureHalfExtent; }
-				if (adultCount < 2) continue;
+				if (adultCount < 1) continue; // chuong con < AnimalsPerSpecies con -> con con lai sinh bu
 				if (rng.Randf() > 0.5f) continue; // ~50% co hoi moi ngay/moi chuong
 
 				var calfPos = lastAdultPos + new Vector3(rng.RandfRange(-25, 25), 0, rng.RandfRange(-25, 25));
@@ -6131,7 +6129,7 @@ namespace HiepSiVeVuon.Core
 				Vector3 trough = home;
 				foreach (var s in list)
 					if (s.IsAdult) { adultCount++; lastAdultPos = s.GlobalPosition; half = s.PastureHalfExtent; trough = s.TroughPosition; }
-				if (adultCount < 2) continue;
+				if (adultCount < 1) continue; // chuong con < AnimalsPerSpecies con -> con con lai sinh bu
 				if (rng.Randf() > 0.5f) continue;
 
 				var lambPos = lastAdultPos + new Vector3(rng.RandfRange(-25, 25), 0, rng.RandfRange(-25, 25));
@@ -6166,7 +6164,7 @@ namespace HiepSiVeVuon.Core
 				Vector3 trough = home;
 				foreach (var p in list)
 					if (p.IsAdult) { adultCount++; lastAdultPos = p.GlobalPosition; half = p.PastureHalfExtent; trough = p.TroughPosition; }
-				if (adultCount < 2) continue;
+				if (adultCount < 1) continue; // chuong con < AnimalsPerSpecies con -> con con lai sinh bu
 				if (rng.Randf() > 0.5f) continue;
 
 				var pigletPos = lastAdultPos + new Vector3(rng.RandfRange(-25, 25), 0, rng.RandfRange(-25, 25));
@@ -6201,7 +6199,7 @@ namespace HiepSiVeVuon.Core
 				Vector3 trough = home;
 				foreach (var h in list)
 					if (h.IsAdult) { adultCount++; lastAdultPos = h.GlobalPosition; half = h.PastureHalfExtent; trough = h.TroughPosition; }
-				if (adultCount < 2) continue;
+				if (adultCount < 1) continue; // chuong con < AnimalsPerSpecies con -> con con lai sinh bu
 				if (rng.Randf() > 0.5f) continue;
 
 				var foalPos = lastAdultPos + new Vector3(rng.RandfRange(-25, 25), 0, rng.RandfRange(-25, 25));
@@ -6235,7 +6233,7 @@ namespace HiepSiVeVuon.Core
 				float half = 130f;
 				foreach (var g in list)
 					if (g.IsAdult) { adultCount++; lastAdultPos = g.GlobalPosition; half = g.PastureHalfExtent; }
-				if (adultCount < 2) continue;
+				if (adultCount < 1) continue; // chuong con < AnimalsPerSpecies con -> con con lai sinh bu
 				if (rng.Randf() > 0.5f) continue;
 
 				var kidPos = lastAdultPos + new Vector3(rng.RandfRange(-25, 25), 0, rng.RandfRange(-25, 25));

@@ -170,6 +170,7 @@ namespace HiepSiVeVuon.Systems
 		public int GetWeaponDamage()
 		{
 			if (EquippedWeapon == null) return 5; // dam tay
+			if (!ItemConditions.IsUsable(EquippedWeapon)) return 5; // vu khi hong (<40% do ben) = danh tay khong
 			var def = ItemDatabase.Instance.GetItem(EquippedWeapon);
 			// Cuong hoa +N (server quyet dinh, xem EnhanceClient): +10% moi cap.
 			return def != null ? Mathf.RoundToInt(def.Damage * EnhanceClient.Mult(EquippedWeapon)) : 5;
@@ -179,6 +180,7 @@ namespace HiepSiVeVuon.Systems
 		public int GetToolPower()
 		{
 			if (EquippedTool == null) return 3; // tay khong cuoc yeu
+			if (!ItemConditions.IsUsable(EquippedTool)) return 3;
 			var def = ItemDatabase.Instance.GetItem(EquippedTool);
 			return def != null ? Mathf.RoundToInt(def.Damage * EnhanceClient.Mult(EquippedTool)) : 3;
 		}
@@ -186,6 +188,7 @@ namespace HiepSiVeVuon.Systems
 		public int GetArmorDefense()
 		{
 			if (EquippedArmor == null) return 0;
+			if (!ItemConditions.IsUsable(EquippedArmor)) return 0; // giap hong khong con tac dung
 			var def = ItemDatabase.Instance.GetItem(EquippedArmor);
 			return def != null ? Mathf.RoundToInt(def.Defense * EnhanceClient.Mult(EquippedArmor)) : 0;
 		}
@@ -199,6 +202,7 @@ namespace HiepSiVeVuon.Systems
 			RemoveItem(itemId, 1);
 			if (def.HealAmount > 0) GameManager.Instance.Heal(def.HealAmount);
 			if (def.StaminaAmount > 0) GameManager.Instance.RestoreStamina(def.StaminaAmount);
+			SurvivalSystem.Instance?.Consume(def); // no/nuoc (xem SurvivalSystem)
 			return true;
 		}
 

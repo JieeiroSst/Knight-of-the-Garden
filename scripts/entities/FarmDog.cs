@@ -95,8 +95,11 @@ namespace HiepSiVeVuon.Entities
             else if (hour == SleepEndHour) _sleeping = false;
         }
 
+        private bool _simAsleep;
+
         public override void _PhysicsProcess(double delta)
         {
+            if (HiepSiVeVuon.Core.SimLod.Sleep(this, ref _simAsleep)) return; // xa nguoi choi -> ngu mo phong
             float dt = (float)delta;
             UpdateBark(dt);
             var (desiredDir, targetSpeed) = _sleeping ? DoGoToKennel() : DoWander();

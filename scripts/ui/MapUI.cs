@@ -29,6 +29,13 @@ namespace HiepSiVeVuon.UI
         public bool HasWaypoint { get; private set; }
         public Vector3 Waypoint { get; private set; }
 
+        public void SetWaypoint(Vector3 world)
+        {
+            Waypoint = new Vector3(world.X, 0, world.Z);
+            HasWaypoint = true;
+            _mapArea?.QueueRedraw();
+        }
+
         private enum Icon { Dot, House, Triangle, Tree, Water, Diamond, Cross, Flower }
 
         private readonly struct Landmark
@@ -57,10 +64,10 @@ namespace HiepSiVeVuon.UI
             new(new Vector2(9250, 3750), new Color(0.95f, 0.85f, 0.4f), "map.landmark.town", Icon.House, false),
 
             // ---- Dia hinh/cong trinh phu gan nong trai (da co truoc) ----
-            new(new Vector2(1600, -350), new Color(0.55f, 0.42f, 0.32f), "map.landmark.plateau", Icon.Triangle, false),
+            new(new Vector2(2350, -1350), new Color(0.55f, 0.42f, 0.32f), "map.landmark.plateau", Icon.Triangle, false),
             new(new Vector2(2650, 750), new Color(0.55f, 0.42f, 0.32f), "", Icon.Triangle, false),
             new(new Vector2(1750, 1950), new Color(0.55f, 0.42f, 0.32f), "", Icon.Triangle, false),
-            new(new Vector2(-2552, 390), new Color(0.95f, 0.78f, 0.1f), "map.landmark.sunflower_field", Icon.Flower, false),
+            new(new Vector2(-1150, 1000), new Color(0.95f, 0.78f, 0.1f), "map.landmark.sunflower_field", Icon.Flower, false),
 
             // ---- 11 khu vuc "the gioi mo" (xem Main.cs cac hang so *RegionCenter/MineEntrancePos) ----
             new(new Vector2(2500, -400), new Color(0.65f, 0.5f, 0.25f), "map.landmark.mine", Icon.Diamond, true),
@@ -77,11 +84,21 @@ namespace HiepSiVeVuon.UI
             new(new Vector2(4100, -5650), new Color(0.4f, 0.4f, 0.42f), "map.landmark.cave", Icon.Diamond, true),
         };
 
-        // Vung toa do THE GIOI hien thi tren ban do - MO RONG de bao het 11 khu vuc moi (truoc
-        // day chi ~14000x8400, chi du cho nong trai+thi tran). Bien luon rong hon toa do xa nhat
-        // (~8300-8900) mot khoang du de khong bi cham vien.
-        private const float WorldMinX = -8700f, WorldMaxX = 11200f;
-        private const float WorldMinZ = -8600f, WorldMaxZ = 9200f;
+        // The gioi KHONG co bien (xem WorldStreamer/WorldBiomes) nen ban do la 1 "khung nhin" di
+        // chuyen duoc: tam (_viewCenter) + ti le (_zoom = don vi the gioi / 1 pixel ban do). Mac
+        // dinh vua khit 11 khu vuc dat tay quanh nong trai; lan chuot de phong to/thu nho, keo
+        // chuot phai de di chuyen, chuot giua/nut "◎" de quay ve vi tri nguoi choi.
+        private const float DefaultZoom = 33f;
+        private const float MinZoom = 2f, MaxZoom = 600f;
+        private const float UnitsPerMeter = 20f;
+        private Vector2 _viewCenter = new(1250f, 300f);
+        private float _zoom = DefaultZoom;
+        private bool _dragging;
+        private Vector2? _hover;
+        private Label _coordsLabel;
+
+        // Cache sinh canh/trai cua tung chunk da kham pha (tinh nhieu moi khung hinh qua ton).
+        private readonly System.Collections.Generic.Dictionary<Vector2I, (Color color, bool camp)> _chunkInfo = new();
         private static readonly Vector2 MapSize = new(600, 536); // ti le gan dung ty le vung the gioi o tren
         private static readonly Vector2 MapOrigin = new(40, 70);
 
@@ -127,11 +144,24 @@ namespace HiepSiVeVuon.UI
             _mapArea = new Control
             {
                 Position = MapOrigin,
-                CustomMinimumSize = MapSize
+                CustomMinimumSize = MapSize,
+                Size = MapSize,
+                ClipContents = true,
             };
             _mapArea.Draw += DrawMap;
             _mapArea.GuiInput += OnMapInput;
+            _mapArea.MouseExited += () => { _hover = null; _mapArea.QueueRedraw(); };
             _panel.AddChild(_mapArea);
+
+            var recenter = new Button { Text = "◎", Position = new Vector2(MapSize.X + 40 - 46, 8), CustomMinimumSize = new Vector2(30, 26), FocusMode = Control.FocusModeEnum.None };
+            recenter.Pressed += CenterOnPlayer;
+            _panel.AddChild(recenter);
+
+            _coordsLabel = new Label { Position = new Vector2(20, MapSize.Y + 72) };
+            _coordsLabel.AddThemeColorOverride("font_color", new Color(TextCream, 0.8f));
+            _coordsLabel.AddThemeFontSizeOverride("font_size", 12);
+            _panel.AddChild(_coordsLabel);
+            _panel.CustomMinimumSize += new Vector2(0, 22);
 
             Loc.LanguageChanged += _loc.Refresh;
 
@@ -148,27 +178,64 @@ namespace HiepSiVeVuon.UI
         // HUD.DrawCompass), khong tu dong dan duong, chi chi huong.
         private void OnMapInput(InputEvent e)
         {
-            if (e is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
+            if (e is InputEventMouseButton mb)
             {
-                Vector2 world = MapToWorld(mb.Position);
-                Waypoint = new Vector3(world.X, 0, world.Y);
-                HasWaypoint = true;
+                if (mb.Pressed && mb.ButtonIndex == MouseButton.Left)
+                {
+                    Vector2 world = MapToWorld(mb.Position);
+                    Waypoint = new Vector3(world.X, 0, world.Y);
+                    HasWaypoint = true;
+                }
+                else if (mb.ButtonIndex == MouseButton.Right)
+                    _dragging = mb.Pressed;
+                else if (mb.Pressed && mb.ButtonIndex == MouseButton.Middle)
+                    CenterOnPlayer();
+                else if (mb.Pressed && (mb.ButtonIndex == MouseButton.WheelUp || mb.ButtonIndex == MouseButton.WheelDown))
+                {
+                    // Phong to quanh con tro: diem the gioi duoi chuot giu nguyen vi tri.
+                    Vector2 before = MapToWorld(mb.Position);
+                    float factor = mb.ButtonIndex == MouseButton.WheelUp ? 1f / 1.2f : 1.2f;
+                    _zoom = Mathf.Clamp(_zoom * factor, MinZoom, MaxZoom);
+                    _viewCenter += before - MapToWorld(mb.Position);
+                }
+                _mapArea.AcceptEvent();
+                _mapArea.QueueRedraw();
+            }
+            else if (e is InputEventMouseMotion hover && !_dragging)
+            {
+                _hover = hover.Position;
+                _mapArea.QueueRedraw();
+            }
+            else if (e is InputEventMouseMotion mm && _dragging)
+            {
+                _viewCenter -= mm.Relative * _zoom;
+                _mapArea.AcceptEvent();
                 _mapArea.QueueRedraw();
             }
         }
 
-        private static Vector2 MapToWorld(Vector2 mapPos)
+        private void CenterOnPlayer()
         {
-            float tx = mapPos.X / MapSize.X;
-            float tz = mapPos.Y / MapSize.Y;
-            return new Vector2(WorldMinX + tx * (WorldMaxX - WorldMinX), WorldMinZ + tz * (WorldMaxZ - WorldMinZ));
+            if (_player == null || !IsInstanceValid(_player))
+                _player = GetTree().GetFirstNodeInGroup("player") as Node3D;
+            if (_player != null) _viewCenter = new Vector2(_player.GlobalPosition.X, _player.GlobalPosition.Z);
+            _mapArea.QueueRedraw();
         }
+
+        private Vector2 MapToWorld(Vector2 mapPos) => _viewCenter + (mapPos - MapSize / 2f) * _zoom;
 
         public override void _Process(double delta)
         {
             if (!Visible) return;
             if (_player == null || !IsInstanceValid(_player))
                 _player = GetTree().GetFirstNodeInGroup("player") as Node3D;
+            if (_player != null)
+            {
+                var pp = new Vector2(_player.GlobalPosition.X, _player.GlobalPosition.Z);
+                string biome = WorldBiomes.Wildness(pp) < 0.5f ? Loc.T("biome.core") : Loc.T(WorldBiomes.NameKey(WorldBiomes.At(pp)));
+                _coordsLabel.Text = string.Format(Loc.T("map.coords_fmt"), Mathf.RoundToInt(pp.X / UnitsPerMeter), Mathf.RoundToInt(pp.Y / UnitsPerMeter),
+                    biome, WorldBiomes.Danger(pp).ToString("0.0"));
+            }
             _mapArea.QueueRedraw();
         }
 
@@ -187,6 +254,16 @@ namespace HiepSiVeVuon.UI
         private void OpenAnimated()
         {
             Visible = true;
+            _dragging = false;
+            // Mo ban do khi dang o xa ngoai vung loi -> nhay toi ngay cho nguoi choi dang dung.
+            if (_player == null || !IsInstanceValid(_player))
+                _player = GetTree().GetFirstNodeInGroup("player") as Node3D;
+            if (_player != null)
+            {
+                var pp = new Vector2(_player.GlobalPosition.X, _player.GlobalPosition.Z);
+                if (WorldToMap(pp) is var mp && (mp.X < 40 || mp.Y < 40 || mp.X > MapSize.X - 40 || mp.Y > MapSize.Y - 40))
+                    _viewCenter = pp;
+            }
             _panel.Scale = Vector2.One * 0.88f;
             _panel.Modulate = new Color(1f, 1f, 1f, 0f);
             _toggleTween?.Kill();
@@ -206,48 +283,58 @@ namespace HiepSiVeVuon.UI
             _toggleTween.TweenCallback(Callable.From(() => Visible = false));
         }
 
-        private static Vector2 WorldToMap(Vector2 worldXZ)
-        {
-            float tx = (worldXZ.X - WorldMinX) / (WorldMaxX - WorldMinX);
-            float tz = (worldXZ.Y - WorldMinZ) / (WorldMaxZ - WorldMinZ);
-            return new Vector2(tx * MapSize.X, tz * MapSize.Y);
-        }
+        private Vector2 WorldToMap(Vector2 worldXZ) => (worldXZ - _viewCenter) / _zoom + MapSize / 2f;
 
         private void DrawMap()
         {
             // Nen: sac xanh rung tham (thay vi 1 mau xanh phang truoc day) + luoi mo nhat kieu
             // "ban do giay" + 2 vung tint rieng cho khu vuc van minh (trang trai/thi tran) de
             // noi bat giua bien wilderness rong lon moi.
-            _mapArea.DrawRect(new Rect2(Vector2.Zero, MapSize), new Color(0.1f, 0.18f, 0.1f));
+            // Vung chua kham pha = suong mu toi; vung loi quanh nong trai (da biet) = xanh rung.
+            _mapArea.DrawRect(new Rect2(Vector2.Zero, MapSize), new Color(0.05f, 0.06f, 0.07f));
+            _mapArea.DrawCircle(WorldToMap(Vector2.Zero), (WorldBiomes.CoreRadius + WorldBiomes.BlendWidth * 0.5f) / _zoom, new Color(0.1f, 0.18f, 0.1f));
+            DrawExplored();
             DrawGrid();
 
             // Tint nhe quanh trang trai + thi tran (khu "an toan", da thuan hoa) - hinh tron mo
             // phong pham vi tuong da/khu do thi, KHONG chinh xac tuyet doi, chi mang tinh dinh
             // huong thi giac.
-            DrawSafeZoneTint(new Vector2(202, 390), 3400f, new Color(0.35f, 0.42f, 0.22f, 0.35f));
+            var farmC = HiepSiVeVuon.Core.FarmSpace.ToWorld(HiepSiVeVuon.Core.FarmSpace.LocalWallCenter);
+            float wallR = HiepSiVeVuon.Core.FarmSpace.WallHalfSize * 1.1f;
+            DrawSafeZoneTint(new Vector2(farmC.X, farmC.Z), wallR, new Color(0.35f, 0.42f, 0.22f, 0.35f));
+            foreach (var f in HiepSiVeVuon.Core.FarmReplicas.Known.Values)
+                DrawSafeZoneTint(new Vector2(f.Center.X, f.Center.Z), wallR, new Color(0.35f, 0.42f, 0.22f, 0.25f));
             DrawSafeZoneTint(new Vector2(9250, 3750), 2000f, new Color(0.42f, 0.38f, 0.22f, 0.35f));
 
             _mapArea.DrawRect(new Rect2(Vector2.Zero, MapSize), FrameGold, false, 2f);
 
             // Duong noi nong trai - thi tran (da co truoc).
-            _mapArea.DrawLine(WorldToMap(new Vector2(-300, -60)), WorldToMap(new Vector2(9250, 3750)), new Color(0.65f, 0.55f, 0.35f, 0.8f), 2.5f);
+            if (HiepSiVeVuon.Core.FarmSpace.Origin == Vector3.Zero)
+                _mapArea.DrawLine(WorldToMap(new Vector2(-300, -60)), WorldToMap(new Vector2(9250, 3750)), new Color(0.65f, 0.55f, 0.35f, 0.8f), 2.5f);
 
             foreach (var lm in Landmarks)
                 DrawLandmark(lm);
 
             DrawAdventureOverlay();
             DrawMines();
+            DrawOtherFarms();
+            DrawMarkets();
+            DrawOnlineMarkers();
+            DrawWorldEvents();
 
-            // Vung que nuoc Phap (xem Main.FrenchRegionCenter) cach xa toi 10km - qua xa de ve
-            // dung ty le. Thay bang 1 mui ten chi huong o mep trai ban do.
-            var arrowTip = new Vector2(6, MapSize.Y * 0.5f);
-            _mapArea.DrawLine(arrowTip + new Vector2(26, 0), arrowTip, FrameGold, 3f);
-            _mapArea.DrawLine(arrowTip, arrowTip + new Vector2(9, -7), FrameGold, 3f);
-            _mapArea.DrawLine(arrowTip, arrowTip + new Vector2(9, 7), FrameGold, 3f);
-            _mapArea.DrawString(ThemeDB.FallbackFont, arrowTip + new Vector2(2, -12),
-                Loc.T("map.france_hint"), HorizontalAlignment.Left, -1, 12, TextCream);
+            // Vung que nuoc Phap (xem Main.FrenchRegionCenter) - ban do gio cuon/thu nho duoc nen
+            // ve dung vi tri that thay cho mui ten chi huong cu.
+            if (WorldStreamer.FrenchRegionCenter is Vector3 fc)
+            {
+                var fp = WorldToMap(new Vector2(fc.X, fc.Z));
+                float fr = WorldStreamer.FrenchRegionHalfSize / _zoom;
+                _mapArea.DrawRect(new Rect2(fp - Vector2.One * fr, Vector2.One * fr * 2f), new Color(0.5f, 0.6f, 0.3f, 0.35f));
+                DrawHouseIcon(fp, new Color(0.85f, 0.75f, 0.55f));
+                DrawLabelPlate(fp + new Vector2(9, 4), Loc.T("map.landmark.french"));
+            }
 
             DrawCompassRose(new Vector2(MapSize.X - 34, MapSize.Y - 34), 16f);
+            DrawScaleBar(new Vector2(14, MapSize.Y - 16));
 
             if (HasWaypoint)
             {
@@ -255,6 +342,7 @@ namespace HiepSiVeVuon.UI
                 _mapArea.DrawCircle(wp, 9f, new Color(1f, 0.25f, 0.2f, 0.3f));
                 _mapArea.DrawLine(wp + new Vector2(-5, -5), wp + new Vector2(5, 5), Colors.White, 2f);
                 _mapArea.DrawLine(wp + new Vector2(-5, 5), wp + new Vector2(5, -5), Colors.White, 2f);
+                DrawLabelPlate(wp + new Vector2(10, -6), MapCoords.Format(Waypoint.X, Waypoint.Z));
             }
 
             if (_player != null)
@@ -270,6 +358,15 @@ namespace HiepSiVeVuon.UI
             }
 
             DrawVignette();
+
+            // Toa do duoi con tro chuot.
+            if (_hover is Vector2 hv && hv.X >= 0 && hv.Y >= 0 && hv.X <= MapSize.X && hv.Y <= MapSize.Y)
+            {
+                var w = MapToWorld(hv);
+                _mapArea.DrawLine(hv + new Vector2(-6, 0), hv + new Vector2(6, 0), new Color(TextCream, 0.7f), 1f);
+                _mapArea.DrawLine(hv + new Vector2(0, -6), hv + new Vector2(0, 6), new Color(TextCream, 0.7f), 1f);
+                DrawLabelPlate(hv + new Vector2(10, 16), MapCoords.Format(w.X, w.Y));
+            }
         }
 
         // Suong mu tren vung CHUA kham pha (xem AdventureSystem.Discover) + diem phieu luu: cot da
@@ -279,7 +376,7 @@ namespace HiepSiVeVuon.UI
         {
             var adv = AdventureSystem.Instance;
             if (adv == null) return;
-            float scale = MapSize.X / (WorldMaxX - WorldMinX);
+            float scale = 1f / _zoom;
             foreach (var r in WorldStreamer.Regions)
             {
                 if (adv.Discovered.Contains(r.Name)) continue;
@@ -328,10 +425,28 @@ namespace HiepSiVeVuon.UI
             }
             foreach (var (labelKey, pos) in HiepSiVeVuon.Core.Main.MineLocations)
             {
-                var p = WorldToMap(new Vector2(pos.X, pos.Z));
+                var p = WorldToMap(Disp(new Vector2(pos.X, pos.Z)));
                 DrawDiamond(p, 5f, new Color(0.75f, 0.55f, 0.3f));
                 _mapArea.DrawLine(p + new Vector2(-3, 3), p + new Vector2(3, -3), Colors.Black, 1.5f);
             }
+        }
+
+        // Nong trai cua nguoi choi khac (moi nguoi 1 toa do rieng, xem FarmReplicas) - nha + ten chu.
+        private void DrawOtherFarms()
+        {
+            foreach (var f in HiepSiVeVuon.Core.FarmReplicas.Known.Values)
+            {
+                var p = WorldToMap(new Vector2(f.House.X, f.House.Z));
+                if (p.X < -20 || p.Y < -20 || p.X > MapSize.X + 20 || p.Y > MapSize.Y + 20) continue;
+                DrawHouseIcon(p, new Color(0.55f, 0.75f, 0.95f));
+                if (_zoom < 120f) DrawLabelPlate(p + new Vector2(9, 4), string.Format(Loc.T("farm.owner_fmt"), f.Name));
+            }
+        }
+
+        private static Vector2 Disp(Vector2 v)
+        {
+            var w = HiepSiVeVuon.Core.FarmSpace.Display(new Vector3(v.X, 0, v.Y));
+            return new Vector2(w.X, w.Z);
         }
 
         private void DrawDiamond(Vector2 c, float r, Color col)
@@ -365,19 +480,187 @@ namespace HiepSiVeVuon.UI
             _mapArea.DrawTextureRect(_vignetteTex, new Rect2(Vector2.Zero, MapSize), false);
         }
 
+        // Cac chunk da kham pha o the gioi vo han: to mau theo sinh canh + danh dau trai hoang.
+        private void DrawExplored()
+        {
+            float cs = WorldStreamer.ExploreChunkSize;
+            float px = cs / _zoom;
+            var tl = MapToWorld(Vector2.Zero);
+            var br = MapToWorld(MapSize);
+            foreach (var key in WorldStreamer.Explored)
+            {
+                float wx = key.X * cs, wz = key.Y * cs;
+                if (wx + cs < tl.X || wz + cs < tl.Y || wx > br.X || wz > br.Y) continue;
+                if (!_chunkInfo.TryGetValue(key, out var info))
+                {
+                    var c = new Vector2(wx + cs / 2f, wz + cs / 2f);
+                    var col = WorldBiomes.Wildness(c) < 0.5f
+                        ? WorldBiomes.MapColors[0]
+                        : WorldBiomes.MapColors[(int)WorldBiomes.At(c)];
+                    info = (col, WorldStreamer.HasCamp(key.X, key.Y));
+                    _chunkInfo[key] = info;
+                }
+                // +0.6px che khe ho giua cac o lien ke.
+                _mapArea.DrawRect(new Rect2(WorldToMap(new Vector2(wx, wz)), Vector2.One * (px + 0.6f)), info.color);
+            }
+            // Trai ve sau cung de khong bi o ke ben de len.
+            foreach (var (key, info) in _chunkInfo)
+            {
+                if (!info.camp) continue;
+                var p = WorldToMap(new Vector2(key.X * cs + cs / 2f, key.Y * cs + cs / 2f));
+                if (p.X < -10 || p.Y < -10 || p.X > MapSize.X + 10 || p.Y > MapSize.Y + 10) continue;
+                DrawTriangleIcon(p, new Color(0.85f, 0.35f, 0.2f));
+                if (_zoom < 60f) DrawLabelPlate(p + new Vector2(9, 4), Loc.T("map.landmark.camp"));
+            }
+        }
+
+        // Thuoc ti le: chon do dai "tron" (10/20/50/100... m) gan ~90px nhat.
+        private void DrawScaleBar(Vector2 left)
+        {
+            float targetMeters = 90f * _zoom / UnitsPerMeter;
+            float pow = Mathf.Pow(10f, Mathf.Floor(Mathf.Log(targetMeters) / Mathf.Log(10f)));
+            float meters = pow;
+            foreach (float m in new[] { 1f, 2f, 5f, 10f })
+                if (m * pow <= targetMeters) meters = m * pow;
+            float px = meters * UnitsPerMeter / _zoom;
+            _mapArea.DrawLine(left, left + new Vector2(px, 0), TextCream, 2f);
+            _mapArea.DrawLine(left + new Vector2(0, -4), left + new Vector2(0, 4), TextCream, 2f);
+            _mapArea.DrawLine(left + new Vector2(px, -4), left + new Vector2(px, 4), TextCream, 2f);
+            string text = meters >= 1000f ? $"{meters / 1000f:0.#} km" : string.Format(Loc.T("map.scale_fmt"), meters);
+            _mapArea.DrawString(ThemeDB.FallbackFont, left + new Vector2(px + 6, 4), text, HorizontalAlignment.Left, -1, 11, TextCream);
+        }
+
+        // Luoi TOA DO THE GIOI (met, giong /toado va HUD): buoc luoi tu chon theo muc phong to (~80px/o),
+        // nhan so o mep tren (X) va mep trai (Z) - de doc/hen "gap nhau o [1500, -2000]".
+        private static readonly float[] GridStepsMeters = { 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000 };
+
         private void DrawGrid()
         {
-            var gridColor = new Color(1f, 1f, 1f, 0.045f);
-            for (float x = 0; x <= MapSize.X; x += 40f)
-                _mapArea.DrawLine(new Vector2(x, 0), new Vector2(x, MapSize.Y), gridColor, 1f);
-            for (float y = 0; y <= MapSize.Y; y += 40f)
-                _mapArea.DrawLine(new Vector2(0, y), new Vector2(MapSize.X, y), gridColor, 1f);
+            float stepM = GridStepsMeters[^1];
+            foreach (float st in GridStepsMeters)
+                if (st * UnitsPerMeter / _zoom >= 80f) { stepM = st; break; }
+            float step = stepM * UnitsPerMeter;
+            var tl = MapToWorld(Vector2.Zero);
+            var br = MapToWorld(MapSize);
+            var gridColor = new Color(1f, 1f, 1f, 0.07f);
+            var axisColor = new Color(1f, 0.85f, 0.5f, 0.25f);
+            var labelColor = new Color(TextCream, 0.55f);
+            var font = ThemeDB.FallbackFont;
+            for (float x = Mathf.Ceil(tl.X / step) * step; x <= br.X; x += step)
+            {
+                float px = WorldToMap(new Vector2(x, 0)).X;
+                _mapArea.DrawLine(new Vector2(px, 0), new Vector2(px, MapSize.Y), Mathf.IsZeroApprox(x) ? axisColor : gridColor, 1f);
+                _mapArea.DrawString(font, new Vector2(px + 2, 11), $"{Mathf.RoundToInt(x / UnitsPerMeter)}", HorizontalAlignment.Left, -1, 9, labelColor);
+            }
+            for (float z = Mathf.Ceil(tl.Y / step) * step; z <= br.Y; z += step)
+            {
+                float py = WorldToMap(new Vector2(0, z)).Y;
+                _mapArea.DrawLine(new Vector2(0, py), new Vector2(MapSize.X, py), Mathf.IsZeroApprox(z) ? axisColor : gridColor, 1f);
+                _mapArea.DrawString(font, new Vector2(2, py - 2), $"{Mathf.RoundToInt(z / UnitsPerMeter)}", HorizontalAlignment.Left, -1, 9, labelColor);
+            }
         }
+
+        // Dong doi to doi, cong trinh cua minh, tui do roi (PvpClient).
+        private void DrawOnlineMarkers()
+        {
+            var pvp = PvpClient.Instance;
+            if (pvp == null) return;
+            foreach (var s in pvp.MyStructures.Values)
+            {
+                var p = WorldToMap(new Vector2(s.X, s.Z));
+                if (!InView(p)) continue;
+                var col = s.Kind == "bed" ? new Color(1f, 0.45f, 0.4f) : s.Kind == "chest" ? new Color(0.75f, 0.5f, 0.25f) : new Color(0.6f, 0.5f, 0.4f);
+                _mapArea.DrawRect(new Rect2(p - Vector2.One * 3f, Vector2.One * 6f), col);
+                if (s.Kind == "bed" && _zoom < 120f) DrawLabelPlate(p + new Vector2(6, 4), Loc.T("base.kind.bed"));
+            }
+            foreach (var b in pvp.Bags.Values)
+            {
+                if (!IsInstanceValid(b)) continue;
+                var p = WorldToMap(new Vector2(b.GlobalPosition.X, b.GlobalPosition.Z));
+                if (InView(p)) DrawDiamond(p, 4f, new Color(1f, 0.85f, 0.3f));
+            }
+            foreach (var m in pvp.PartyPositions.Values)
+            {
+                if (Time.GetTicksMsec() - m.SeenMs > 5000) continue;
+                var p = WorldToMap(new Vector2(m.Pos.X, m.Pos.Z));
+                // Ngoai khung -> ghim o mep ban do theo huong (van biet dong doi o dau).
+                var c = MapSize / 2f;
+                var d = p - c;
+                float k = Mathf.Max(Mathf.Abs(d.X) / (c.X - 8f), Mathf.Abs(d.Y) / (c.Y - 8f));
+                if (k > 1f) p = c + d / k;
+                _mapArea.DrawCircle(p, 5f, new Color(0.35f, 0.9f, 1f));
+                _mapArea.DrawCircle(p, 5f, Colors.Black, false, 1.2f);
+                DrawLabelPlate(p + new Vector2(8, -4), $"{m.Name} {MapCoords.Format(m.Pos.X, m.Pos.Z)}");
+            }
+        }
+
+        // Khu cho: vong vung an toan + bieu tuong + ten + toa do (diem hen gap nhau/giao dich).
+        private void DrawMarkets()
+        {
+            var font = ThemeDB.FallbackFont;
+            foreach (var m in ItemDatabase.Instance.Markets)
+            {
+                var p = WorldToMap(new Vector2(m.X, m.Z));
+                if (!InView(p)) continue;
+                _mapArea.DrawArc(p, Mathf.Max(6f, m.SafeRadius / _zoom), 0f, Mathf.Tau, 32, new Color(0.4f, 1f, 0.5f, 0.55f), 1.4f, true);
+                _mapArea.DrawCircle(p, 6.5f, new Color(0.95f, 0.78f, 0.25f));
+                _mapArea.DrawCircle(p, 6.5f, Colors.Black, false, 1.2f);
+                _mapArea.DrawString(font, p + new Vector2(-3.5f, 4.5f), "$", HorizontalAlignment.Left, -1, 12, new Color(0.3f, 0.2f, 0.05f));
+                string name = Loc.Current == Loc.Lang.VI ? m.Name : m.NameEn;
+                DrawLabelPlate(p + new Vector2(10, 4), _zoom < 90f ? $"{name} {MapCoords.Format(m.X, m.Z)}" : name);
+            }
+        }
+
+        // Su kien the gioi: ruong tiep te + doan thuong nhan (ghim mep ban do neu o ngoai khung).
+        private void DrawWorldEvents()
+        {
+            var we = WorldEventsClient.Instance;
+            if (we == null) return;
+            long now = WorldEventsClient.ServerNow;
+            foreach (var d in we.Drops.Values)
+            {
+                var p = PinToEdge(WorldToMap(new Vector2(d.X, d.Z)));
+                var col = d.Looted ? new Color(0.5f, 0.5f, 0.5f) : new Color(1f, 0.3f, 0.2f);
+                _mapArea.DrawRect(new Rect2(p - Vector2.One * 5f, Vector2.One * 10f), col);
+                _mapArea.DrawRect(new Rect2(p - Vector2.One * 5f, Vector2.One * 10f), Colors.Black, false, 1.2f);
+                long left = (d.LandsAt - now) / 1000;
+                string st = d.Looted ? Loc.T("world.map_looted") : left > 0 ? $"{left / 60}:{left % 60:00}" : Loc.T("world.map_ready");
+                DrawLabelPlate(p + new Vector2(9, 4), $"{Loc.T("world.map_drop")} {MapCoords.Format(d.X, d.Z)} {st}");
+            }
+            if (we.CurrentCaravan is WorldEventsClient.Caravan cv)
+            {
+                var p = PinToEdge(WorldToMap(new Vector2(cv.X, cv.Z)));
+                _mapArea.DrawCircle(p, 6.5f, new Color(0.95f, 0.75f, 0.2f));
+                _mapArea.DrawCircle(p, 6.5f, Colors.Black, false, 1.2f);
+                long left = Mathf.Max(0, (int)((cv.Until - now) / 1000));
+                DrawLabelPlate(p + new Vector2(9, 4), $"{Loc.T("world.map_caravan")} {MapCoords.Format(cv.X, cv.Z)} {left / 60}:{left % 60:00}");
+            }
+            if (we.Boss is WorldEventsClient.WorldBoss b)
+            {
+                var p = PinToEdge(WorldToMap(new Vector2(b.X, b.Z)));
+                float pulse = (Mathf.Sin(Time.GetTicksMsec() / 250f) + 1f) * 0.5f;
+                _mapArea.DrawCircle(p, 9f + pulse * 3f, new Color(0.9f, 0.1f, 0.1f, 0.35f));
+                DrawCrossIcon(p, new Color(0.95f, 0.2f, 0.15f));
+                long wake = (b.WakeAt - now) / 1000;
+                string st = wake > 0 ? string.Format(Loc.T("wboss.map_wake_fmt"), wake / 60, wake % 60) : $"{Mathf.RoundToInt(100f * b.Hp / Mathf.Max(1, b.MaxHp))}%";
+                DrawLabelPlate(p + new Vector2(11, 4), $"{Loc.T("wboss.map")} {WorldEventsClient.BossName(b.Kind)} {MapCoords.Format(b.X, b.Z)} {st}");
+            }
+        }
+
+        private static Vector2 PinToEdge(Vector2 p)
+        {
+            var c = MapSize / 2f;
+            var d = p - c;
+            float k = Mathf.Max(Mathf.Abs(d.X) / (c.X - 10f), Mathf.Abs(d.Y) / (c.Y - 10f));
+            return k > 1f ? c + d / k : p;
+        }
+
+        private static bool InView(Vector2 p) => p.X >= -10 && p.Y >= -10 && p.X <= MapSize.X + 10 && p.Y <= MapSize.Y + 10;
 
         private void DrawSafeZoneTint(Vector2 worldXZ, float worldRadius, Color color)
         {
             var p = WorldToMap(worldXZ);
-            float rx = worldRadius / (WorldMaxX - WorldMinX) * MapSize.X;
+            float rx = worldRadius / _zoom;
             _mapArea.DrawCircle(p, rx, color);
         }
 
@@ -396,7 +679,7 @@ namespace HiepSiVeVuon.UI
 
         private void DrawLandmark(Landmark lm)
         {
-            var p = WorldToMap(lm.Pos);
+            var p = WorldToMap(Disp(lm.Pos));
 
             // Vong tron do canh bao mo, mem, "tho" nhe theo nhip sin (thay vi 1 vong tinh truoc
             // day) - de mat nguoi choi tu nhien bi hut ve cac khu nguy hiem tren ban do rong.

@@ -2,6 +2,11 @@
 // phuc. Nguoi choi khac nhin thay qua gateway (presence) va giao dich/cho.
 const repo = require("../repositories/characterRepository");
 const { AppError } = require("../utils/AppError");
+const cache = require("../cache/cache");
+
+// Ho so nhan vat doc rat nhieu (moi ket noi gateway, nhan rieng, moi to doi, giao dich...) -> cache.
+const charKey = (id) => `char:${id}`;
+const nameKey = (name) => `charname:${String(name).toLowerCase()}`;
 
 // Phai khop CharacterCatalog.cs ben Godot.
 // Boi canh Trung co: chi cac kieu nhan vat thoi Trung co (xem CharacterCatalog.cs ben Godot).
@@ -21,15 +26,18 @@ function toPublic(row) {
 }
 
 async function get(playerId) {
-  return toPublic(await repo.get(playerId));
+  return cache.cached(charKey(playerId), 300, async () => toPublic(await repo.get(playerId)));
 }
 
 async function save(playerId, body) {
   if (!MODELS[body.gender]?.includes(body.modelId)) throw new AppError(400, "Mau nhan vat khong hop voi gioi tinh.");
   const existing = await repo.findByName(body.displayName);
   if (existing && existing.player_id !== playerId) throw new AppError(409, "Ten nhan vat da co nguoi dung.");
+  const before = await repo.get(playerId);
   try {
-    return toPublic(await repo.upsert(playerId, body));
+    const saved = toPublic(await repo.upsert(playerId, body));
+    await cache.invalidate(charKey(playerId), nameKey(body.displayName), before && nameKey(before.display_name));
+    return saved;
   } catch (err) {
     if (err.code === "23505") throw new AppError(409, "Ten nhan vat da co nguoi dung.");
     throw err;
@@ -41,7 +49,8 @@ async function getMany(ids) {
 }
 
 async function findByName(name) {
-  return toPublic(await repo.findByName(name));
+  const id = await cache.cached(nameKey(name), 300, async () => (await repo.findByName(name))?.player_id ?? null);
+  return id == null ? null : get(id);
 }
 
 module.exports = { get, save, getMany, findByName, MODELS };

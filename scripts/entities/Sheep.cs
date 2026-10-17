@@ -54,8 +54,26 @@ namespace HiepSiVeVuon.Entities
 
         private readonly HiepSiVeVuon.Core.SteeringUtil.StuckDetector _stuckDetector = new();
 
+        // Huy dang ky su kien khi bi xoa (vd bi giet thit - xem Huntable) - tranh goi vao doi tuong da giai phong.
+
+        public override void _ExitTree()
+
+        {
+
+            if (GameManager.Instance == null) return;
+
+            GameManager.Instance.HourChanged -= OnHourChanged;
+
+            GameManager.Instance.DayChanged -= OnDayChanged;
+
+        }
+
+
         public override void _Ready()
         {
+            // Giet thit / san ban (xem Huntable.cs) - con da bi giet o phien truoc thi khong hien lai.
+            if (!Huntable.Attach(this, "sheep", 35, farm: true)) return;
+            if (!IsAdult) AnimalLedger.OnBirth("sheep"); // con non sinh ra bu vao so da giet thit
             AddToGroup("sheep");
             _model = GetNodeOrNull<Node3D>("Model");
             _collision = GetNodeOrNull<CollisionShape3D>("Collision");
@@ -99,8 +117,11 @@ namespace HiepSiVeVuon.Entities
                 _state = State.GoToTrough;
         }
 
+        private bool _simAsleep;
+
         public override void _PhysicsProcess(double delta)
         {
+            if (HiepSiVeVuon.Core.SimLod.Sleep(this, ref _simAsleep)) return; // xa nguoi choi -> ngu mo phong
             float dt = (float)delta;
 
             var (desiredDir, targetSpeed) = _state switch

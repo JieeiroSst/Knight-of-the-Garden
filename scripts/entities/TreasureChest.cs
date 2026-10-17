@@ -34,7 +34,7 @@ namespace HiepSiVeVuon.Entities
             AddBox(new Vector3(4, 4, 1), new Vector3(0, 10, 10.5f), gold); // o khoa
             _lid = AddBox(new Vector3(30, 6, 20), new Vector3(0, 17, 0), wood.Lightened(0.1f));
             AddBox(new Vector3(32, 1.5f, 22), new Vector3(0, 20.5f, 0), gold);
-            _glow = new OmniLight3D { LightColor = gold, LightEnergy = 1.2f, OmniRange = 70f, Position = Vector3.Up * 25f };
+            _glow = new OmniLight3D { LightColor = gold, LightEnergy = 1.2f, OmniRange = 70f, Position = Vector3.Up * 25f, DistanceFadeEnabled = true, DistanceFadeBegin = 700f, DistanceFadeLength = 200f };
             AddChild(_glow);
             UpdateVisual();
         }

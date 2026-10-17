@@ -1,5 +1,6 @@
 // SQL cho ban be / bang hoi / tham nong trai.
 const { pool } = require("../db/pool");
+const { adjustContainer } = require("./containerState");
 
 const pair = (x, y) => (x < y ? [x, y] : [y, x]);
 
@@ -115,18 +116,9 @@ async function storage(guildId) {
   return r.rows;
 }
 
-async function adjustStorage(client, guildId, itemId, delta) {
-  if (delta > 0) {
-    await client.query(
-      `INSERT INTO guild_storage (guild_id, item_id, count) VALUES ($1, $2, $3)
-       ON CONFLICT (guild_id, item_id) DO UPDATE SET count = guild_storage.count + EXCLUDED.count`, [guildId, itemId, delta]);
-    return true;
-  }
-  const need = -delta;
-  const del = await client.query("DELETE FROM guild_storage WHERE guild_id = $1 AND item_id = $2 AND count = $3 RETURNING 1", [guildId, itemId, need]);
-  if (del.rowCount) return true;
-  const r = await client.query("UPDATE guild_storage SET count = count - $3 WHERE guild_id = $1 AND item_id = $2 AND count > $3 RETURNING 1", [guildId, itemId, need]);
-  return r.rowCount > 0;
+// Tra ve true (them) / trang thai phan lay ra (lay) / false (khong du) - xem containerState.js.
+async function adjustStorage(client, guildId, itemId, delta, carry = null) {
+  return adjustContainer(client, "guild_storage", ["guild_id"], [guildId], itemId, delta, carry);
 }
 
 // ---- Tham nong trai ----
